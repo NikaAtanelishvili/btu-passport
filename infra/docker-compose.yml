@@ -1,0 +1,169 @@
+# IN-01. Dev: only the default-profile infrastructure runs here; api, worker,
+# signer and web run on the host with hot reload (make api / web / ...).
+# The `app` and `demo` profiles containerise everything for the demo (IN-05, M10).
+#
+# Started via the Makefile, which passes --env-file .env from the repo root.
+# Images are pinned to exact tags (and digests where the tag is mutable).
+
+name: btu-passport
+
+services:
+  db:
+    image: postgres:16.15@sha256:9e2cf6287f25c3151f4c9421ccce2b17f3e60061c111a29165e0d2cdd9ff0a97
+    environment:
+      POSTGRES_USER: passport
+      POSTGRES_PASSWORD: passport # DEV ONLY
+      POSTGRES_DB: passport
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro # creates passport_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U passport -d passport"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [backend]
+
+  minio:
+    # MinIO stopped publishing official images in Oct 2025 (project archived 2026);
+    # Chainguard's free rebuild from source is used instead, pinned by digest.
+    # See Deviations in docs/plan/00-overview.md.
+    image: cgr.dev/chainguard/minio@sha256:ae73835075ee168f1745cc28d4cf5bbd6a5973e5609b2b2593280aaa495ea113
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minio}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minio-secret}
+    ports: ["9000:9000", "9001:9001"]
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      # The image has bash but no curl or grep: plain HTTP over /dev/tcp.
+      test:
+        - CMD
+        - bash
+        - -c
+        - |-
+          exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /minio/health/live HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && read -r status <&3 && [[ $$status == *' 200 '* ]]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [backend]
+
+  minio-init:
+    image: cgr.dev/chainguard/minio-client@sha256:8548a9731c3f4cf507d8596c18c351ddb8fcb1063f212e6dd72ff5eeb697bc9c
+    depends_on:
+      minio: { condition: service_healthy }
+    environment:
+      # mc reads the alias from MC_HOST_<alias>; the image has no shell.
+      MC_HOST_local: http://${S3_ACCESS_KEY:-minio}:${S3_SECRET_KEY:-minio-secret}@minio:9000
+    # Buckets are private unless a policy is set; none is set.
+    command: ["mb", "--ignore-existing", "local/${S3_BUCKET:-passports}"]
+    restart: "no"
+    networks: [backend]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1@sha256:a78d6b79572168cb25886b80a8b5b8d4ed4390743e3eecb810538683e209dd6b
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?set KC_BOOTSTRAP_ADMIN_PASSWORD in .env}
+      KC_HEALTH_ENABLED: "true"
+    ports: ["8080:8080"]
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro # btu-realm.json arrives in IN-04 (M3)
+    healthcheck:
+      # Health lives on the management port 9000 (not published). No curl in the image.
+      test:
+        - CMD
+        - bash
+        - -c
+        - |-
+          exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && read -r status <&3 && [[ $$status == *' 200 '* ]]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks: [backend]
+
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:v1.8.6@sha256:4a16a86f41d30418fbdca47ce2868121bbb0aeaa0a34bde2dd1e2911c4be2464
+    # The image's entrypoint is `/bin/sh -c`, so the command is one string; `exec` makes
+    # anvil PID 1 so it gets SIGTERM and writes --state on shutdown.
+    command: ["exec anvil --host 0.0.0.0 --chain-id 31337 --state /data/anvil-state.json"]
+    user: root # named volume is root-owned; dev-only chain
+    ports: ["8545:8545"]
+    volumes:
+      - anvildata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cast block-number --rpc-url http://127.0.0.1:8545"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [backend, signing]
+
+  # --- profile app: containerised services for the demo (Dockerfiles in IN-05, M10) ---
+
+  api:
+    profiles: [app]
+    build: { context: ../backend }
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    env_file: [../.env]
+    expose: ["8000"]
+    depends_on:
+      db: { condition: service_healthy }
+      minio: { condition: service_healthy }
+    networks: [backend]
+
+  worker:
+    profiles: [app]
+    build: { context: ../backend }
+    command: ["python", "-m", "worker"]
+    env_file: [../.env]
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [backend, signing]
+
+  signer:
+    profiles: [app]
+    build: { context: ../backend }
+    command: ["uvicorn", "signer.main:app", "--host", "0.0.0.0", "--port", "8100"]
+    env_file: [../.env] # split into a signer-only env file in IN-05
+    environment:
+      ISSUER_PRIVATE_KEY_FILE: /run/secrets/issuer_key
+    secrets: [issuer_key] # the only service with the key
+    expose: ["8100"]
+    networks: [signing]
+
+  web:
+    profiles: [app]
+    build: { context: ../web }
+    environment:
+      API_ORIGIN: http://api:8000
+    expose: ["3000"]
+    networks: [backend]
+
+  caddy:
+    profiles: [demo]
+    image: caddy:2.11.7
+    ports: ["80:80", "443:443"]
+    environment:
+      DEMO_DOMAIN: ${DEMO_DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    networks: [backend]
+
+networks:
+  backend: {}
+  signing: {}
+
+volumes:
+  pgdata: {}
+  miniodata: {}
+  anvildata: {}
+  caddydata: {}
+
+secrets:
+  issuer_key:
+    file: ../secrets/issuer_key
