@@ -1,0 +1,31 @@
+# Secrets and local env (IN-02)
+.env
+.env.demo
+secrets/
+infra/*state*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/*/31337/
+
+# Editors / OS
+.DS_Store
+.idea/
