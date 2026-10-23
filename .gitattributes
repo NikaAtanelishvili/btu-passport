@@ -1,0 +1,3 @@
+# Keep the hackathon originals byte-for-byte (BE-04: "the hackathon file, unchanged").
+seed/*.csv -text
+docs/plan/HACKATHON_PLAN.txt -text
