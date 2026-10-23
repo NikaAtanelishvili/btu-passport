@@ -1,0 +1,58 @@
+[project]
+name = "btu-passport-backend"
+version = "0.1.0"
+description = "BTU AI Skills Passport: API, worker, signer and CLI"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "alembic>=1.20.1",
+    "authlib>=1.9.1",
+    "boto3>=1.43.118",
+    "fastapi>=0.162.0",
+    "httpx>=0.28.1",
+    "itsdangerous>=2.2.0",
+    "jinja2>=3.1.6",
+    "psycopg[binary]>=3.3.6",
+    "pycryptodome>=3.24.1",
+    "pydantic>=2.14.1",
+    "pydantic-settings>=2.16.1",
+    "python-multipart>=0.0.32",
+    "segno>=1.6.6",
+    "sqlalchemy>=2",
+    "uvicorn[standard]>=0.54.0",
+    "weasyprint>=70.0",
+    "web3>=7",
+]
+
+[tool.uv]
+# One project, several entry points (app, worker, signer, cli); not an installable package.
+package = false
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.2",
+    "time-machine>=3.5.1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app", "tests"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "chain: needs Anvil with the contract deployed (make test-chain)",
+]
