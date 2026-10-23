@@ -1,0 +1,67 @@
+HACKATHON CHALLENGE
+BTU AI Skills Digital Passport
+The Challenge
+The Business and Technology University (BTU) is creating the "BTU AI Skills Digital Passport"—a digital record of AI skills acquired by students and verified by the university.
+Unlike a standard certificate, the AI ​​Skills Digital Passport is a persistent document with a permanent, unique ID; its content expands incrementally as the student’s skills develop.
+Whenever a student acquires a new AI skill, the corresponding skill, badge, date of acquisition, and description are added to the passport, while existing information remains preserved.
+Your challenge for this hackathon is to develop a working prototype (MVP) of a technical solution that automates the management of the BTU AI Skills Digital Passport and enables the verification of its contents via blockchain.
+________________
+
+
+What are you expected to build?
+The system you develop must facilitate the automated generation of a student’s Digital Passport, its periodic updates, and the verification of its authenticity on the blockchain.
+BTU will provide the teams with:
+* A complete, multi-page visual design for the Digital Passport;
+* A database of test student data. * The structure of Skills and Badges.
+________________
+
+
+Mandatory Functional Requirements
+1. Unique Digital Passport
+A single Digital Passport must be created for each student, and a permanent, unique Passport ID must be assigned.
+The student’s first name, last name, Passport ID, and the initial issuance date are recorded at the time of the Passport's creation and remain unchanged during any subsequent updates.
+The Digital Passport shall be a single, multi-page PDF document.
+2. Integration with Google Sheets
+Google Sheets serves as the primary data source for the system.
+When an administrator adds a new verified Skill for a student, the system must be able to detect this change, associate it with the relevant student, and update their existing Digital Passport.
+3. Automated Passport Generation
+The system must automatically populate a visual template—provided by BTU—with the relevant student's data to generate the final multi-page PDF.
+The process must not require manual assembly of documents for individual students.
+4. Adding New Skills
+When a student acquires a new AI-related skill, the following information must be added to their existing Passport:
+* The name of the skill;
+* The corresponding Badge/Stamp;
+* The date the skill was acquired;
+* A relevant description. When a new skill is added, a new passport is not created for the student; instead, their existing Digital Passport is updated.
+5. Blockchain Verification – Mandatory Requirement
+The authenticity of every officially issued version of a Digital Passport must be verifiable on the blockchain.
+Blockchain verification must confirm that:
+* The document was officially issued;
+* The presented document matches the officially issued version;
+* Its content has not been altered since issuance.
+If even a single piece of data in the PDF is changed after issuance—such as the student's name, a skill, a badge, or a date—the altered document must fail blockchain verification.
+Teams are free to select an appropriate blockchain network, protocol, or technological solution.
+6. Verification of the Issuer’s Identity (BTU)
+Verification must go beyond merely confirming that the document remains unaltered.
+The solution must enable third parties to verify the identity of BTU as the official issuer of the Digital Passport.
+Consequently, the final verification process must confirm two key components:
+Document Authenticity – the document is genuine and unaltered; Issuer Authenticity – BTU is the verified issuer of the document.
+7. Unique Verification Code/ID
+The Digital Passport must include a unique Verification Code/ID, allowing any interested party to verify the document.
+For example, an employer can enter the verification code/ID found on the passport into a designated field within the relevant system or website to confirm its authenticity.
+Third parties should not be required to register or log in to perform verification.
+8. Passport Updates and Version Management
+The Digital Passport may be updated over time.
+Following each update, the system must be able to properly record the new version and verify it via blockchain.
+Throughout this process, the student’s original, primary Passport ID must remain unchanged.
+The system must be capable of identifying the latest valid version of the Passport.
+9. Student Access
+Students must be able to view and download their own Digital Passports.
+Ideally, access to the student’s personal document should be granted using their BTU university email address or another secure authentication mechanism.
+Public verification of the document, however, must be possible without the need for authorization. 10. Scalability
+The solution must be designed to support the issuance and subsequent management of at least 5,000 Digital Passports per year, with the potential for further growth.
+Particular preference will be given to solutions that ensure maximum process automation and do not require individual, manual processing of each document.
+
+
+Ultimate Goal of the Challenge
+Develop a solution that enables BTU to automatically manage a single, persistent, incrementally updatable, and blockchain-verified "AI Skills Digital Passport" for thousands of students, while allowing students, employers, or any other interested party to easily and independently verify its authenticity.
