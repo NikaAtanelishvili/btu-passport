@@ -4,12 +4,13 @@ Issues one persistent, versioned PDF passport per student, anchors each version'
 SHA-256 in a Merkle root on an EVM chain, and lets anyone verify it without login.
 
 ## Read first
-- docs/plan.md — implementation plan (tasks, order, rules). It wins over other docs.
-- docs/requirements.md, docs/design.md, docs/webapp.md — background and IDs.
+- docs/plan/00-overview.md — implementation plan index; one file per area in docs/plan/.
+  The plan wins over other docs.
+- docs/01-requirements.md, docs/02-system-design.md, docs/03-web-app-design.md — background and IDs.
 
 ## Stack (locked)
 Next.js App Router + TS + Tailwind + stock shadcn/ui · FastAPI + Pydantic v2 +
-SQLAlchemy 2 + Alembic · PostgreSQL 16 · MinIO · WeasyPrint · Keycloak (OIDC) ·
+SQLAlchemy 2 + Alembic · PostgreSQL 16 · MinIO · WeasyPrint · email-code login (no IdP) ·
 Solidity + Foundry · Anvil (dev) / Sepolia (demo) · web3.py signer.
 
 ## Commands
@@ -29,5 +30,5 @@ make chain-deploy | types | lint | test
 - The issuer key lives only in the signer process. Never log it, never import it elsewhere.
 - No personal data on-chain. Only Merkle roots.
 - Stock shadcn components only; no custom visual design.
-- Commit per task: "<TASK-ID>: summary". Tick tasks in docs/plan.md.
+- Commit per task: "<TASK-ID>: summary". Tick tasks in the docs/plan/ file that defines them.
 - Unclear spec: use the documented default and add a "# DEFAULT(Qn)" comment.

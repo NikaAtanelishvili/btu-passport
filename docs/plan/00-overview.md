@@ -18,7 +18,7 @@ This plan is written for Claude Code to build the whole MVP in 11 milestones (M0
 
 **How tasks are written.** Each task has an ID (`BE-07`, `FE-12`, `BC-03`, `IN-02`), the files it creates or changes, what to build, and a *Done when* line with the command or test that proves it. Requirement IDs (FR-xx, NFR-xx) and acceptance scenarios (A1–A16) refer to the Requirements Analysis document.
 
-**Before M0:** export the four documents to Markdown and put them in the repo as `docs/requirements.md`, `docs/design.md`, `docs/webapp.md`, `docs/plan.md`, so every Claude Code session can read them.
+**Before M0:** export the four documents to Markdown and put them in the repo as `docs/01-requirements.md`, `docs/02-system-design.md`, `docs/03-web-app-design.md` and `docs/plan/*.md` (one file per tab), so every Claude Code session can read them.
 
 ## 2. Locked decisions
 
@@ -151,7 +151,7 @@ One milestone per session, tests before features for every invariant, and nothin
 7. **API contract first:** backend schemas in `app/schemas/` are the source of truth; the frontend regenerates TypeScript types with `make types` after any change.
 8. **UI:** stock shadcn/ui components and Tailwind defaults only. No custom styling beyond layout (spacing, grid). Every form shows server field errors under the field.
 9. **Commits:** one commit per task, message `<task-id>: <summary>` (e.g. `BE-23: issuance service creates pending versions`).
-10. **Keep the plan current:** tick the task in `docs/plan.md` when done; add a line under "Deviations" at the bottom of that file for anything built differently, with the reason.
+10. **Keep the plan current:** tick the task in the `docs/plan/` file that defines it when done; add a line under "Deviations" at the bottom of `docs/plan/00-overview.md` for anything built differently, with the reason.
 
 ### Definition of done (every task)
 
@@ -227,7 +227,7 @@ Every functional requirement has a task that builds it and a test that proves it
 
 ## Deviations
 
-Anything built differently from this plan, with the reason. (The plan lives in `docs/plan/*.md`, not a single `docs/plan.md`; tasks are ticked ✅ in the tab that defines them.)
+Anything built differently from this plan, with the reason. Tasks are ticked ✅ in the `docs/plan/` file that defines them.
 
 | Task | Deviation | Reason |
 | --- | --- | --- |
@@ -240,3 +240,4 @@ Anything built differently from this plan, with the reason. (The plan lives in `
 | BE-01 | `web3` resolved to 8.0.0 | Current stable at scaffold time; BC-07 is written against the v7 API, so check it then |
 | FE-01 | shadcn `field` instead of `form`; the shadcn style is the current default (`base-nova`, Base UI primitives) | The registry has replaced `form` (FE-01 step 4) |
 | IN-01, IN-02, BE-01 | **Superseded on 2026-10-24:** Keycloak (OIDC, staff MFA) is replaced by passwordless email-code sign-in built into FastAPI (BE-10, FE-04, IN-04); Mailpit catches dev mail. The Keycloak service, realm folder, `KC_*`/`OIDC_*`/MFA variables and `authlib`/`itsdangerous` are removed, and there is no `SESSION_SECRET` or `SessionMiddleware` | Product decision: simpler to run and demo, no IdP to configure. Accepted trade-off (IN-04): no second factor for staff — whoever controls an admin's inbox can sign in as that admin |
+| docs | `docs/01-requirments.md` renamed to `docs/01-requirements.md` | Match the name CLAUDE.md and §7 use |
