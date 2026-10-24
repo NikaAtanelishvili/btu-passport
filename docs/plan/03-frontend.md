@@ -97,7 +97,7 @@ One client page, two steps (Web App Design P4), stock shadcn `Card`, `field`, `I
 
 These must work well on a phone: most visitors are an employer opening a link or a student scanning a QR.
 
-### FE-10 Verify `/verify` (M5)
+### FE-10 Verify `/verify` (M5) ✅
 
 The public verification page lives at `/verify`. `/` stays as an alias: `app/page.tsx` redirects to `/verify` (replacing the temporary FE-01 health page), so old links and the bare domain still land on Verify.
 
@@ -105,7 +105,7 @@ The public verification page lives at `/verify`. `/` stays as an alias: `app/pag
 - `Card` "Or check the PDF you received": file `Input` (`accept="application/pdf"`) or drop zone. On select: `sha256File()` (BC-06) → `POST /api/verify/hash` → render `<VerifyResultView>` below, then run the independent check (FE-12). The note "Your file stays on your device; only its fingerprint is sent" sits under the input.
 - Three lines of "How it works" text.
 
-### FE-11 Verify result `/v/[code]` (M5)
+### FE-11 Verify result `/v/[code]` (M5) ✅
 
 `GET /api/verify/{code}` → `<VerifyResultView>` (shared with FE-10):
 
@@ -127,7 +127,7 @@ The public verification page lives at `/verify`. `/` stays as an alias: `app/pag
 | `NOT_ISSUED_BY_BTU` | Not issued by BTU                                                           |
 | `REVOKED`           | Revoked by BTU                                                              |
 
-### FE-12 Independent check (M5) — `web/lib/verify.ts`
+### FE-12 Independent check (M5) — `web/lib/verify.ts` ✅
 
 `independentCheck(result)`: fetch `/.well-known/ai-passport-issuer.json`; recompute the root with `processProof(leaf, proof)`; create a `viem` public client on `NEXT_PUBLIC_RPC_URL` with the ABI from `shared/PassportRegistry.abi.json` (copied into `web/lib/` by `make chain-abi`); read `anchoredAt(root)` and `owner()`. Returns `{documentOk, issuerOk}` or `{unreachable: true}`. Never blocks the page: the server verdict shows first.
 

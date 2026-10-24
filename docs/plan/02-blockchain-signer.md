@@ -188,7 +188,7 @@ The same five steps run in three places: the API (BE-30, to produce the verdict)
   "issuer_file_url": "https://…/.well-known/ai-passport-issuer.json" }
 ```
 
-### BC-06b Standalone checker (M5) — `shared/verify_proof.py`
+### BC-06b Standalone checker (M5) — `shared/verify_proof.py` ✅
 
 `python verify_proof.py passport.pdf proof.json --rpc https://…`: about 50 lines with only `web3` and `pycryptodome`, implementing steps 1–4 (it prints a warning instead of fetching the issuer file if offline). It is documented in the README and on the passport's last page as the "verify without BTU" option.
 

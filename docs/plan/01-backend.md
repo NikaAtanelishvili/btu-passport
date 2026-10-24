@@ -292,7 +292,7 @@ Unauthenticated: `{"authenticated": false}` with status 200.
 
 The complete contract, grouped by router. Shapes are written as Pydantic field lists; `?` means optional. Every list returns `Page[T]`. Error codes used everywhere: `validation_error` (422), `unauthenticated` (401), `forbidden` / `csrf_failed` (403), `not_found` (404), `conflict` (409, with a specific `error` such as `duplicate_email`), `rate_limited` (429).
 
-### Public: verify, issuer file, stamps (BE-30 – BE-32, M5)
+### Public: verify, issuer file, stamps (BE-30 – BE-32, M5) ✅
 
 | Method, path                               | Request                         | Response                                                    | Notes                                            |
 | ------------------------------------------ | ------------------------------- | ----------------------------------------------------------- | ------------------------------------------------ |
@@ -480,7 +480,7 @@ In order: event missing or deleted → `NOT_FOUND`; the caller's row exists and 
 
 Manual add takes a `student_id`, uses that student's email, method `MANUAL`; if a removed row exists, clear `removed_at`. Remove sets `removed_at`, `removed_by`. Flags: `UNREGISTERED` when `student_id` is NULL; `ALREADY_HOLDS` when an award exists for (student, event skill). Both actions are audited.
 
-### BE-30 Verification (M5) — `app/services/verification.py`, `app/services/chain.py`
+### BE-30 Verification (M5) — `app/services/verification.py`, `app/services/chain.py` ✅
 
 `chain.py` holds a read-only web3 client with three calls: `anchored_at(root)`, `owner()`, `is_revoked(leaf)`; results cached in-process for 60 s. `verify(version)`: issuer check = config contract address and `owner() == ISSUER_ADDRESS`; document check = recompute the root from `pdf_sha256` + `merkle_proof` (BC-04) and `anchored_at(root) > 0`; then `REVOKED`, else `SUPERSEDED` if `version_no` < the passport's latest ANCHORED `version_no`, else `VALID`. Verification never trusts `status` alone (dataset rule: use the chain proof).
 
