@@ -1,7 +1,5 @@
-"""Worker timers (BE-26), checked on every loop iteration.
-
-The event tick (every 15 s, BE-40) is added with events in M7.
-"""
+"""Worker timers (BE-26), checked on every loop iteration: anchoring, stale jobs, and the
+event tick (every 15 s, BE-40) that opens and closes check-in by each event's window."""
 
 import logging
 import time
@@ -12,10 +10,11 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import SessionLocal
 from app.models import AnchorBatch, PassportVersion
-from app.services import jobs
+from app.services import events, jobs
 
 log = logging.getLogger("worker")
 STALE_CHECK_SECONDS = 60
+EVENT_TICK_SECONDS = 15
 
 
 def anchor_tick(db: Session) -> bool:
@@ -38,6 +37,7 @@ class Timers:
         self.anchor_every = get_settings().anchor_interval_seconds
         self.next_anchor = 0.0
         self.next_stale_check = time.monotonic() + STALE_CHECK_SECONDS
+        self.next_event_tick = 0.0
 
     def run_due(self) -> None:
         now = time.monotonic()
@@ -48,6 +48,12 @@ class Timers:
             with SessionLocal() as db:
                 if n := jobs.requeue_stale(db):
                     log.info("requeued %s job(s) left RUNNING by a crashed worker", n)
+                db.commit()
+        if now >= self.next_event_tick:
+            self.next_event_tick = now + EVENT_TICK_SECONDS
+            with SessionLocal() as db:
+                if n := events.tick(db):
+                    log.info("event tick: %s event(s) opened or closed", n)
                 db.commit()
         if now >= self.next_anchor:
             self.next_anchor = now + self.anchor_every

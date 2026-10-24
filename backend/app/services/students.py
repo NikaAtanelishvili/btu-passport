@@ -34,7 +34,7 @@ from app.schemas.student import (
     StudentProfile,
 )
 from app.schemas.version import version_row
-from app.services import audit
+from app.services import audit, events
 
 if TYPE_CHECKING:
     from app.auth.deps import Principal
@@ -122,6 +122,7 @@ def create_student(db: Session, actor: "Principal | None", body: StudentCreate) 
     passport_id = f"BTU-AI-{db.scalar(passport_number_seq.next_value()):06d}"
     db.add(Passport(passport_id=passport_id, student_id=student.student_id))
     db.flush()
+    events.link_participants(db, student.student_id, student.email)  # Unregistered check-ins
     audit.record(
         db,
         actor,
@@ -154,6 +155,8 @@ def update_student(
         for k, v in changed.items():
             setattr(student, k, v)
         _flush_unique(db, changed, student_id)
+        if "email" in changed:
+            events.link_participants(db, student_id, student.email)
         audit.record(db, actor, "student.update", "student", student_id, before, changed)
         db.flush()
     return student, _warnings(db, student)

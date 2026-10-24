@@ -161,3 +161,23 @@ def test_timers_requeue_stale_jobs_while_running(
     timers.next_stale_check = 0.0  # due now
     timers.run_due()
     assert _jobs(db)[0].status == "QUEUED"
+
+
+def test_timers_run_the_event_tick(db: Session) -> None:
+    # BE-40: a DRAFT event whose check-in window has started opens without anyone clicking.
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import Event
+    from tests import factories
+    from worker import ticks
+
+    skill = factories.skill(db)
+    event = factories.event(db, skill, factories.user(db))
+    now = datetime.now(UTC)
+    event.checkin_opens_at = now - timedelta(minutes=1)
+    event.checkin_closes_at = now + timedelta(minutes=30)
+    db.commit()
+    ticks.Timers().run_due()
+    db.expire_all()
+    opened = db.get(Event, event.event_id)
+    assert opened is not None and opened.status == "CHECKIN_OPEN"
