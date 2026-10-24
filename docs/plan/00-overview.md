@@ -14,7 +14,7 @@ This plan is written for Claude Code to build the whole MVP in 11 milestones (M0
 | Backend | FastAPI app, database schema, auth, API contract, issuance services, worker, PDF |
 | Blockchain and signer | Solidity contract, Foundry, Merkle spec, signer service, verification |
 | Frontend | Next.js app, every page, its components and API calls |
-| Infra and testing | Docker Compose, Keycloak realm, Makefile, acceptance tests, demo |
+| Infra and testing | Docker Compose, Mailpit, Makefile, acceptance tests, demo |
 
 **How tasks are written.** Each task has an ID (`BE-07`, `FE-12`, `BC-03`, `IN-02`), the files it creates or changes, what to build, and a *Done when* line with the command or test that proves it. Requirement IDs (FR-xx, NFR-xx) and acceptance scenarios (A1–A16) refer to the Requirements Analysis document.
 
@@ -27,11 +27,11 @@ These are settled; the agent implements them and asks before changing any. Versi
 | Area | Decision |
 | --- | --- |
 | Frontend | Next.js (App Router) + TypeScript, Tailwind, **stock shadcn/ui components, no custom design work**, react-hook-form + zod, TanStack Query, `viem` + `@noble/hashes` for browser-side verification. Package manager: pnpm |
-| Backend | Python 3.12, FastAPI, Pydantic v2, pydantic-settings, SQLAlchemy 2 (sync), Alembic, psycopg 3, Authlib. Package manager: uv |
+| Backend | Python 3.12, FastAPI, Pydantic v2, pydantic-settings, SQLAlchemy 2 (sync), Alembic, psycopg 3. Package manager: uv |
 | Database | PostgreSQL 16 — the only datastore for data, job queue and sessions |
 | Files | MinIO (S3 API) via boto3; PDFs keyed by their SHA-256 |
 | PDF | Jinja2 HTML/CSS → WeasyPrint; QR with `segno`; Noto Sans Georgian embedded |
-| Login | Keycloak (OIDC authorization code + PKCE, TOTP for staff) in Docker for dev and demo |
+| Login | Passwordless email codes built into FastAPI (hashed 6-digit code, 10-minute expiry, rate limits); SMTP to send, Mailpit in dev. No Keycloak, no OIDC, no staff MFA |
 | Roles | `SUPER_ADMIN`, `ADMIN` in `user_roles`; students identified by email match; no Auditor role |
 | Chain | Solidity + Foundry + OpenZeppelin `Ownable2Step`; Anvil for dev, Sepolia for demo; `web3.py` in the signer |
 | Merkle | Sorted-pair keccak256, double-hashed leaves (Blockchain tab, BC-04) — one tree and one transaction per batch |
@@ -53,8 +53,7 @@ btu-passport/
 ├── docs/                      # requirements, design, webapp, plan (Markdown)
 ├── infra/
 │   ├── docker-compose.yml
-│   ├── Caddyfile              # demo profile only
-│   └── keycloak/btu-realm.json
+│   └── Caddyfile              # demo profile only
 ├── seed/
 │   ├── test-data.csv          # the hackathon CSV, unchanged
 │   └── stamps/                # placeholder stamp SVGs for the 3 categories
@@ -96,11 +95,12 @@ All settings come from environment variables, read in Python by one `pydantic-se
 | `DATABASE_URL` | api, worker, cli | `postgresql+psycopg://passport:passport@localhost:5432/passport` | Tests use database `passport_test` |
 | `S3_ENDPOINT_URL`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` | api, worker | `http://localhost:9000`, `minio`, `minio-secret`, `passports` |  |
 | `PUBLIC_BASE_URL` | api, worker | `http://localhost:3000` | Base of verify links and check-in QR URLs |
-| `OIDC_ISSUER` | api | `http://localhost:8080/realms/btu` |  |
-| `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | api | `passport-web`, value from the realm file | Confidential client |
-| `OIDC_REDIRECT_URI` | api | `http://localhost:3000/auth/callback` | Goes through the Next.js proxy |
-| `REQUIRE_MFA_CLAIM` | api | `false` | `true` in demo: admin routes need the ACR level set by Keycloak's OTP step (BE-12) |
-| `ALLOWED_EMAIL_DOMAINS` | api | `btu.edu.ge,btu.test,example.org` | For admin grants and student registration |
+| `SMTP_HOST`, `SMTP_PORT` | api | `localhost`, `1025` | Mailpit in dev (its inbox UI is on port 8025); the demo uses a real SMTP account |
+| `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | api | empty, empty, `passport@btu.test` | Demo: real credentials in .env only, never committed |
+| `LOGIN_CODE_TTL_MINUTES`, `LOGIN_CODE_MAX_ATTEMPTS` | api | `10`, `5` | Email-code login (BE-10) |
+| `LOGIN_RATE_PER_EMAIL_HOUR`, `LOGIN_RATE_PER_IP_HOUR` | api | `5`, `20` | Code requests allowed per hour; over the limit returns 429 |
+| `DEV_LOG_LOGIN_CODES` | api | `true` | Also prints codes to the API log; the API refuses to start with it on unless ENV is dev or test |
+| `ALLOWED_EMAIL_DOMAINS` | api | `btu.edu.ge,btu.test,example.org` | For sign-in, admin grants and student registration; checked on the server |
 | `BOOTSTRAP_SUPER_ADMIN_EMAIL` | cli | `superadmin@btu.test` | First super admin, created by `cli bootstrap` |
 | `SESSION_COOKIE_NAME`, `SESSION_SECURE` | api | `session`, `false` | Demo: `__Host-session`, `true` (needs HTTPS) |
 | `SESSION_ABSOLUTE_HOURS`, `ADMIN_IDLE_MINUTES` | api | `8`, `30` | NFR-04 |
@@ -111,7 +111,6 @@ All settings come from environment variables, read in Python by one `pydantic-se
 | `API_ORIGIN` | web (server side) | `http://localhost:8000` | Target of the Next.js rewrites |
 | `NEXT_PUBLIC_RPC_URL`, `NEXT_PUBLIC_EXPLORER_TX_URL` | web (browser) | `http://localhost:8545`, empty | Read-only chain access for the verify page; Sepolia uses a public or domain-restricted RPC URL |
 | `TIMEZONE` | api, worker | `Asia/Tbilisi` | "Today" for date checks and an event's local date for date earned |
-| `MFA_ACR_VALUE` | api | `2` | Only read when REQUIRE\_MFA\_CLAIM is true (IN-04) |
 | `PASSPORT_TEMPLATE_DIR` | worker | `app/pdf/templates` | Swap in BTU's design without code changes |
 | `DEPLOYER_PRIVATE_KEY, ETHERSCAN_API_KEY` | make chain-deploy only | Anvil account 0 key, empty | Never read by any service; Etherscan key only for Sepolia verification |
 
@@ -125,10 +124,10 @@ An arrow means "needs": M4 needs both the contract (M1) and sign-in (M3); M10 ne
 
 | # | Milestone | Tasks | Needs | Done when |
 | --- | --- | --- | --- | --- |
-| M0 | Scaffold and infra | IN-01 – IN-03, BE-01, FE-01 | — | `make infra-up` shows Postgres, MinIO, Keycloak, Anvil healthy; `make api` and `make web` run; `http://localhost:3000/api/healthz` returns `{"ok":true}` through the proxy |
+| M0 | Scaffold and infra | IN-01 – IN-03, BE-01, FE-01 | — | `make infra-up` shows Postgres, MinIO, Mailpit, Anvil healthy; `make api` and `make web` run; `http://localhost:3000/api/healthz` returns `{"ok":true}` through the proxy |
 | M1 | Contract and Merkle | BC-01 – BC-06 | M0 | `forge test` green; `make chain-deploy` writes `contracts/deployments/31337.json`; Python, Solidity and TS Merkle tests all pass the shared vectors |
 | M2 | Schema and seed | BE-02 – BE-05 | M0 | `make migrate && make seed` loads 18 students, 18 passports, 16 skills, 3 categories, 60 awards, 8 LEGACY versions; running `make seed` again changes nothing |
-| M3 | Authentication | IN-04, BE-10 – BE-14, FE-02, FE-03 | M2 | Each Keycloak test user can sign in; `/api/session` returns the right role; a student gets 403 from `/api/admin/*` (A11) |
+| M3 | Authentication | IN-04, BE-10 – BE-14, FE-02 – FE-04 | M2 | Each seeded test user can sign in with a code read from Mailpit; `/api/session` returns the right role; a student gets 403 from `/api/admin/*` (A11) |
 | M4 | Issuance pipeline | BE-20 – BE-29, BC-07 | M1, M3 | A direct award posted to the API reaches ANCHORED on Anvil within 30 s, PDF in MinIO; A1, A2, A3 pass |
 | M5 | Verification | BE-30 – BE-32, FE-10 – FE-12 | M4 | Uploading an issued PDF on `/verify` says Valid, an edited copy says Not valid; A4 – A7 pass |
 | M6 | Admin core UI | BE-35, FE-20 – FE-25 | M5 | Register a student and award a skill entirely in the UI; failed issuance retried from the UI; A9 passes |
@@ -174,12 +173,13 @@ Issues one persistent, versioned PDF passport per student, anchors each version'
 SHA-256 in a Merkle root on an EVM chain, and lets anyone verify it without login.
 
 ## Read first
-- docs/plan.md — implementation plan (tasks, order, rules). It wins over other docs.
-- docs/requirements.md, docs/design.md, docs/webapp.md — background and IDs.
+- docs/plan/00-overview.md — implementation plan index; one file per area in docs/plan/.
+  The plan wins over other docs.
+- docs/01-requirements.md, docs/02-system-design.md, docs/03-web-app-design.md — background and IDs.
 
 ## Stack (locked)
 Next.js App Router + TS + Tailwind + stock shadcn/ui · FastAPI + Pydantic v2 +
-SQLAlchemy 2 + Alembic · PostgreSQL 16 · MinIO · WeasyPrint · Keycloak (OIDC) ·
+SQLAlchemy 2 + Alembic · PostgreSQL 16 · MinIO · WeasyPrint · email-code login (no IdP) ·
 Solidity + Foundry · Anvil (dev) / Sepolia (demo) · web3.py signer.
 
 ## Commands
@@ -199,7 +199,7 @@ make chain-deploy | types | lint | test
 - The issuer key lives only in the signer process. Never log it, never import it elsewhere.
 - No personal data on-chain. Only Merkle roots.
 - Stock shadcn components only; no custom visual design.
-- Commit per task: "<TASK-ID>: summary". Tick tasks in docs/plan.md.
+- Commit per task: "<TASK-ID>: summary". Tick tasks in the docs/plan/ file that defines them.
 - Unclear spec: use the documented default and add a "# DEFAULT(Qn)" comment.
 ```
 
@@ -224,18 +224,3 @@ Every functional requirement has a task that builds it and a test that proves it
 | NFR-01, NFR-02 (batching, bulk) | BE-28 | M4 | Bulk test in IN-06 (A10) |
 | NFR-03 – NFR-07 (privacy, security) | BE-10 – BE-14, BE-60, BC-07 | M3, M10 | A11, A12, rate-limit test in BE-60 |
 | NFR-12, NFR-13 (Georgian font, determinism) | BE-25 | M4 | Tests in BE-25 |
-
-## Deviations
-
-Anything built differently from this plan, with the reason. (The plan lives in `docs/plan/*.md`, not a single `docs/plan.md`; tasks are ticked ✅ in the tab that defines them.)
-
-| Task | Deviation | Reason |
-| --- | --- | --- |
-| IN-01 | MinIO images are `cgr.dev/chainguard/minio` and `cgr.dev/chainguard/minio-client`, pinned by digest | MinIO stopped publishing official Docker images in Oct 2025 and archived the project in 2026; Chainguard's free images are rebuilt from MinIO's source. Still MinIO and the S3 API, so no code changes. Chainguard's free tier only tags `latest`, hence the digest pin |
-| IN-01 | Anvil's command is `exec anvil …` and the container runs as root | The image's entrypoint is `/bin/sh -c`; without `exec`, anvil never receives SIGTERM and `--state` is never written. The named volume is root-owned |
-| IN-01 | Healthchecks for MinIO and Keycloak use bash `/dev/tcp`; Keycloak runs with `KC_HEALTH_ENABLED=true` | Neither image ships curl (MinIO doesn't ship grep either) |
-| IN-01 | `signer` (profile `app`) reads `../.env` for now | Its own signer-only env file arrives with IN-05 |
-| IN-02 | `.env.example` also has `KC_BOOTSTRAP_ADMIN_USERNAME` / `KC_BOOTSTRAP_ADMIN_PASSWORD`; secrets are `change-me` placeholders | Keycloak needs an admin login; IN-01 names these variables |
-| BE-01 | `SessionMiddleware` is not mounted yet | It needs a signing secret that no variable in §4 provides; it gets added with BE-10 (M3) once that variable is decided |
-| BE-01 | `web3` resolved to 8.0.0 | Current stable at scaffold time; BC-07 is written against the v7 API, so check it then |
-| FE-01 | shadcn `field` instead of `form`; the shadcn style is the current default (`base-nova`, Base UI primitives) | The registry has replaced `form` (FE-01 step 4) |

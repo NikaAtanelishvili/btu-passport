@@ -8,17 +8,19 @@ The MVP has to prove four things end to end: a skill awarded through the admin p
 
 | Stakeholder | What they need from the system | Auth |
 | --- | --- | --- |
-| BTU administrator | Award verified skills through the admin panel and see each passport's issuance status and errors | BTU SSO + admin role + MFA |
-| Student | View and download the latest passport (and older versions) | BTU email (OTP or Google SSO) |
+| BTU administrator | Award verified skills through the admin panel and see each passport's issuance status and errors | Email code to a BTU address + admin role |
+| Student | View and download the latest passport (and older versions) | Email code to a BTU address |
 | Third-party verifier (employer) | Enter a verification code or upload a PDF and get a clear verdict | None |
 | BTU (as issuer) | A publicly checkable identity bound to the signing key | Holds the issuer key |
 | Hackathon jury / mentors | A live demo including a tamper test | n/a |
 
 **In scope for the MVP:** admin panel (role-restricted forms for students, skills and awards), events with QR check-in, passport ID allocation, PDF rendering from BTU's template, versioning, on-chain anchoring, issuer identity proof, public verify page, student portal.
 
-**Out of scope (state this explicitly to the jury):** skill approval workflow (the dataset says awards are already verified), production key custody (HSM), real BTU SSO, mainnet deployment, mobile apps.
+**Out of scope (state this explicitly to the jury):** skill approval workflow (the dataset says awards are already verified), production key custody (HSM), integration with BTU's own identity provider (SSO), mainnet deployment, mobile apps.
 
 **Change on 2026-10-21:** the Google Sheet is only a picture of the database schema and the seed data, not a live data source. Administrators enter data through an admin panel that only they can reach; the Sheet's columns become database tables (section 7).
+
+**Change on 2026-10-24:** sign-in is a passwordless one-time code emailed to the user's BTU address, built into the app. Keycloak, OIDC single sign-on and the staff second factor (MFA) are dropped; verifiers never sign in (section 6).
 
 **How these requirements were gathered.** Elicitation so far is document analysis (the brief and the test dataset) plus mentor Q&A. User stories and use cases (sections 2–3) are the techniques used to *record and structure* what was elicited; the FR/NFR tables (sections 4–5) are derived from them, and every requirement points back to its story.
 
@@ -28,7 +30,7 @@ Twenty-two stories across four roles cover every mandatory brief requirement plu
 
 | ID | Story | Acceptance criteria | Produces |
 | --- | --- | --- | --- |
-| US-01 | As an **admin**, I want to sign in with my BTU account and a second factor, so that nobody else can issue passports. | A BTU user without the admin role gets 403 on every admin page and API call; sign-in without MFA is refused. | FR-01, NFR-04, NFR-05 |
+| US-01 | As an **admin**, I want to sign in with a one-time code sent to my BTU email, so that nobody without access to that inbox can issue passports. | A BTU user without the admin role gets 403 on every admin page and API call; a code works once and expires after 10 minutes. | FR-01, NFR-04, NFR-05 |
 | US-02 | As an **admin**, I want to register a new student, so that they get a permanent passport. | Duplicate Student ID or email is rejected; Passport ID is generated once and never changes. | FR-02, FR-10 |
 | US-03 | As an **admin**, I want to award a skill by picking it from the catalog, so that I never retype names or descriptions. | Name, category, badge and description come from the catalog; a future date or a skill the student already holds is rejected. | FR-03, FR-04, FR-17 |
 | US-04 | As an **admin**, I want to award one skill to a whole group in one submission, so that a cohort of 200 takes minutes. | One submission creates exactly one new version per student. | FR-05, FR-13 |
@@ -62,7 +64,7 @@ Seven use cases carry the system: stories say *what* each role wants, use cases 
 
 ### UC-01 Award skills and issue a new version
 
-**Actor:** Admin · **Precondition:** admin signed in with MFA; student exists · **Trigger:** student completed a skill · **Covers:** US-03, US-04, US-05
+**Actor:** Admin · **Precondition:** admin signed in; student exists · **Trigger:** student completed a skill · **Covers:** US-03, US-04, US-05
 
 1. Admin opens the award form and selects one or more students.
 2. Admin picks a skill from the catalog and enters the date earned.
@@ -101,7 +103,7 @@ Seven use cases carry the system: stories say *what* each role wants, use cases 
 
 **Actor:** Student · **Covers:** US-09, US-10
 
-1. Student signs in with their BTU email (SSO or one-time link).
+1. Student signs in with their BTU email (one-time code).
 2. System looks up the passport linked to that email.
 3. Student sees the latest version and the version history; downloads a PDF.
 
@@ -122,7 +124,7 @@ Seven use cases carry the system: stories say *what* each role wants, use cases 
 **Actor:** Student · **Precondition:** event status Check-in open; QR shown in presenter view · **Covers:** US-16, US-17
 
 1. Student scans the QR; it opens the check-in page with the current token.
-2. If not signed in, the student signs in with BTU SSO and returns to the page.
+2. If not signed in, the student signs in with a one-time email code and returns to the page.
 3. System checks the token (current or previous 30 s window) and the event status.
 4. System shows the event name, skill with stamp, and date; student taps Check in.
 5. System records the check-in and the participant list updates.
@@ -202,7 +204,7 @@ The real load is versions, not passports. The test data averages 3.3 skills per 
 | NFR-01 | Scalability | ≥ 5,000 passports and ≥ 25,000 versions per year; many version hashes anchored per transaction (Merkle root). |
 | NFR-02 | Throughput | A bulk award to 500 students is issued in one background run, with no manual step per student. |
 | NFR-03 | Privacy | No personal data on-chain — only hashes / Merkle roots. The verify page shows only name, Passport ID, version, issue date and skills. |
-| NFR-04 | Security: authentication | Admins sign in through an identity provider (OIDC/SSO) with MFA; the app stores no admin passwords. Sessions expire after 8 h, or 30 min idle, for admins. |
+| NFR-04 | Security: authentication | Everyone signs in with a one-time code emailed to their BTU address; the app stores no passwords, only a hash of each code (10-minute expiry, single use, at most 5 attempts, rate-limited per email and per IP). Sessions expire after 8 h, or 30 min idle, for admins. |
 | NFR-05 | Security: authorization | Checked on the server for every request, deny by default; role checks for admin actions and ownership checks for student data (no access by guessing an ID). |
 | NFR-06 | Security: issuer key | The issuer private key lives only in the signing service's secret store; it is never in the repo, the database or any browser, and no admin can export it. |
 | NFR-07 | Security: web | HttpOnly + Secure + SameSite cookies; CSRF tokens on every form; server-side validation of all input; rate limits on sign-in and on the verify endpoint. |
@@ -215,18 +217,18 @@ The real load is versions, not passports. The test data averages 3.3 skills per 
 
 ## 6. Authentication and authorization (recommendation)
 
-Don't build login yourself: sign everyone in through BTU's identity provider over OIDC, keep roles in your own database (role-based access control), and keep the blockchain key in a separate signing service that no human session can reach. Authentication answers *who are you*; authorization answers *what may you do* — they are separate layers.
+Sign everyone in with a one-time code emailed to their BTU address (passwordless, no external identity provider), keep roles in your own database (role-based access control), and keep the blockchain key in a separate signing service that no human session can reach. Authentication answers *who are you*; authorization answers *what may you do* — they are separate layers.
 
 ### Who signs in, and how
 
 | Actor | Authentication | Authorization |
 | --- | --- | --- |
-| Super admin, Admin | OIDC single sign-on with BTU's provider (Microsoft Entra ID or Google Workspace, whichever BTU runs — Q11), MFA required | Role from the app's `user_roles` table (an allowlist), re-checked on every request |
-| Student | Same SSO; fallback: one-time sign-in link emailed to the BTU address | Ownership only: can read the passport whose student email matches the session |
-| Verifier | None | Public, read-only, rate-limited endpoints that return the minimum data |
+| Super admin, Admin | 6-digit code emailed to the BTU address; no second factor (accepted trade-off: whoever controls the inbox controls the account) | Role from the app's `user_roles` table (an allowlist), re-checked on every request |
+| Student | Same email code | Ownership only: can read the passport whose student email matches the session |
+| Verifier | None. "Continue as guest" just opens the public Verify page; there is no guest session | Public, read-only, rate-limited endpoints that return the minimum data |
 | Signing service | Service credential, not a user | Accepts signing jobs only from the issuance worker over an internal queue |
 
-**Why roles can't come from the email domain:** every student also has a BTU address, so "signed in with @btu" proves membership, not admin rights. The allowlist table (later: group claims managed by BTU IT) is what makes someone an admin.
+**Why roles can't come from the email domain:** every student also has a BTU address, so "signed in with @btu" proves membership, not admin rights. The allowlist table (later: BTU IT's directory groups, if SSO is ever added) is what makes someone an admin.
 
 ### Permissions by role
 
@@ -249,13 +251,14 @@ Don't build login yourself: sign everyone in through BTU's identity provider ove
 - Scope student queries by the session (`WHERE student_id = session.student_id`), never by an ID from the URL — this blocks the classic "change the number in the URL" attack (IDOR).
 - Read the role from the database on each request (or cache ≤ 1 min) so a revoked admin is locked out immediately (US-06).
 - Use server-side sessions in HttpOnly cookies rather than tokens in `localStorage`; add CSRF tokens to every admin form.
+- **Email codes:** check the email domain on the server against an allowlist (`ALLOWED_EMAIL_DOMAINS`: `btu.edu.ge`, plus `example.org` in dev because the seed students use it). Store only a hash of the code; 10-minute expiry, single use, 5 wrong tries kill it, and rate-limit code requests per email and per IP.
 - **Separate admin from signer.** An admin action only queues a job; the signing service holds the key and signs hashes produced by the issuance worker. A stolen admin session can create a wrong award (logged and revocable), but can never take BTU's key.
 - Record the session's user ID on every privileged action in the audit log.
 - *Could:* require a fresh sign-in (< 15 min) before confirming an issuance, since anchoring can't be undone; a second admin's approval for bulk awards above a threshold.
 
 ### For the hackathon
 
-You probably won't get BTU's real identity provider this week. Use an OIDC provider that matches your stack — Keycloak (self-hosted, closest to an enterprise setup), Auth.js (Next.js), django-allauth (Django), Supabase Auth or Auth0 — with test accounts, plus a seed script that fills `user_roles`. Cap it at half a day. Demo three users: super admin, admin, student, and show the student getting 403 on the admin panel.
+Email-code login is built into the API (a few hundred lines), so there is no identity provider to set up. In development, Mailpit catches every outgoing email so you can read codes without a real mailbox; for the demo, send through an SMTP account (BTU mail, a Gmail app password, or Resend/Mailgun). Seed `user_roles`, and demo three users: super admin, admin, student, showing the student getting 403 on the admin panel.
 
 ## 7. Test dataset analysis (schema and seed data)
 
@@ -333,7 +336,7 @@ Ask these on day 1; each has a default so work isn't blocked while waiting.
 | Q8 | Any preference on blockchain network? Is a public testnet acceptable for the demo? | Public EVM testnet (e.g. Sepolia). |
 | Q9 | Can an admin revoke an award? | Out of scope for MVP; registry supports a revoked flag. |
 | Q10 | Should students be able to download older versions? | Yes, read-only, marked "superseded". |
-| Q11 | Which identity provider does BTU use (Microsoft Entra ID or Google Workspace), and can we get a test tenant? | Keycloak or a hosted OIDC provider with test accounts. |
+| Q11 | Which identity provider does BTU use (Microsoft Entra ID or Google Workspace), and can we get a test tenant? | Decided 2026-10-24: no external provider; passwordless email-code login built into the app. SSO can be added later. |
 | Q12 | Do admins need narrower scopes, e.g. a lecturer may award only their own course's skills? | Two global roles: Super admin and Admin. |
 | Q13 | Is a CSV import of a whole cohort needed besides the form? | Should-have; the form comes first. |
 

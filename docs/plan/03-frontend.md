@@ -4,7 +4,7 @@
 
 A Next.js app built entirely from stock shadcn/ui components. Visual design is out of scope: default theme, default spacing, no custom CSS beyond layout.
 
-### FE-01 Scaffold (M0) — `web/` ✅
+### FE-01 Scaffold (M0) — `web/`
 
 1. `pnpm create next-app web --ts --tailwind --eslint --app --import-alias "@/*"` (no `src/` folder).
 2. `pnpm dlx shadcn@latest init` with defaults, then add: `button input label textarea select checkbox form card table badge tabs dialog alert-dialog alert dropdown-menu command popover separator skeleton sheet sonner tooltip`.
@@ -19,7 +19,10 @@ export default {
     return [
       { source: "/api/:path*", destination: `${api}/api/:path*` },
       { source: "/auth/:path*", destination: `${api}/auth/:path*` },
-      { source: "/.well-known/:path*", destination: `${api}/.well-known/:path*` },
+      {
+        source: "/.well-known/:path*",
+        destination: `${api}/.well-known/:path*`,
+      },
     ];
   },
 };
@@ -36,47 +39,58 @@ Every page is a client component that fetches through one typed API client with 
 
 ### Routes (`web/app/`)
 
-| Route | Page | Guard | Task |
-| --- | --- | --- | --- |
-| `/` | P1 Verify | none | FE-10 |
-| `/v/[code]` | P2 Verify result | none | FE-11 |
-| `/checkin/[eventId]` | P3 Check-in | signed in | FE-33 |
-| `/me`, `/me/history`, `/me/events` | S1 – S3 | student | FE-40, FE-41, FE-34 |
-| `/admin` | A1 Dashboard | admin | FE-21 |
-| `/admin/students`, `/admin/students/new`, `/admin/students/[id]` | A2, A3 | admin | FE-22, FE-23 |
-| `/admin/awards/new` | A4 Direct award | admin | FE-24 |
-| `/admin/issuance` | A5 Issuance | admin | FE-25 |
-| `/admin/events`, `/admin/events/new`, `/admin/events/[id]`, `/admin/events/[id]/edit` | A6, A7 | admin (writes: super admin) | FE-30, FE-31 |
-| `/admin/events/[id]/present` | A8 Presenter view | super admin | FE-32 |
-| `/admin/skills`, `/admin/categories`, `/admin/roles`, `/admin/audit` | A9 – A12 | super admin (skills, categories: admins read) | FE-50 – FE-53 |
+| Route                                                                                 | Page              | Guard                                         | Task                |
+| ------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------- | ------------------- |
+| `/`                                                                                   | P1 Verify         | none                                          | FE-10               |
+| `/v/[code]`                                                                           | P2 Verify result  | none                                          | FE-11               |
+| `/login`                                                                              | P4 Sign in        | none (signed in → redirect by role)           | FE-04               |
+| `/checkin/[eventId]`                                                                  | P3 Check-in       | signed in                                     | FE-33               |
+| `/me`, `/me/history`, `/me/events`                                                    | S1 – S3           | student                                       | FE-40, FE-41, FE-34 |
+| `/admin`                                                                              | A1 Dashboard      | admin                                         | FE-21               |
+| `/admin/students`, `/admin/students/new`, `/admin/students/[id]`                      | A2, A3            | admin                                         | FE-22, FE-23        |
+| `/admin/awards/new`                                                                   | A4 Direct award   | admin                                         | FE-24               |
+| `/admin/issuance`                                                                     | A5 Issuance       | admin                                         | FE-25               |
+| `/admin/events`, `/admin/events/new`, `/admin/events/[id]`, `/admin/events/[id]/edit` | A6, A7            | admin (writes: super admin)                   | FE-30, FE-31        |
+| `/admin/events/[id]/present`                                                          | A8 Presenter view | super admin                                   | FE-32               |
+| `/admin/skills`, `/admin/categories`, `/admin/roles`, `/admin/audit`                  | A9 – A12          | super admin (skills, categories: admins read) | FE-50 – FE-53       |
 
 Page codes (P1, S1, A7 …) are those of the Web App Design document; follow its section tables for what each page contains.
 
 ### FE-02 API client and types (M3) — `web/lib/`
 
 - `api-types.ts`: generated, never edited. `make types` runs `openapi-typescript http://localhost:8000/openapi.json -o web/lib/api-types.ts`.
-- `api.ts`: an `openapi-fetch` client with `baseUrl: ""` (same origin) and `credentials: "include"`. A middleware adds `X-CSRF-Token` (read from the `csrf_token` cookie) to every POST, PUT, PATCH and DELETE, and turns non-2xx responses into `ApiError {status, error, message, fields}`. On 401 from a guarded page, redirect to `/auth/login?next=<current path>`.
+- `api.ts`: an `openapi-fetch` client with `baseUrl: ""` (same origin) and `credentials: "include"`. A middleware adds `X-CSRF-Token` (read from the `csrf_token` cookie) to every POST, PUT, PATCH and DELETE, and turns non-2xx responses into `ApiError {status, error, message, fields}`. On 401 from a guarded page, redirect to `/login?next=<current path>`.
 - `query-keys.ts`: one place for TanStack Query keys, so mutations invalidate the right lists.
 - `forms.ts`: `applyServerErrors(form, apiError)` calls `form.setError(name, ...)` for each entry in `fields`, and shows `message` in a toast when there are no field errors.
 
 ### FE-03 Session and guards (M3)
 
 - `useSession()` = query on `GET /api/session` (stale time 30 s).
-- `<RequireRole role="student" | "admin" | "super_admin">` in the `me/` and `admin/` layouts: skeleton while loading; signed out → redirect to `/auth/login?next=…`; wrong role → a shadcn `Alert` "You don't have access to this page" with a link home. The server enforces the same rules; this is only for a sensible screen.
-- Header: "Sign in" links to `/auth/login`; "Sign out" POSTs `/auth/logout` and then sets `window.location` to the returned Keycloak logout URL.
+- `<RequireRole role="student" | "admin" | "super_admin">` in the `me/` and `admin/` layouts: skeleton while loading; signed out → redirect to `/login?next=…`; wrong role → a shadcn `Alert` "You don't have access to this page" with a link home. The server enforces the same rules; this is only for a sensible screen.
+- Header: "Sign in" links to `/login`; "Sign out" POSTs `/auth/logout` and then navigates to the home page.
 
 ### Shared components (`web/components/`)
 
-| Component | Built from | Used for |
-| --- | --- | --- |
-| `AdminShell` | `sheet` (mobile), plain nav | Sidebar: Operations (Dashboard, Students, Direct award, Issuance) and Super admin (Events, Skills, Categories & stamps, Admins & roles, Audit log); Super admin group hidden for `ADMIN`, who sees Events from the dashboard |
-| `DataTable` | `table`, `button` | Server-paginated lists with a search input and filter selects |
-| `StatusBadge` | `badge` | Version and event statuses; one fixed mapping of status → badge variant |
-| `CodeDisplay` | `button`, `tooltip` | Shows `XXXX-XXXX-XX` with a copy button |
-| `StampImage` | `img` | `/api/stamps/{sha256}`, 48 px, with alt text = category |
-| `ConfirmDialog` | `alert-dialog` | Every destructive or irreversible action |
-| `EmptyState`, `ErrorState` | `card`, `alert` | Every list and detail page |
-| `StudentPicker` | `command`, `popover` | Multi-select search over `/api/admin/students?q=` |
+| Component                  | Built from                  | Used for                                                                                                                                                                                                                     |
+| -------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AdminShell`               | `sheet` (mobile), plain nav | Sidebar: Operations (Dashboard, Students, Direct award, Issuance) and Super admin (Events, Skills, Categories & stamps, Admins & roles, Audit log); Super admin group hidden for `ADMIN`, who sees Events from the dashboard |
+| `DataTable`                | `table`, `button`           | Server-paginated lists with a search input and filter selects                                                                                                                                                                |
+| `StatusBadge`              | `badge`                     | Version and event statuses; one fixed mapping of status → badge variant                                                                                                                                                      |
+| `CodeDisplay`              | `button`, `tooltip`         | Shows `XXXX-XXXX-XX` with a copy button                                                                                                                                                                                      |
+| `StampImage`               | `img`                       | `/api/stamps/{sha256}`, 48 px, with alt text = category                                                                                                                                                                      |
+| `ConfirmDialog`            | `alert-dialog`              | Every destructive or irreversible action                                                                                                                                                                                     |
+| `EmptyState`, `ErrorState` | `card`, `alert`             | Every list and detail page                                                                                                                                                                                                   |
+| `StudentPicker`            | `command`, `popover`        | Multi-select search over `/api/admin/students?q=`                                                                                                                                                                            |
+
+### FE-04 Sign in `/login` (M3)
+
+One client page, two steps (Web App Design P4), stock shadcn `Card`, `field`, `Input`, `InputOTP`, `Button`.
+
+1. **Email step:** email `Input` + **Send code** → `POST /auth/request-code`. Errors under the field: 422 `email_domain_not_allowed` → "Use your BTU email"; 429 → "Too many codes requested, try again later". A **Continue as guest** link goes to `/` (Verify); guests never sign in.
+2. **Code step:** "We sent a 6-digit code to {email}", a 6-slot `InputOTP`, **Sign in** → `POST /auth/verify-code` with `next` from the URL. 400 `code_invalid` → "Wrong code, {attempts_left} tries left"; 400 `code_expired` → "Code expired, send a new one" and back to step 1. **Resend code** is disabled for 60 s after each send; **Use a different email** returns to step 1.
+3. On success, `window.location.assign(redirect)`: a full reload, so the new cookies and `useSession()` start fresh. Already signed in → redirect by role.
+
+**Done when (M3):** each test user signs in with a code read from Mailpit and lands on the right page; a non-BTU email shows the domain error; a wrong code shows the tries left.
 
 ## 3. Public pages
 
@@ -92,23 +106,23 @@ These must work well on a phone: most visitors are an employer opening a link or
 
 `GET /api/verify/{code}` → `<VerifyResultView>` (shared with FE-10):
 
-| Section | Component | Content |
-| --- | --- | --- |
-| Verdict | `Alert` (default variant for VALID, destructive for the failures) | Wording below |
-| Checks | two rows with ✓ / ✗ | "Document unchanged since issue", "Issued by BTU" |
-| Independent check | small text row | FE-12 result: "Also checked directly on the blockchain from your browser ✓", or "Couldn't reach the blockchain from your browser; the result above is from BTU's server" |
-| Official data | `Card` | Holder name, Passport ID, version, issue date; skills list with `StampImage`, name, date earned |
-| Compare | `Button` | "Download the official copy" → `/api/verify/{code}/pdf` |
-| Proof | collapsible section | Contract, Merkle root, transaction (link to `NEXT_PUBLIC_EXPLORER_TX_URL` when set), "Download proof.json" |
+| Section           | Component                                                         | Content                                                                                                                                                                  |
+| ----------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Verdict           | `Alert` (default variant for VALID, destructive for the failures) | Wording below                                                                                                                                                            |
+| Checks            | two rows with ✓ / ✗                                               | "Document unchanged since issue", "Issued by BTU"                                                                                                                        |
+| Independent check | small text row                                                    | FE-12 result: "Also checked directly on the blockchain from your browser ✓", or "Couldn't reach the blockchain from your browser; the result above is from BTU's server" |
+| Official data     | `Card`                                                            | Holder name, Passport ID, version, issue date; skills list with `StampImage`, name, date earned                                                                          |
+| Compare           | `Button`                                                          | "Download the official copy" → `/api/verify/{code}/pdf`                                                                                                                  |
+| Proof             | collapsible section                                               | Contract, Merkle root, transaction (link to `NEXT_PUBLIC_EXPLORER_TX_URL` when set), "Download proof.json"                                                               |
 
-| Verdict | Headline |
-| --- | --- |
-| `VALID` | Valid — issued by BTU |
-| `SUPERSEDED` | Authentic, but superseded by version N — ask the holder for the current one |
-| `NOT_FOUND` | Not valid — this file doesn't match any passport BTU issued |
-| `UNKNOWN_CODE` | Unknown code — check it and try again |
-| `NOT_ISSUED_BY_BTU` | Not issued by BTU |
-| `REVOKED` | Revoked by BTU |
+| Verdict             | Headline                                                                    |
+| ------------------- | --------------------------------------------------------------------------- |
+| `VALID`             | Valid — issued by BTU                                                       |
+| `SUPERSEDED`        | Authentic, but superseded by version N — ask the holder for the current one |
+| `NOT_FOUND`         | Not valid — this file doesn't match any passport BTU issued                 |
+| `UNKNOWN_CODE`      | Unknown code — check it and try again                                       |
+| `NOT_ISSUED_BY_BTU` | Not issued by BTU                                                           |
+| `REVOKED`           | Revoked by BTU                                                              |
 
 ### FE-12 Independent check (M5) — `web/lib/verify.ts`
 
@@ -116,27 +130,27 @@ These must work well on a phone: most visitors are an employer opening a link or
 
 ### FE-33 Check-in `/checkin/[eventId]?t=` (M7)
 
-1. `useSession()`; not signed in → `/auth/login?next=<this URL including t>`.
+1. `useSession()`; not signed in → `/login?next=<this URL including t>`.
 2. `GET /api/checkin/{eventId}?t=` → one `Card` per state:
 
-| State | Shows |
-| --- | --- |
-| `CONFIRM` | Event name, `StampImage` + skill name, date, location; large `Button` "Check in" → POST; then the CHECKED\_IN card |
-| `CHECKED_IN` | "You're checked in. The skill will appear on your passport once the organiser completes the event." Link to My events. Extra line when `unregistered` ("…your account isn't in BTU's student records yet; the organiser will add you") or `already_holds_skill` ("You already have this skill; your passport won't change") |
-| `TOKEN_EXPIRED` | "This code has expired. Scan the code on the screen again." |
-| `NOT_OPEN` / `CLOSED` | "Check-in hasn't opened yet" / "Check-in has closed" |
-| `REMOVED` | "The organiser removed your check-in. Please talk to them." |
-| `NOT_FOUND` | "Event not found" |
+| State                 | Shows                                                                                                                                                                                                                                                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CONFIRM`             | Event name, `StampImage` + skill name, date, location; large `Button` "Check in" → POST; then the CHECKED_IN card                                                                                                                                                                                                           |
+| `CHECKED_IN`          | "You're checked in. The skill will appear on your passport once the organiser completes the event." Link to My events. Extra line when `unregistered` ("…your account isn't in BTU's student records yet; the organiser will add you") or `already_holds_skill` ("You already have this skill; your passport won't change") |
+| `TOKEN_EXPIRED`       | "This code has expired. Scan the code on the screen again."                                                                                                                                                                                                                                                                 |
+| `NOT_OPEN` / `CLOSED` | "Check-in hasn't opened yet" / "Check-in has closed"                                                                                                                                                                                                                                                                        |
+| `REMOVED`             | "The organiser removed your check-in. Please talk to them."                                                                                                                                                                                                                                                                 |
+| `NOT_FOUND`           | "Event not found"                                                                                                                                                                                                                                                                                                           |
 
 ## 4. Student portal
 
 Three read-only pages under `app/me/`, with a top nav (My passport, History, My events) and `<RequireRole role="student">` in `me/layout.tsx`.
 
-| Task | Route | API calls | Content |
-| --- | --- | --- | --- |
-| FE-40 (M8) | `/me` | `GET /api/me/passport` | Header `Card`: name, Passport ID, first issued. `Alert` "Issuing version N…" when `issuing` is set (refetch every 5 s while it is). Current version `Card`: version, issue date, `CodeDisplay`, a "Copy verify link" button (the QR lives in the PDF, not on this page), buttons Download PDF and Download proof.json. Skills: one `Card` per skill (stamp, name, category, date earned, description, source). Empty state: "No passport yet. Attend a BTU event to earn your first skill." |
-| FE-41 (M8) | `/me/history` | `GET /api/me/versions` | `Table`: version · issued · skills · what changed (`added_skills`) · `StatusBadge` (Current / Superseded / Legacy, not verifiable) · Download (ANCHORED only) |
-| FE-34 (M7) | `/me/events` | `GET /api/me/events` | `Table`: event · date · skill · status (`Waiting for organiser`, `Awarded in vN` linking to `/me`, `Already held`, `Not confirmed`, `Event deleted`) |
+| Task       | Route         | API calls              | Content                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------- | ------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FE-40 (M8) | `/me`         | `GET /api/me/passport` | Header `Card`: name, Passport ID, first issued. `Alert` "Issuing version N…" when `issuing` is set (refetch every 5 s while it is). Current version `Card`: version, issue date, `CodeDisplay`, a "Copy verify link" button (the QR lives in the PDF, not on this page), buttons Download PDF and Download proof.json. Skills: one `Card` per skill (stamp, name, category, date earned, description, source). Empty state: "No passport yet. Attend a BTU event to earn your first skill." |
+| FE-41 (M8) | `/me/history` | `GET /api/me/versions` | `Table`: version · issued · skills · what changed (`added_skills`) · `StatusBadge` (Current / Superseded / Legacy, not verifiable) · Download (ANCHORED only)                                                                                                                                                                                                                                                                                                                               |
+| FE-34 (M7) | `/me/events`  | `GET /api/me/events`   | `Table`: event · date · skill · status (`Waiting for organiser`, `Awarded in vN` linking to `/me`, `Already held`, `Not confirmed`, `Event deleted`)                                                                                                                                                                                                                                                                                                                                        |
 
 **Done when (M8):** signed in as `btu-t-0002@example.org`, the student sees only BTU-AI-000126 and can download its PDF; requesting another student's PDF URL returns 404 (A8).
 
@@ -185,21 +199,21 @@ Events (M7) first, because they are the main award path; then catalog, roles and
 
 ### FE-31 Event detail (M7) — `/admin/events/[id]`
 
-`GET /api/admin/events/{id}` plus `GET .../participants` polled every 3 s while the status is CHECKIN\_OPEN (every 15 s otherwise).
+`GET /api/admin/events/{id}` plus `GET .../participants` polled every 3 s while the status is CHECKIN_OPEN (every 15 s otherwise).
 
-| Section | Contents and actions |
-| --- | --- |
-| Header | Name, `StampImage` + skill, date, location, `StatusBadge`, Edit (hidden when COMPLETED) |
-| Check-in | Window times; buttons by status: Open check-in now (DRAFT), Close check-in now (OPEN), Reopen (CLOSED); "Open presenter view" opens `/present` in a new tab |
+| Section      | Contents and actions                                                                                                                                                                                                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Header       | Name, `StampImage` + skill, date, location, `StatusBadge`, Edit (hidden when COMPLETED)                                                                                                                                                                                                          |
+| Check-in     | Window times; buttons by status: Open check-in now (DRAFT), Close check-in now (OPEN), Reopen (CLOSED); "Open presenter view" opens `/present` in a new tab                                                                                                                                      |
 | Participants | `Table`: name · Student ID · time · method · flags as `Badge`s (Unregistered, Already holds skill). Row actions: Remove (`ConfirmDialog`); for Unregistered rows "Register student" → `/admin/students/new?email=…` in a new tab. "Add participant" opens `StudentPicker` (single select) → POST |
-| Complete | "Mark as done" — disabled with the blocker reasons from `complete_blockers` (e.g. "2 Unregistered participants") |
-| Danger zone | "Delete event" with `ConfirmDialog`; hidden when COMPLETED |
+| Complete     | "Mark as done" — disabled with the blocker reasons from `complete_blockers` (e.g. "2 Unregistered participants")                                                                                                                                                                                 |
+| Danger zone  | "Delete event" with `ConfirmDialog`; hidden when COMPLETED                                                                                                                                                                                                                                       |
 
 **Mark as done dialog:** an `AlertDialog` that lists who will receive the skill and who is skipped (computed from the participant flags), states the date earned, and has a checkbox "I checked the participant list" that enables Confirm. Confirm → `POST .../complete`. Afterwards the page is read-only and shows the `completion` block from `EventDetail` (awarded students with their new version number, skipped students), each linking to the student's detail page, plus a link to the Issuance page for live status.
 
 ### FE-32 Presenter view (M7) — `/admin/events/[id]/present`
 
-Full-screen page with no shell: event name (large), the QR from `GET .../qr` (`svg` rendered with `dangerouslySetInnerHTML` — the SVG comes from our own server), the short URL as text, and "N checked in". Refetch `.../qr` when `refresh_in_seconds` runs out (and at least every 30 s); when status isn't CHECKIN\_OPEN show "Check-in closed" instead of the QR.
+Full-screen page with no shell: event name (large), the QR from `GET .../qr` (`svg` rendered with `dangerouslySetInnerHTML` — the SVG comes from our own server), the short URL as text, and "N checked in". Refetch `.../qr` when `refresh_in_seconds` runs out (and at least every 30 s); when status isn't CHECKIN_OPEN show "Check-in closed" instead of the QR.
 
 ### FE-50 Skills (M9) — `/admin/skills`
 
@@ -221,15 +235,15 @@ Full-screen page with no shell: event name (large), the QR from `GET .../qr` (`s
 
 Unit tests for the logic that could silently be wrong (hashing, proofs, code formatting); end-to-end tests for the flows the jury will see.
 
-| Tool | Location | Covers | When |
-| --- | --- | --- | --- |
-| Vitest | `web/tests/merkle.test.ts` | `processProof` and `leafFromPdfSha256` against `shared/merkle-vectors.json` (BC-05) | M1 |
-| Vitest | `web/tests/format.test.ts` | Code formatting and normalising (same cases as the Python tests), verdict → headline mapping, `applyServerErrors` | M5 |
-| Playwright | `web/e2e/` | The flows below, against the full dev stack with Keycloak test users | M10 (FE-60) |
+| Tool       | Location                   | Covers                                                                                                            | When        |
+| ---------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
+| Vitest     | `web/tests/merkle.test.ts` | `processProof` and `leafFromPdfSha256` against `shared/merkle-vectors.json` (BC-05)                               | M1          |
+| Vitest     | `web/tests/format.test.ts` | Code formatting and normalising (same cases as the Python tests), verdict → headline mapping, `applyServerErrors` | M5          |
+| Playwright | `web/e2e/`                 | The flows below, against the full dev stack; sign-in codes are read from Mailpit's REST API                       | M10 (FE-60) |
 
 ### FE-60 End-to-end flows (M10)
 
-1. **Thin slice:** sign in as `admin@btu.test` (Keycloak login form; OTP disabled in the e2e realm) → direct award to BTU-T-0021 → wait for ANCHORED on the Issuance page → download the PDF → upload it on `/` → "Valid" → upload a copy with one byte changed → "Not valid".
+1. **Thin slice:** sign in as `admin@btu.test` (code read from Mailpit) → direct award to BTU-T-0021 → wait for ANCHORED on the Issuance page → download the PDF → upload it on `/` → "Valid" → upload a copy with one byte changed → "Not valid".
 2. **Event:** sign in as `superadmin@btu.test` → create an event → open check-in → a second browser context signed in as a student opens the check-in URL (fetch the current URL from `GET .../qr`) → checks in → the participant appears → close → Mark as done → the student's `/me/events` shows "Awarded in vN".
 3. **Access:** a student opening `/admin` sees the no-access alert, and `GET /api/admin/students` returns 403.
 

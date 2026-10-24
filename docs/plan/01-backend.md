@@ -4,27 +4,27 @@
 
 One Python project (`backend/`, managed with uv) with three entry points — API, worker, signer — plus a CLI for seeding. Everything below uses synchronous SQLAlchemy; at this scale async adds complexity without benefit.
 
-### BE-01 Scaffold (M0) ✅
+### BE-01 Scaffold (M0)
 
-**Dependencies:** `fastapi`, `uvicorn[standard]`, `pydantic`, `pydantic-settings`, `sqlalchemy>=2`, `alembic`, `psycopg[binary]`, `authlib`, `httpx`, `itsdangerous` (OAuth handshake cookie), `python-multipart`, `jinja2`, `weasyprint`, `segno`, `boto3`, `pycryptodome` (keccak), `web3` (read-only chain calls in the API; key use only in the signer). Dev group: `pytest`, `pytest-cov`, `time-machine`, `ruff`, `mypy`.
+**Dependencies:** `fastapi`, `uvicorn[standard]`, `pydantic`, `pydantic-settings`, `sqlalchemy>=2`, `alembic`, `psycopg[binary]`, `httpx`, `python-multipart`, `jinja2`, `weasyprint`, `segno`, `boto3`, `pycryptodome` (keccak), `web3` (read-only chain calls in the API; key use only in the signer). Dev group: `pytest`, `pytest-cov`, `time-machine`, `ruff`, `mypy`.
 
 **Files:**
 
-| Path | Contents |
-| --- | --- |
-| `app/main.py` | `create_app()`: routers, exception handlers, `SessionMiddleware` for the OAuth handshake only, `GET /api/healthz` → `{"ok": true}` |
-| `app/config.py` | `Settings(BaseSettings)` with every variable from Overview §4; `get_settings()` cached |
-| `app/db.py` | Engine, `SessionLocal`, dependency `get_db()`: one transaction per request — commit on success, rollback on exception |
-| `app/errors.py` | `AppError(code, message, status=400, fields=None)` and handlers producing `{error, message, fields}`; Pydantic validation errors become 422 with `fields` keyed by field name |
-| `app/models/` | One module per aggregate: `student.py` (Student, Passport), `catalog.py` (SkillCategory, Skill), `award.py` (AwardSubmission, SkillAward), `version.py` (PassportVersion, VersionAward, AnchorBatch), `job.py`, `user.py` (User, UserRole, Session), `audit.py`, `event.py` (Event, EventParticipant) |
-| `app/schemas/` | Pydantic request/response models, mirrored by module; shared `Page[T]` = `{items, total, page, page_size}` |
-| `app/routers/` | `auth.py`, `session.py`, `verify.py`, `wellknown.py`, `checkin.py`, `me.py`, `stamps.py`, `admin/` (`dashboard`, `students`, `awards`, `versions`, `events`, `skills`, `categories`, `roles`, `audit`) |
-| `app/auth/` | `oidc.py`, `sessions.py`, `deps.py` (guards), `csrf.py` |
-| `app/services/` | `codes.py`, `audit.py`, `storage.py`, `issuance.py`, `content.py`, `events.py`, `qr_tokens.py`, `merkle.py`, `chain.py` (read-only), `verification.py` |
-| `app/pdf/` | `render.py`, `templates/passport.html.j2`, `templates/passport.css`, `fonts/NotoSansGeorgian-*.ttf` |
-| `worker/__main__.py`, `worker/jobs.py`, `worker/ticks.py` | Job loop and handlers (§7) |
-| `signer/` | Separate service (Blockchain tab, BC-07) |
-| `cli/__main__.py` | `seed`, `bootstrap`, `issue-pending` commands |
+| Path                                                      | Contents                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/main.py`                                             | `create_app()`: routers, exception handlers, `GET /api/healthz` → `{"ok": true}`                                                                                                                                                                                                                      |
+| `app/config.py`                                           | `Settings(BaseSettings)` with every variable from Overview §4; `get_settings()` cached                                                                                                                                                                                                                |
+| `app/db.py`                                               | Engine, `SessionLocal`, dependency `get_db()`: one transaction per request — commit on success, rollback on exception                                                                                                                                                                                 |
+| `app/errors.py`                                           | `AppError(code, message, status=400, fields=None)` and handlers producing `{error, message, fields}`; Pydantic validation errors become 422 with `fields` keyed by field name                                                                                                                         |
+| `app/models/`                                             | One module per aggregate: `student.py` (Student, Passport), `catalog.py` (SkillCategory, Skill), `award.py` (AwardSubmission, SkillAward), `version.py` (PassportVersion, VersionAward, AnchorBatch), `job.py`, `user.py` (User, UserRole, Session), `audit.py`, `event.py` (Event, EventParticipant) |
+| `app/schemas/`                                            | Pydantic request/response models, mirrored by module; shared `Page[T]` = `{items, total, page, page_size}`                                                                                                                                                                                            |
+| `app/routers/`                                            | `auth.py`, `session.py`, `verify.py`, `wellknown.py`, `checkin.py`, `me.py`, `stamps.py`, `admin/` (`dashboard`, `students`, `awards`, `versions`, `events`, `skills`, `categories`, `roles`, `audit`)                                                                                                |
+| `app/auth/`                                               | `login_codes.py`, `sessions.py`, `deps.py` (guards), `csrf.py`                                                                                                                                                                                                                                        |
+| `app/services/`                                           | `codes.py`, `audit.py`, `storage.py`, `issuance.py`, `content.py`, `events.py`, `qr_tokens.py`, `merkle.py`, `chain.py` (read-only), `verification.py`                                                                                                                                                |
+| `app/pdf/`                                                | `render.py`, `templates/passport.html.j2`, `templates/passport.css`, `fonts/NotoSansGeorgian-*.ttf`                                                                                                                                                                                                   |
+| `worker/__main__.py`, `worker/jobs.py`, `worker/ticks.py` | Job loop and handlers (§7)                                                                                                                                                                                                                                                                            |
+| `signer/`                                                 | Separate service (Blockchain tab, BC-07)                                                                                                                                                                                                                                                              |
+| `cli/__main__.py`                                         | `seed`, `bootstrap`, `issue-pending` commands                                                                                                                                                                                                                                                         |
 
 **Conventions:** list endpoints take `page` (default 1) and `page_size` (default 25, max 100). Times are stored as `timestamptz` and returned in ISO 8601 UTC. Emails are stored lower-cased. IDs from the domain (Student ID, Passport ID, Skill ID) are the primary keys; internal tables use `bigserial` or UUID.
 
@@ -34,7 +34,7 @@ One Python project (`backend/`, managed with uv) with three entry points — API
 
 ### BE-02 Models (M2)
 
-Sixteen tables. Implement them as SQLAlchemy 2 models (`Mapped[...]` style) exactly as below; the SQL is the specification, not a file to run. Two refinements over the design doc: the passport's frozen fields are filled at **first issuance**, not at registration (so a typo can be fixed before anything is printed), and events are **soft-deleted** so students can still see "Event deleted".
+Seventeen tables. Implement them as SQLAlchemy 2 models (`Mapped[...]` style) exactly as below; the SQL is the specification, not a file to run. Two refinements over the design doc: the passport's frozen fields are filled at **first issuance**, not at registration (so a typo can be fixed before anything is printed), and events are **soft-deleted** so students can still see "Event deleted".
 
 ```sql
 -- People and passports ---------------------------------------------------
@@ -137,7 +137,7 @@ INDEX jobs_ready ON jobs (status, run_after);
 UNIQUE INDEX jobs_dedupe ON jobs (dedupe_key) WHERE status IN ('QUEUED','RUNNING');
 
 -- Users, roles, sessions, audit ------------------------------------------
-users(user_id uuid PRIMARY KEY, oidc_subject text NOT NULL UNIQUE,
+users(user_id uuid PRIMARY KEY,
       email text NOT NULL UNIQUE CHECK (email = lower(email)), display_name text NOT NULL,
       created_at timestamptz NOT NULL DEFAULT now(), last_login_at timestamptz NULL)
 
@@ -147,8 +147,17 @@ user_roles(email text PRIMARY KEY CHECK (email = lower(email)),  -- grant before
 
 sessions(session_hash text PRIMARY KEY,           -- sha256 of the cookie token
          user_id uuid NOT NULL REFERENCES users ON DELETE CASCADE,
-         csrf_token text NOT NULL, acr text NULL, id_token text NOT NULL,
+         csrf_token text NOT NULL,
          created_at, last_seen_at timestamptz NOT NULL DEFAULT now(), expires_at timestamptz NOT NULL)
+
+login_codes(code_id bigserial PRIMARY KEY,
+            email text NOT NULL CHECK (email = lower(email)),
+            code_hash text NOT NULL,                 -- sha256 of the 6-digit code, never the code
+            requested_ip inet NULL,
+            attempts int NOT NULL DEFAULT 0,
+            expires_at timestamptz NOT NULL, used_at timestamptz NULL,
+            created_at timestamptz NOT NULL DEFAULT now())
+INDEX login_codes_email ON login_codes (email, created_at);
 
 audit_log(id bigserial PRIMARY KEY, at timestamptz NOT NULL DEFAULT now(),
           actor_user_id uuid NULL, actor_email text NULL,   -- NULL actor = system
@@ -223,23 +232,23 @@ Reads `seed/test-data.csv` (the hackathon file, unchanged). Idempotent: every in
 
 ### BE-05 Bootstrap: `python -m cli bootstrap [--dev-users]` (M2)
 
-Upserts `user_roles` for `BOOTSTRAP_SUPER_ADMIN_EMAIL` as `SUPER_ADMIN`. With `--dev-users` also grants `admin@btu.test` the `ADMIN` role, matching the Keycloak test users (Infra tab, IN-04). Writes an audit row with a NULL actor.
+Upserts `user_roles` for `BOOTSTRAP_SUPER_ADMIN_EMAIL` as `SUPER_ADMIN`. With `--dev-users` also grants `admin@btu.test` the `ADMIN` role, matching the dev test users (Infra tab, IN-04). Writes an audit row with a NULL actor.
 
 **Done when:** after bootstrap, signing in as `superadmin@btu.test` (M3) gives the super admin role.
 
 ## 4. Authentication and authorization
 
-Keycloak proves who the user is; our `sessions` table keeps them signed in; `user_roles` and the `students` email match decide what they may do. All checks are FastAPI dependencies, applied per router.
+A one-time code emailed to the user proves who they are; our `sessions` table keeps them signed in; `user_roles` and the `students` email match decide what they may do. All checks are FastAPI dependencies, applied per router.
 
-### BE-10 OIDC sign-in (M3) — `app/auth/oidc.py`, `app/routers/auth.py`
+### BE-10 Email-code sign-in (M3) — `app/auth/login_codes.py`, `app/services/mailer.py`, `app/routers/auth.py`
 
-Authlib's Starlette client, configured from `OIDC_ISSUER/.well-known/openid-configuration`, scope `openid email profile`, PKCE `S256`. The short-lived state, nonce and PKCE verifier live in Starlette's signed `SessionMiddleware` cookie (handshake only, 10-minute max age).
+Passwordless, no identity provider. A code is `f"{secrets.randbelow(10**6):06d}"`; only its SHA-256 goes into `login_codes`, compared with `hmac.compare_digest`. `mailer.send_login_code(email, code)` uses the standard library `smtplib` with `SMTP_*` (STARTTLS when the port is 587); in dev it lands in Mailpit, and when `DEV_LOG_LOGIN_CODES` is true the code is also logged. No `SessionMiddleware`: there is no OAuth handshake to sign. Client IP = the first `X-Forwarded-For` hop, trusted only from the Next.js proxy or Caddy.
 
-| Route | Behaviour |
-| --- | --- |
-| `GET /auth/login?next=/path` | Accept `next` only if it is a relative path starting with `/`; store it; redirect to Keycloak |
-| `GET /auth/callback` | Exchange the code; Authlib validates the ID token (signature via JWKS, `iss`, `aud`, `exp`, nonce). Require `email_verified = true` and an email domain in `ALLOWED_EMAIL_DOMAINS`, else 403 page. Upsert `users` by `sub`. Create a session (BE-11), set cookies, redirect to `next`, else by role: admin → `/admin`, student → `/me`, otherwise `/` |
-| `POST /auth/logout` | Delete the session row, clear both cookies, return `{redirect: <Keycloak end_session_endpoint>?id_token_hint=…&post_logout_redirect_uri=PUBLIC_BASE_URL}`; the frontend navigates there so the Keycloak session ends too (needed to switch test users in the demo) |
+| Route                                           | Behaviour                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /auth/request-code` `{email}`             | Trim and lower-case the email; 422 `email_domain_not_allowed` unless its domain is in `ALLOWED_EMAIL_DOMAINS`. Count this email's and this IP's `login_codes` rows from the last hour; over `LOGIN_RATE_PER_EMAIL_HOUR` or `LOGIN_RATE_PER_IP_HOUR` → 429 `rate_limited`. Mark earlier unused codes for the email as used, insert a new row (expiry `LOGIN_CODE_TTL_MINUTES`), send the email, return 204. Same response whether or not the email belongs to a student.                                                                                                                |
+| `POST /auth/verify-code` `{email, code, next?}` | Take the newest unused, unexpired code for the email; none → 400 `code_expired`. Wrong code → `attempts + 1` and 400 `code_invalid` with `attempts_left`; at `LOGIN_CODE_MAX_ATTEMPTS` the code is dead even if the next guess is right. Right → set `used_at`, upsert `users` by email (`display_name` = the student's name when the email matches a student, else the part before `@`), set `last_login_at`, create a session (BE-11), set cookies, return `{redirect}`: `next` when it is a relative path starting with `/`, else admin → `/admin`, student → `/me`, otherwise `/`. |
+| `POST /auth/logout`                             | Delete the session row, clear both cookies, return 204.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ### BE-11 Sessions (M3) — `app/auth/sessions.py`
 
@@ -250,15 +259,15 @@ Authlib's Starlette client, configured from `OIDC_ISSUER/.well-known/openid-conf
 
 ### BE-12 Guards (M3) — `app/auth/deps.py`
 
-| Dependency | Passes when | Otherwise |
-| --- | --- | --- |
-| `current_user_optional` | Always; returns `Principal(user, role, student)` or `None` | — |
-| `require_user` | Signed in | 401 `unauthenticated` |
-| `require_student` | Signed in and `students.email = user.email` | 403 `not_a_student` |
-| `require_admin` | Role is `ADMIN` or `SUPER_ADMIN` and the MFA check passes | 403 `forbidden` |
-| `require_super_admin` | Role is `SUPER_ADMIN` and the MFA check passes | 403 `forbidden` |
+| Dependency              | Passes when                                                | Otherwise             |
+| ----------------------- | ---------------------------------------------------------- | --------------------- |
+| `current_user_optional` | Always; returns `Principal(user, role, student)` or `None` | —                     |
+| `require_user`          | Signed in                                                  | 401 `unauthenticated` |
+| `require_student`       | Signed in and `students.email = user.email`                | 403 `not_a_student`   |
+| `require_admin`         | Role is `ADMIN` or `SUPER_ADMIN`                           | 403 `forbidden`       |
+| `require_super_admin`   | Role is `SUPER_ADMIN`                                      | 403 `forbidden`       |
 
-The role is read from `user_roles` on **every request** (one indexed lookup), so revocation is immediate. MFA check: when `REQUIRE_MFA_CLAIM` is true, the session's stored `acr` must equal `MFA_ACR_VALUE` (default `"2"`, the level Keycloak assigns after the OTP step; see IN-04). Apply guards at router level: `admin/*` routers depend on `require_admin`, and super-admin endpoints add `require_super_admin`.
+The role is read from `user_roles` on **every request** (one indexed lookup), so revocation is immediate. Apply guards at router level: `admin/*` routers depend on `require_admin`, and super-admin endpoints add `require_super_admin`.
 
 ### BE-13 CSRF (M3) — `app/auth/csrf.py`
 
@@ -267,15 +276,17 @@ Double-submit: at session creation set a readable cookie `csrf_token` equal to `
 ### BE-14 Session endpoint (M3) — `GET /api/session`
 
 ```json
-{ "authenticated": true,
+{
+  "authenticated": true,
   "user": { "email": "btu-t-0002@example.org", "name": "Mariam Beridze" },
-  "role": null,                      // "SUPER_ADMIN" | "ADMIN" | null
-  "student": { "student_id": "BTU-T-0002", "passport_id": "BTU-AI-000126" } }
+  "role": null, // "SUPER_ADMIN" | "ADMIN" | null
+  "student": { "student_id": "BTU-T-0002", "passport_id": "BTU-AI-000126" }
+}
 ```
 
 Unauthenticated: `{"authenticated": false}` with status 200.
 
-**Done when (M3):** integration tests sign in through a fake OIDC provider fixture (no Keycloak needed in tests) as a super admin, an admin, a student and an unknown BTU user; each gets the right `/api/session`; a student gets 403 on `GET /api/admin/students` (A11); a POST without the CSRF header gets 403; a revoked admin's next request gets 403 (A12).
+**Done when (M3):** integration tests sign in by requesting a code and reading it from the \`fake_mailer\` fixture (no SMTP in tests) as a super admin, an admin, a student and an unknown BTU user; each gets the right `/api/session`; a student gets 403 on `GET /api/admin/students` (A11); a POST without the CSRF header gets 403; a revoked admin's next request gets 403 (A12); the right code after 5 wrong tries fails; an expired or reused code fails; a request over the rate limit gets 429; a non-allowed domain gets 422.
 
 ## 5. API endpoints
 
@@ -283,89 +294,89 @@ The complete contract, grouped by router. Shapes are written as Pydantic field l
 
 ### Public: verify, issuer file, stamps (BE-30 – BE-32, M5)
 
-| Method, path | Request | Response | Notes |
-| --- | --- | --- | --- |
-| `GET /api/verify/{code}` | code, any case, dashes optional | `VerifyResult` | `UNKNOWN_CODE` if no ANCHORED version has it |
-| `POST /api/verify/hash` | `{sha256}` (64 hex) | `VerifyResult` | `NOT_FOUND` if no ANCHORED version has that hash |
-| `GET /api/verify/{code}/pdf` | — | `application/pdf` | Only ANCHORED versions |
-| `GET /api/verify/{code}/proof.json` | — | Proof file (Blockchain tab, BC-06) | Only ANCHORED versions |
-| `GET /.well-known/ai-passport-issuer.json` | — | `{issuer_name, chain_id, contract_address, issuer_address}` | From config |
-| `GET /api/stamps/{sha256}` | — | Stamp image | Public; used by check-in and verify pages |
+| Method, path                               | Request                         | Response                                                    | Notes                                            |
+| ------------------------------------------ | ------------------------------- | ----------------------------------------------------------- | ------------------------------------------------ |
+| `GET /api/verify/{code}`                   | code, any case, dashes optional | `VerifyResult`                                              | `UNKNOWN_CODE` if no ANCHORED version has it     |
+| `POST /api/verify/hash`                    | `{sha256}` (64 hex)             | `VerifyResult`                                              | `NOT_FOUND` if no ANCHORED version has that hash |
+| `GET /api/verify/{code}/pdf`               | —                               | `application/pdf`                                           | Only ANCHORED versions                           |
+| `GET /api/verify/{code}/proof.json`        | —                               | Proof file (Blockchain tab, BC-06)                          | Only ANCHORED versions                           |
+| `GET /.well-known/ai-passport-issuer.json` | —                               | `{issuer_name, chain_id, contract_address, issuer_address}` | From config                                      |
+| `GET /api/stamps/{sha256}`                 | —                               | Stamp image                                                 | Public; used by check-in and verify pages        |
 
 `VerifyResult` = `{verdict, checks: {document: bool, issuer: bool}, version?: {passport_id, version_no, issued_at, holder_name, skills: [{name, category, badge_code, stamp_sha256, date_earned}]}, latest_version_no?, chain?: {chain_id, contract_address, issuer_address, merkle_root, tx_hash, block_number, anchored_at}, proof?: {pdf_sha256, leaf, proof}}`. `verdict` ∈ `VALID`, `SUPERSEDED`, `NOT_FOUND`, `UNKNOWN_CODE`, `NOT_ISSUED_BY_BTU`, `REVOKED`. The server computes the verdict by reading the chain (`app/services/chain.py`); the browser re-checks independently (Frontend tab, FE-12).
 
 ### Session and student portal (BE-14, BE-46, BE-47)
 
-| Method, path | Guard | Response |
-| --- | --- | --- |
-| `GET /api/session` | none | See BE-14 |
-| `GET /api/me/passport` | student | `{passport_id, holder_name, first_issued_on?, current?: VersionSummary, issuing?: {version_no}, skills: [SkillOnPassport]}`; `current` = the latest ANCHORED version; `issuing` when a newer PENDING/RENDERED/ANCHORING one exists |
-| `GET /api/me/versions` | student | `[VersionSummary]`, newest first, including LEGACY |
-| `GET /api/me/versions/{version_no}/pdf`, `/proof.json` | student | Own ANCHORED versions only, else 404 |
-| `GET /api/me/events` | student | `[{event_id, name, starts_at, skill_name, status}]`, `status` ∈ `WAITING`, `AWARDED` (+ `version_no`), `ALREADY_HELD`, `NOT_CONFIRMED`, `EVENT_DELETED` |
+| Method, path                                           | Guard   | Response                                                                                                                                                                                                                           |
+| ------------------------------------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/session`                                     | none    | See BE-14                                                                                                                                                                                                                          |
+| `GET /api/me/passport`                                 | student | `{passport_id, holder_name, first_issued_on?, current?: VersionSummary, issuing?: {version_no}, skills: [SkillOnPassport]}`; `current` = the latest ANCHORED version; `issuing` when a newer PENDING/RENDERED/ANCHORING one exists |
+| `GET /api/me/versions`                                 | student | `[VersionSummary]`, newest first, including LEGACY                                                                                                                                                                                 |
+| `GET /api/me/versions/{version_no}/pdf`, `/proof.json` | student | Own ANCHORED versions only, else 404                                                                                                                                                                                               |
+| `GET /api/me/events`                                   | student | `[{event_id, name, starts_at, skill_name, status}]`, `status` ∈ `WAITING`, `AWARDED` (+ `version_no`), `ALREADY_HELD`, `NOT_CONFIRMED`, `EVENT_DELETED`                                                                            |
 
 `VersionSummary` = `{version_no, status, issued_at?, verification_code?, skill_count, added_skills: [name], superseded: bool}`.
 
 ### Check-in (BE-42, M7) — guard: signed in (any BTU user)
 
-| Method, path | Request | Response |
-| --- | --- | --- |
+| Method, path                     | Request        | Response                                                                                                                                                                              |
+| -------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET /api/checkin/{event_id}?t=` | token in query | `{event: {name, starts_at, location?, skill: {name, category, stamp_sha256}}, state}`; `state` ∈ `CONFIRM`, `CHECKED_IN`, `TOKEN_EXPIRED`, `NOT_OPEN`, `CLOSED`, REMOVED, `NOT_FOUND` |
-| `POST /api/checkin/{event_id}` | `{t}` | `{state: "CHECKED_IN", unregistered: bool, already_holds_skill: bool}`; a repeat returns the same body |
+| `POST /api/checkin/{event_id}`   | `{t}`          | `{state: "CHECKED_IN", unregistered: bool, already_holds_skill: bool}`; a repeat returns the same body                                                                                |
 
 ### Admin, both roles (BE-24, BE-29, BE-35)
 
-| Method, path | Request | Response | Notes |
-| --- | --- | --- | --- |
-| `GET /api/admin/dashboard` | — | `{checkin_open, awaiting_completion, unregistered_checkins, failed_versions, recent: [VersionRow]}` | Counters for A1 |
-| `GET /api/admin/students` | `q?, program?, status?, has_passport?` | `Page[StudentRow]` | `q` matches name, Student ID, email |
-| `POST /api/admin/students` | `StudentCreate{student_id, first_name, last_name, email, program, education_level, status}` | 201 `StudentDetail` | Creates the passport with the next Passport ID; 409 `duplicate_student_id` / `duplicate_email` |
-| `GET /api/admin/students/{id}` | — | `StudentDetail{profile, passport{passport_id, first_issued_on?, frozen: bool, versions: [VersionRow]}, awards: [AwardRow], events: [ParticipationRow]}` |  |
-| `PATCH /api/admin/students/{id}` | any `StudentCreate` field except `student_id` | `StudentDetail` + `warnings` | `warnings: ["printed_name_differs"]` when names change after first issue; the passport is untouched |
-| `GET /api/admin/programs` | — | `[string]` | Distinct programs in `students`, for the select |
-| `POST /api/admin/awards/preview` | `{student_ids, skill_id, date_earned, reason}` | `{rows: [{student_id, name, result: "NEW_VERSION" \| "SKIP_ALREADY_HELD", from_version?, to_version?}]}` | No writes |
-| `POST /api/admin/awards` | same body + header `Idempotency-Key` (UUID) | 202 `{submission_id, versions: [{student_id, version_id, version_no}], skipped: [student_id]}` | Same key again → the stored response |
-| `GET /api/admin/versions` | `status? (comma-separated list), passport_id?` | `Page[VersionRow]` | For the issuance page |
-| `POST /api/admin/versions/{id}/retry` | — | 202 `VersionRow` | 409 unless FAILED |
-| `POST /api/admin/versions/retry-failed` | — | `{count}` |  |
-| `GET /api/admin/versions/{id}/pdf` | — | PDF | Any ANCHORED version |
-| `GET /api/admin/events`, `/{id}`, `/{id}/participants` | — | read-only for ADMIN | See below |
+| Method, path                                           | Request                                                                                     | Response                                                                                                                                                | Notes                                                                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `GET /api/admin/dashboard`                             | —                                                                                           | `{checkin_open, awaiting_completion, unregistered_checkins, failed_versions, recent: [VersionRow]}`                                                     | Counters for A1                                                                                     |
+| `GET /api/admin/students`                              | `q?, program?, status?, has_passport?`                                                      | `Page[StudentRow]`                                                                                                                                      | `q` matches name, Student ID, email                                                                 |
+| `POST /api/admin/students`                             | `StudentCreate{student_id, first_name, last_name, email, program, education_level, status}` | 201 `StudentDetail`                                                                                                                                     | Creates the passport with the next Passport ID; 409 `duplicate_student_id` / `duplicate_email`      |
+| `GET /api/admin/students/{id}`                         | —                                                                                           | `StudentDetail{profile, passport{passport_id, first_issued_on?, frozen: bool, versions: [VersionRow]}, awards: [AwardRow], events: [ParticipationRow]}` |                                                                                                     |
+| `PATCH /api/admin/students/{id}`                       | any `StudentCreate` field except `student_id`                                               | `StudentDetail` + `warnings`                                                                                                                            | `warnings: ["printed_name_differs"]` when names change after first issue; the passport is untouched |
+| `GET /api/admin/programs`                              | —                                                                                           | `[string]`                                                                                                                                              | Distinct programs in `students`, for the select                                                     |
+| `POST /api/admin/awards/preview`                       | `{student_ids, skill_id, date_earned, reason}`                                              | `{rows: [{student_id, name, result: "NEW_VERSION" \| "SKIP_ALREADY_HELD", from_version?, to_version?}]}`                                                | No writes                                                                                           |
+| `POST /api/admin/awards`                               | same body + header `Idempotency-Key` (UUID)                                                 | 202 `{submission_id, versions: [{student_id, version_id, version_no}], skipped: [student_id]}`                                                          | Same key again → the stored response                                                                |
+| `GET /api/admin/versions`                              | `status? (comma-separated list), passport_id?`                                              | `Page[VersionRow]`                                                                                                                                      | For the issuance page                                                                               |
+| `POST /api/admin/versions/{id}/retry`                  | —                                                                                           | 202 `VersionRow`                                                                                                                                        | 409 unless FAILED                                                                                   |
+| `POST /api/admin/versions/retry-failed`                | —                                                                                           | `{count}`                                                                                                                                               |                                                                                                     |
+| `GET /api/admin/versions/{id}/pdf`                     | —                                                                                           | PDF                                                                                                                                                     | Any ANCHORED version                                                                                |
+| `GET /api/admin/events`, `/{id}`, `/{id}/participants` | —                                                                                           | read-only for ADMIN                                                                                                                                     | See below                                                                                           |
 
 `VersionRow` = `{version_id, passport_id, student_id, student_name, version_no, status, error?, issued_at?, created_at}`.
 
 ### Events (BE-40 – BE-45, M7) — writes need super admin
 
-| Method, path | Request | Response | Notes |
-| --- | --- | --- | --- |
-| `GET /api/admin/events` | `status?` | `Page[EventRow{event_id, name, skill_name, starts_at, participant_count, status}]` | Excludes deleted |
-| `POST /api/admin/events` | `EventCreate{name, skill_id, description?, starts_at, ends_at, location?, checkin_opens_at?, checkin_closes_at?}` | 201 `EventDetail` | Window defaults: opens = ends − 15 min, closes = ends + 30 min |
-| `GET /api/admin/events/{id}` | — | `EventDetail{...EventCreate, event_id, status, skill, counts{total, unregistered, already_held}, can_complete, complete_blockers: [code], completion?: {awarded, skipped}}` | Blockers: `CHECKIN_OPEN`, `UNREGISTERED_PRESENT`, `NO_PARTICIPANTS` |
-| `PATCH /api/admin/events/{id}` | any `EventCreate` field | `EventDetail` | 409 `skill_locked`, 409 `event_completed` |
-| `DELETE /api/admin/events/{id}` | — | 204 | Soft delete; 409 `event_completed` |
-| `POST /api/admin/events/{id}/open` \| `/close` \| `/reopen` | — | `EventDetail` | See BE-40 for the time rules |
-| `GET /api/admin/events/{id}/qr` | — | `{url, svg, refresh_in_seconds, participant_count, status}` | Super admin only; `svg` from segno |
-| `GET /api/admin/events/{id}/participants` | `include_removed?` | `[{email, student_id?, name, checked_in_at, method, flags: ["UNREGISTERED" \| "ALREADY_HOLDS"], removed_at?}]` | Polled every 3 s by the UI |
-| `POST /api/admin/events/{id}/participants` | `{student_id}` | `Participant` | Manual add; 409 if present |
-| `DELETE /api/admin/events/{id}/participants/{email}` | — | 204 | Sets `removed_at` |
-| `POST /api/admin/events/{id}/complete` | — | `{submission_id, awarded: [{student_id, version_no}], skipped: [student_id]}` | 409 `cannot_complete` + blockers; repeat → stored response |
+| Method, path                                                | Request                                                                                                           | Response                                                                                                                                                                    | Notes                                                               |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `GET /api/admin/events`                                     | `status?`                                                                                                         | `Page[EventRow{event_id, name, skill_name, starts_at, participant_count, status}]`                                                                                          | Excludes deleted                                                    |
+| `POST /api/admin/events`                                    | `EventCreate{name, skill_id, description?, starts_at, ends_at, location?, checkin_opens_at?, checkin_closes_at?}` | 201 `EventDetail`                                                                                                                                                           | Window defaults: opens = ends − 15 min, closes = ends + 30 min      |
+| `GET /api/admin/events/{id}`                                | —                                                                                                                 | `EventDetail{...EventCreate, event_id, status, skill, counts{total, unregistered, already_held}, can_complete, complete_blockers: [code], completion?: {awarded, skipped}}` | Blockers: `CHECKIN_OPEN`, `UNREGISTERED_PRESENT`, `NO_PARTICIPANTS` |
+| `PATCH /api/admin/events/{id}`                              | any `EventCreate` field                                                                                           | `EventDetail`                                                                                                                                                               | 409 `skill_locked`, 409 `event_completed`                           |
+| `DELETE /api/admin/events/{id}`                             | —                                                                                                                 | 204                                                                                                                                                                         | Soft delete; 409 `event_completed`                                  |
+| `POST /api/admin/events/{id}/open` \| `/close` \| `/reopen` | —                                                                                                                 | `EventDetail`                                                                                                                                                               | See BE-40 for the time rules                                        |
+| `GET /api/admin/events/{id}/qr`                             | —                                                                                                                 | `{url, svg, refresh_in_seconds, participant_count, status}`                                                                                                                 | Super admin only; `svg` from segno                                  |
+| `GET /api/admin/events/{id}/participants`                   | `include_removed?`                                                                                                | `[{email, student_id?, name, checked_in_at, method, flags: ["UNREGISTERED" \| "ALREADY_HOLDS"], removed_at?}]`                                                              | Polled every 3 s by the UI                                          |
+| `POST /api/admin/events/{id}/participants`                  | `{student_id}`                                                                                                    | `Participant`                                                                                                                                                               | Manual add; 409 if present                                          |
+| `DELETE /api/admin/events/{id}/participants/{email}`        | —                                                                                                                 | 204                                                                                                                                                                         | Sets `removed_at`                                                   |
+| `POST /api/admin/events/{id}/complete`                      | —                                                                                                                 | `{submission_id, awarded: [{student_id, version_no}], skipped: [student_id]}`                                                                                               | 409 `cannot_complete` + blockers; repeat → stored response          |
 
 ### Super admin: catalog, roles, audit (BE-50 – BE-53, M9)
 
-| Method, path | Request | Response | Notes |
-| --- | --- | --- | --- |
-| `GET /api/admin/skills` | `include_archived?` | `[SkillRow{skill_id, name, category, description, times_awarded, archived}]` | Admins may read |
-| `POST /api/admin/skills` | `{name, category_id, description}` | 201 `SkillRow` | `skill_id` generated: next `SKL-nnn` |
-| `PATCH /api/admin/skills/{id}` | `{name?, category_id?, description?}` | `SkillRow` |  |
-| `POST /api/admin/skills/{id}/archive` \| `/unarchive` | — | `SkillRow` |  |
-| `DELETE /api/admin/skills/{id}` | — | 204 | 409 `in_use` if awarded or used by an event |
-| `GET /api/admin/categories` | — | `[CategoryRow{category_id, name, badge_code, stamp_sha256?, skill_count, archived}]` | Admins may read |
-| `POST /api/admin/categories` | `{name}` | 201 `CategoryRow` | `badge_code` generated: next `BDG-AI-nnn` |
-| `PATCH /api/admin/categories/{id}`, `POST .../archive`, `DELETE ...` | as skills |  | 409 `in_use` if any skill uses it |
-| `POST /api/admin/categories/{id}/stamp` | multipart `file` | `CategoryRow` | PNG or SVG, ≤ 1 MB, PNG ≥ 600×600 and square; stored by SHA-256 |
-| `GET /api/admin/roles` | — | `[{email, role, name?, granted_by_email?, granted_at, last_login_at?}]` |  |
-| `PUT /api/admin/roles/{email}` | `{role}` | Role row | Domain check; revokes the person's sessions on change |
-| `DELETE /api/admin/roles/{email}` | — | 204 | 409 `last_super_admin` |
-| `GET /api/admin/audit` | `actor?, action?, from?, to?` | `Page[AuditRow]` | Newest first |
+| Method, path                                                         | Request                               | Response                                                                             | Notes                                                           |
+| -------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| `GET /api/admin/skills`                                              | `include_archived?`                   | `[SkillRow{skill_id, name, category, description, times_awarded, archived}]`         | Admins may read                                                 |
+| `POST /api/admin/skills`                                             | `{name, category_id, description}`    | 201 `SkillRow`                                                                       | `skill_id` generated: next `SKL-nnn`                            |
+| `PATCH /api/admin/skills/{id}`                                       | `{name?, category_id?, description?}` | `SkillRow`                                                                           |                                                                 |
+| `POST /api/admin/skills/{id}/archive` \| `/unarchive`                | —                                     | `SkillRow`                                                                           |                                                                 |
+| `DELETE /api/admin/skills/{id}`                                      | —                                     | 204                                                                                  | 409 `in_use` if awarded or used by an event                     |
+| `GET /api/admin/categories`                                          | —                                     | `[CategoryRow{category_id, name, badge_code, stamp_sha256?, skill_count, archived}]` | Admins may read                                                 |
+| `POST /api/admin/categories`                                         | `{name}`                              | 201 `CategoryRow`                                                                    | `badge_code` generated: next `BDG-AI-nnn`                       |
+| `PATCH /api/admin/categories/{id}`, `POST .../archive`, `DELETE ...` | as skills                             |                                                                                      | 409 `in_use` if any skill uses it                               |
+| `POST /api/admin/categories/{id}/stamp`                              | multipart `file`                      | `CategoryRow`                                                                        | PNG or SVG, ≤ 1 MB, PNG ≥ 600×600 and square; stored by SHA-256 |
+| `GET /api/admin/roles`                                               | —                                     | `[{email, role, name?, granted_by_email?, granted_at, last_login_at?}]`              |                                                                 |
+| `PUT /api/admin/roles/{email}`                                       | `{role}`                              | Role row                                                                             | Domain check; revokes the person's sessions on change           |
+| `DELETE /api/admin/roles/{email}`                                    | —                                     | 204                                                                                  | 409 `last_super_admin`                                          |
+| `GET /api/admin/audit`                                               | `actor?, action?, from?, to?`         | `Page[AuditRow]`                                                                     | Newest first                                                    |
 
 ## 6. Services
 
@@ -406,33 +417,49 @@ Routers stay thin: they validate input, call one service function inside the req
 `build_content(db, version)` returns the JSON that is both stored in `content_json` and rendered into the PDF:
 
 ```json
-{ "schema": "btu-ai-passport/1",
-  "passport_id": "BTU-AI-000126", "version_no": 2,
+{
+  "schema": "btu-ai-passport/1",
+  "passport_id": "BTU-AI-000126",
+  "version_no": 2,
   "holder": { "first_name": "Mariam", "last_name": "Beridze" },
-  "first_issued_on": "2026-09-15", "issued_at": "2026-10-22T15:40:12Z",
-  "verification_code": "K7QM3XWP9D", "verify_url": "https://…/v/K7QM3XWP9D",
-  "skills": [ { "skill_id": "SKL-002", "name": "Prompt Engineering Fundamentals",
-                "category": "AI Skill", "badge_code": "BDG-AI-001",
-                "stamp_sha256": "…", "description": "…", "date_earned": "2026-09-21",
-                "source": { "type": "event", "event_name": "…" } } ],
-  "issuer": { "name": "Business and Technology University",
-              "chain_id": 31337, "contract_address": "0x…" } }
+  "first_issued_on": "2026-09-15",
+  "issued_at": "2026-10-22T15:40:12Z",
+  "verification_code": "K7QM3XWP9D",
+  "verify_url": "https://…/v/K7QM3XWP9D",
+  "skills": [
+    {
+      "skill_id": "SKL-002",
+      "name": "Prompt Engineering Fundamentals",
+      "category": "AI Skill",
+      "badge_code": "BDG-AI-001",
+      "stamp_sha256": "…",
+      "description": "…",
+      "date_earned": "2026-09-21",
+      "source": { "type": "event", "event_name": "…" }
+    }
+  ],
+  "issuer": {
+    "name": "Business and Technology University",
+    "chain_id": 31337,
+    "contract_address": "0x…"
+  }
+}
 ```
 
 Skills are sorted by `date_earned`, then `award_id`. If the passport has no `first_issued_on` yet, set it (today) and copy the holder names from the student, in the same transaction; the trigger then freezes them.
 
 ### BE-40 Events (M7) — `app/services/events.py`
 
-| Function | Allowed from | Effect |
-| --- | --- | --- |
-| `create` | — | Status `DRAFT`; fill window defaults; `qr_secret` = 32 random bytes |
-| `update` | not COMPLETED | Skill change rejected once a participant exists (`skill_locked`) |
-| `open(now)` | DRAFT, CHECKIN\_CLOSED | → CHECKIN\_OPEN; `checkin_opens_at` = min(current, now); if `checkin_closes_at` ≤ now, set it to now + 30 min |
-| `close(now)` | CHECKIN\_OPEN | → CHECKIN\_CLOSED; `checkin_closes_at` = now |
-| `reopen(now)` | CHECKIN\_CLOSED | → CHECKIN\_OPEN; `checkin_closes_at` = now + 30 min |
-| `tick(now)` | worker, every 15 s | DRAFT with opens ≤ now < closes → OPEN; OPEN with now ≥ closes → CLOSED |
-| `delete` | not COMPLETED | Set `deleted_at` (soft) |
-| `complete(actor)` | CHECKIN\_CLOSED, no blockers | See below |
+| Function          | Allowed from                | Effect                                                                                                       |
+| ----------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `create`          | —                           | Status `DRAFT`; fill window defaults; `qr_secret` = 32 random bytes                                          |
+| `update`          | not COMPLETED               | Skill change rejected once a participant exists (`skill_locked`)                                             |
+| `open(now)`       | DRAFT, CHECKIN_CLOSED       | → CHECKIN_OPEN; `checkin_opens_at` = min(current, now); if `checkin_closes_at` ≤ now, set it to now + 30 min |
+| `close(now)`      | CHECKIN_OPEN                | → CHECKIN_CLOSED; `checkin_closes_at` = now                                                                  |
+| `reopen(now)`     | CHECKIN_CLOSED              | → CHECKIN_OPEN; `checkin_closes_at` = now + 30 min                                                           |
+| `tick(now)`       | worker, every 15 s          | DRAFT with opens ≤ now < closes → OPEN; OPEN with now ≥ closes → CLOSED                                      |
+| `delete`          | not COMPLETED               | Set `deleted_at` (soft)                                                                                      |
+| `complete(actor)` | CHECKIN_CLOSED, no blockers | See below                                                                                                    |
 
 `complete`: if a submission with this `event_id` exists, return its stored response. Otherwise create a submission (kind `EVENT`, `event_id`); for each participant with `removed_at IS NULL` and a `student_id`, skip those who hold the skill, else insert an award dated the event's start date in `TIMEZONE`; call `create_versions`; set COMPLETED, `completed_by`, `completed_at`; store the response; audit `event.complete`. All in one transaction.
 
@@ -443,7 +470,7 @@ Skills are sorted by `date_earned`, then `award_id`. If the passport has no `fir
 - `window(now) = floor(unix_seconds / 30)`.
 - `token(secret, event_id, w)` = first 16 characters of `base32(HMAC-SHA256(secret, f"{event_id}:{w}"))`, no padding.
 - `is_valid(secret, event_id, t, now)`: constant-time compare against windows `w` and `w − 1` — a token lives 30–60 s (FR-28).
-- `checkin_url` = `PUBLIC_BASE_URL/checkin/{event_id}?t={token}`; `refresh_in_seconds` = 30 − (unix\_seconds mod 30).
+- `checkin_url` = `PUBLIC_BASE_URL/checkin/{event_id}?t={token}`; `refresh_in_seconds` = 30 − (unix_seconds mod 30).
 
 ### BE-42 Check-in logic (M7)
 
@@ -482,10 +509,10 @@ RETURNING *;
 
 **Timers** (`worker/ticks.py`, checked every loop):
 
-| Timer | Every | Does |
-| --- | --- | --- |
+| Timer       | Every                     | Does                                                                                                         |
+| ----------- | ------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Anchor tick | `ANCHOR_INTERVAL_SECONDS` | If any version is `RENDERED` or a batch is `SUBMITTING`, enqueue `ANCHOR_BATCH` with `dedupe_key = 'anchor'` |
-| Event tick | 15 s | `events.tick(now)` (BE-40) |
+| Event tick  | 15 s                      | `events.tick(now)` (BE-40)                                                                                   |
 
 ### BE-27 `ISSUE_VERSION {version_id}` (M4) — `worker/jobs.py`
 
@@ -528,17 +555,17 @@ RETURNING *;
 
 pytest against a real PostgreSQL (`passport_test`), because the triggers, constraints and `SKIP LOCKED` are part of the behaviour. Chain tests need Anvil and are marked so they can be skipped.
 
-| Folder | What | Needs |
-| --- | --- | --- |
-| `tests/unit/` | codes, QR tokens (with `time-machine`), Merkle vs shared vectors, content builder, event transitions, verdict logic | nothing |
-| `tests/integration/` | Every router through FastAPI's `TestClient`; triggers; seed import; worker handlers called directly (not the loop) | Postgres, MinIO |
-| `tests/chain/` (`@pytest.mark.chain`) | Signer against Anvil, end-to-end anchoring, `chain.py` reads | + Anvil with the contract deployed |
+| Folder                                | What                                                                                                                | Needs                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `tests/unit/`                         | codes, QR tokens (with `time-machine`), Merkle vs shared vectors, content builder, event transitions, verdict logic | nothing                            |
+| `tests/integration/`                  | Every router through FastAPI's `TestClient`; triggers; seed import; worker handlers called directly (not the loop)  | Postgres, MinIO                    |
+| `tests/chain/` (`@pytest.mark.chain`) | Signer against Anvil, end-to-end anchoring, `chain.py` reads                                                        | + Anvil with the contract deployed |
 
 **Fixtures (`tests/conftest.py`):**
 
 - `db` — runs migrations once per session; truncates all tables between tests (faster and simpler than nested transactions with triggers).
-- `client_as(role)` — a `TestClient` with a real session row and CSRF cookie for `"super_admin" | "admin" | "student" | "unregistered" | None`; bypasses Keycloak by inserting the session directly.
-- `fake_oidc` — stubs Authlib's token exchange to return chosen claims, for BE-10 tests.
+- `client_as(role)` — a `TestClient` with a real session row and CSRF cookie for `"super_admin" | "admin" | "student" | "unregistered" | None`; skips the email-code flow by inserting the session directly.
+- `fake_`mailer — replaces the mailer and records sent codes so tests can read them, for BE-10 tests.
 - `seeded` — runs the seed importer on the real CSV.
 - `fake_signer` — an in-process stand-in that records roots and returns a fake receipt, or fails on demand; used everywhere except `tests/chain/`.
 - `run_jobs()` — drains the job queue by calling the handlers until it's empty.
@@ -547,7 +574,7 @@ pytest against a real PostgreSQL (`passport_test`), because the triggers, constr
 
 ### BE-60 Hardening (M10)
 
-- Rate limits, in-process token bucket keyed by client IP (behind Caddy use `X-Forwarded-For` from the trusted proxy only): `/api/verify/*` 30 per minute, `/auth/login` 10 per minute, `POST /api/checkin/*` 20 per minute. Return 429 `rate_limited`.
+- Rate limits, in-process token bucket keyed by client IP (behind Caddy use `X-Forwarded-For` from the trusted proxy only): `/api/verify/*` 30 per minute, `/auth/verify-code` 10 per minute, `POST /api/checkin/*` 20 per minute. Return 429 `rate_limited`.
 - Security headers on API responses: `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`.
-- Structured JSON logs in `demo`; never log cookies, tokens, `id_token`, or the HMAC secret.
+- Structured JSON logs in `demo`; never log cookies, tokens, `login codes (outside dev)`, or the HMAC secret.
 - Test: the 31st verify request in a minute gets 429.

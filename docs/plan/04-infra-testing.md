@@ -4,14 +4,14 @@
 
 During development only the infrastructure runs in Docker; the API, worker, signer and web app run on the host with hot reload. The `app` and `demo` profiles containerise everything for the demo.
 
-### IN-01 `infra/docker-compose.yml` (M0) ✅
+### IN-01 `infra/docker-compose.yml` (M0)
 
 | Service | Image (pin exact tags) | Ports | Profile | Notes |
 | --- | --- | --- | --- | --- |
 | `db` | `postgres:16` | 5432 | default | User, password and database `passport`; an init script also creates `passport_test`; volume `pgdata`; healthcheck `pg_isready` |
 | `minio` | `minio/minio:<release tag>` | 9000, 9001 (console) | default | `server /data --console-address :9001`; volume `miniodata` |
 | `minio-init` | `minio/mc:<release tag>` | — | default | One-shot: create the private bucket `passports` |
-| `keycloak` | `quay.io/keycloak/keycloak:<26.x tag>` | 8080 | default | `start-dev --import-realm`; mounts `infra/keycloak/` at `/opt/keycloak/data/import`; admin via `KC_BOOTSTRAP_ADMIN_USERNAME` / `KC_BOOTSTRAP_ADMIN_PASSWORD` |
+| `mailpit` | `axllent/mailpit:<tag>` | 8025 (UI), 1025 (SMTP) | default | Dev only: catches all outgoing email; inbox and REST API at `http://localhost:8025` |
 | `anvil` | `ghcr.io/foundry-rs/foundry:<tag>` | 8545 | default | `anvil --host 0.0.0.0 --chain-id 31337 --state /data/anvil-state.json`; volume `anvildata` |
 | `api` | built from `backend/Dockerfile` | internal 8000 | `app` | `uvicorn app.main:app` |
 | `worker` | same image | — | `app` | `python -m worker` |
@@ -19,51 +19,40 @@ During development only the infrastructure runs in Docker; the API, worker, sign
 | `web` | built from `web/Dockerfile` | internal 3000 | `app` | `next build` with `output: "standalone"` |
 | `caddy` | `caddy:2` | 80, 443 | `demo` | `infra/Caddyfile` (IN-05) |
 
-Networks: `backend` (db, minio, keycloak, anvil, api, worker, web, caddy) and `signing` (worker, signer, anvil). Only the worker can reach the signer; the API reaches the chain only for read-only calls.
+Networks: `backend` (db, minio, mailpit, anvil, api, worker, web, caddy) and `signing` (worker, signer, anvil). Only the worker can reach the signer; the API reaches the chain only for read-only calls.
 
-### IN-02 Environment files (M0) ✅
+### IN-02 Environment files (M0)
 
 `.env.example` (committed, every variable from Overview §4 with dev defaults), `.env` (git-ignored, copied from the example), `.env.demo` (git-ignored, demo values), `secrets/issuer_key` (git-ignored; in dev it holds Anvil account 0's published test key). `.gitignore` covers `.env`, `.env.demo`, `secrets/`, `infra/*state*.json`.
 
-**Done when (M0):** `make infra-up` starts the default services: db, minio, keycloak and anvil report healthy and minio-init exits 0; MinIO's console shows the `passports` bucket; Keycloak's admin console loads; `cast block-number --rpc-url http://localhost:8545` answers.
+**Done when (M0):** `make infra-up` starts the default services: db, minio, mailpit and anvil report healthy and minio-init exits 0; MinIO's console shows the `passports` bucket; Mailpit's inbox loads at localhost:8025; `cast block-number --rpc-url http://localhost:8545` answers.
 
-## 2. Keycloak realm
+## 2. Sign-in email
 
-### IN-04 `infra/keycloak/btu-realm.json` (M3)
+### IN-04 Mailpit and SMTP (M3)
 
-Write the realm as an import file by hand (the agent can't click through the admin console), start Keycloak, and check it loads; if a setting is awkward to express in JSON, configure it in the console once and replace the file with `kc.sh export --realm btu --users realm_file`.
+**Dev:** the `mailpit` service catches every email the API sends (SMTP on 1025, inbox UI and REST API on 8025), so nobody needs a real mailbox. Unit and integration tests use the `fake_mailer` fixture instead (BE-10); e2e tests read codes from Mailpit's REST API.
 
-| Setting | Value |
-| --- | --- |
-| Realm | `btu`; login with email; "Verify email" off; users created with `emailVerified: true` |
-| Client | `passport-web`: confidential (secret in the file, copied to `.env` as `OIDC_CLIENT_SECRET`), standard flow only, PKCE method `S256`, redirect URIs `http://localhost:3000/auth/callback` (+ the demo URL), post-logout redirect URIs `http://localhost:3000/*` (+ demo), web origins `+` |
-| Scopes | default `openid email profile` (gives `email`, `email_verified`, `given_name`, `family_name`, `name`) |
-| Group | `staff` |
-| Browser flow | Copy of the built-in browser flow where the OTP step is *conditional on the user having OTP configured* (built-in "Condition – user configured") |
+**Demo:** point `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `SMTP_FROM` at a real sender (BTU mail, a Gmail account with an app password, or a service such as Resend or Mailgun) and set `DEV_LOG_LOGIN_CODES=false`. Send yourself a code before the demo and check it doesn't land in spam.
 
-**Test users** (password `Passw0rd!` for all, `# DEV ONLY`):
+**No second factor for staff:** whoever controls an admin's inbox can sign in as that admin. Record it under Deviations as an accepted trade-off.
 
-| Email | Name | Group | Role after `cli bootstrap --dev-users` | Used for |
-| --- | --- | --- | --- | --- |
-| `superadmin@btu.test` | Super Admin | staff | SUPER\_ADMIN | Events, catalog, roles |
-| `admin@btu.test` | Admin User | staff | ADMIN | Students, direct awards |
-| `btu-t-0002@example.org` | Mariam Beridze | — | student (seed) | A2, A6, A8 |
-| `btu-t-0012@example.org` | Nikoloz Gelashvili | — | student (seed) | Check-in |
-| `btu-t-0021@example.org` | Luka Japaridze | — | student (seed) | A1, first passport |
-| `newcomer@btu.test` | Nino Newcomer | — | none (no student record) | A14, Unregistered |
+**Test users** (no passwords; each signs in with a code read from Mailpit):
 
-**MFA by environment:**
+| Email | Name | Role after `cli bootstrap --dev-users` | Used for |
+| --- | --- | --- | --- |
+| `superadmin@btu.test` | Super Admin | SUPER\_ADMIN | Events, catalog, roles |
+| `admin@btu.test` | Admin User | ADMIN | Students, direct awards |
+| `btu-t-0002@example.org` | Mariam Beridze | student (seed) | A2, A6, A8 |
+| `btu-t-0012@example.org` | Nikoloz Gelashvili | student (seed) | Check-in |
+| `btu-t-0021@example.org` | Luka Japaridze | student (seed) | A1, first passport |
+| `newcomer@btu.test` | Nino Newcomer | none (no student record) | A14, Unregistered |
 
-- **Dev and e2e:** staff users have no OTP configured, so the conditional step is skipped; `REQUIRE_MFA_CLAIM=false`.
-- **Demo:** add the required action `CONFIGURE_TOTP` to the two staff users, so each enrols an authenticator app on first sign-in and is asked for a code every time after. If time allows, also map OTP to level 2 (client → Advanced → "ACR to LoA mapping", and a "Condition – Level of Authentication" step), so the ID token's `acr` becomes `"2"` and the API can enforce it with `REQUIRE_MFA_CLAIM=true` (BE-12). If that takes more than an hour, leave `REQUIRE_MFA_CLAIM=false` and say in the demo that Keycloak enforces the second factor — record it under Deviations.
-
-**Demo hostname:** run Keycloak on its own subdomain (`auth.<demo-domain>`) behind Caddy, with `KC_HOSTNAME=https://auth.<demo-domain>`, `KC_PROXY_HEADERS=xforwarded`, `KC_HTTP_ENABLED=true`; set `OIDC_ISSUER=https://auth.<demo-domain>/realms/btu`. The issuer URL must be the same for the browser and the API, which is why it is a public hostname rather than `keycloak:8080`.
-
-**Done when (M3):** every test user can sign in at `http://localhost:3000/auth/login` and lands on the right page.
+**Done when (M3):** every test user can sign in at `http://localhost:3000/login` with a code read from Mailpit and lands on the right page.
 
 ## 3. Makefile targets
 
-### IN-03 `Makefile` (M0, extended as milestones add pieces) ✅ M0 targets
+### IN-03 `Makefile` (M0, extended as milestones add pieces)
 
 Every command a developer or the agent needs, so nobody has to remember flags. Targets load `.env` (`include .env` + `export`).
 
@@ -134,12 +123,9 @@ Each scenario from the Requirements Analysis becomes at least one automated test
     handle /.well-known/* { reverse_proxy api:8000 }
     handle                { reverse_proxy web:3000 }
 }
-auth.{$DEMO_DOMAIN} {
-    reverse_proxy keycloak:8080
-}
 ```
 
-Demo `.env.demo`: `ENV=demo`, `SESSION_COOKIE_NAME=__Host-session`, `SESSION_SECURE=true`, `PUBLIC_BASE_URL=https://<domain>`, `OIDC_REDIRECT_URI=https://<domain>/auth/callback`, Sepolia chain values (BC-08).
+Demo `.env.demo`: `ENV=demo`, `SESSION_COOKIE_NAME=__Host-session`, `SESSION_SECURE=true`, `PUBLIC_BASE_URL=https://<domain>`, `SMTP_* for the real sender, DEV_LOG_LOGIN_CODES=false`, Sepolia chain values (BC-08).
 
 ### IN-07 Hosting options for the demo (decide by day 5)
 
@@ -149,7 +135,7 @@ Phones must reach the app to scan the check-in QR, so it needs an address the ju
 | --- | --- | --- |
 | Small VPS with a domain | `make demo-up` on the server; Caddy gets HTTPS certificates automatically | Most realistic; needs a domain and a server (\~1 hour) |
 | Cloudflare named tunnel | Laptop runs `make demo-up`; a tunnel maps `<domain>` and `auth.<domain>` to Caddy | Needs a domain on Cloudflare; laptop must stay online |
-| Same Wi-Fi, no HTTPS (fallback) | `make dev` on the laptop; use its LAN IP in `PUBLIC_BASE_URL`, `OIDC_ISSUER`, Keycloak redirect URIs; `SESSION_SECURE=false` | Works with no domain; not HTTPS, so say so in the demo; venue Wi-Fi may isolate devices |
+| Same Wi-Fi, no HTTPS (fallback) | `make dev` on the laptop; use its LAN IP in `PUBLIC_BASE_URL`; `SESSION_SECURE=false` | Works with no domain; not HTTPS, so say so in the demo; venue Wi-Fi may isolate devices |
 
 Whichever is chosen, record a 3-minute screen video of the full flow the day before as a backup.
 
@@ -162,6 +148,6 @@ Whichever is chosen, record a 3-minute screen video of the full flow the day bef
 5. **Student, 1 min:** sign in as the student, show the new version and download the PDF.
 6. **Employer, 1.5 min:** in a private window (no login), enter the verification code → Valid; upload the PDF → Valid, plus "checked directly on the blockchain from your browser".
 7. **Attacks, 1 min:** upload a copy with an edited date → Not valid; enter an old version's code → Superseded; (pre-run) a root anchored on a look-alike contract → Not issued by BTU.
-8. **Scale and security, 30 s:** batching (one transaction per batch, not per passport), 30-second rotating QR, MFA for staff, issuer key isolated in the signer.
+8. **Scale and security, 30 s:** batching (one transaction per batch, not per passport), 30-second rotating QR, passwordless email-code sign-in, issuer key isolated in the signer.
 
 **Done when (M10):** the full script runs end to end twice in a row on the chosen hosting option without manual fixes.
