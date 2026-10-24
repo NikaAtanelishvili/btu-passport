@@ -29,7 +29,7 @@ Networks: `backend` (db, minio, mailpit, anvil, api, worker, web, caddy) and `si
 
 ## 2. Sign-in email
 
-### IN-04 Mailpit and SMTP (M3)
+### IN-04 Mailpit and SMTP (M3) ✅
 
 **Dev:** the `mailpit` service catches every email the API sends (SMTP on 1025, inbox UI and REST API on 8025), so nobody needs a real mailbox. Unit and integration tests use the `fake_mailer` fixture instead (BE-10); e2e tests read codes from Mailpit's REST API.
 
@@ -52,7 +52,7 @@ Networks: `backend` (db, minio, mailpit, anvil, api, worker, web, caddy) and `si
 
 ## 3. Makefile targets
 
-### IN-03 `Makefile` (M0, extended as milestones add pieces) ✅ M0 – M2 targets
+### IN-03 `Makefile` (M0, extended as milestones add pieces) ✅ M0 – M3 targets
 
 Every command a developer or the agent needs, so nobody has to remember flags. Targets load `.env` (`include .env` + `export`).
 

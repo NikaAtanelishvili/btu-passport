@@ -240,7 +240,7 @@ Upserts `user_roles` for `BOOTSTRAP_SUPER_ADMIN_EMAIL` as `SUPER_ADMIN`. With `-
 
 A one-time code emailed to the user proves who they are; our `sessions` table keeps them signed in; `user_roles` and the `students` email match decide what they may do. All checks are FastAPI dependencies, applied per router.
 
-### BE-10 Email-code sign-in (M3) — `app/auth/login_codes.py`, `app/services/mailer.py`, `app/routers/auth.py`
+### BE-10 Email-code sign-in (M3) — `app/auth/login_codes.py`, `app/services/mailer.py`, `app/routers/auth.py` ✅
 
 Passwordless, no identity provider. A code is `f"{secrets.randbelow(10**6):06d}"`; only its SHA-256 goes into `login_codes`, compared with `hmac.compare_digest`. `mailer.send_login_code(email, code)` uses the standard library `smtplib` with `SMTP_*` (STARTTLS when the port is 587); in dev it lands in Mailpit, and when `DEV_LOG_LOGIN_CODES` is true the code is also logged. No `SessionMiddleware`: there is no OAuth handshake to sign. Client IP = the first `X-Forwarded-For` hop, trusted only from the Next.js proxy or Caddy.
 
@@ -250,14 +250,14 @@ Passwordless, no identity provider. A code is `f"{secrets.randbelow(10**6):06d}"
 | `POST /auth/verify-code` `{email, code, next?}` | Take the newest unused, unexpired code for the email; none → 400 `code_expired`. Wrong code → `attempts + 1` and 400 `code_invalid` with `attempts_left`; at `LOGIN_CODE_MAX_ATTEMPTS` the code is dead even if the next guess is right. Right → set `used_at`, upsert `users` by email (`display_name` = the student's name when the email matches a student, else the part before `@`), set `last_login_at`, create a session (BE-11), set cookies, return `{redirect}`: `next` when it is a relative path starting with `/`, else admin → `/admin`, student → `/me`, otherwise `/`. |
 | `POST /auth/logout`                             | Delete the session row, clear both cookies, return 204.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
-### BE-11 Sessions (M3) — `app/auth/sessions.py`
+### BE-11 Sessions (M3) — `app/auth/sessions.py` ✅
 
 - Token = `secrets.token_urlsafe(32)`; store only its SHA-256 in `sessions.session_hash`. Cookie: name `SESSION_COOKIE_NAME`, HttpOnly, `SameSite=Lax`, `Secure` when `SESSION_SECURE`, path `/`.
 - `expires_at` = now + `SESSION_ABSOLUTE_HOURS`. For users with a role, also expire when `last_seen_at` is older than `ADMIN_IDLE_MINUTES`.
 - Update `last_seen_at` at most once a minute per session.
 - `revoke_user_sessions(email)` deletes all sessions for that email; called when a role is revoked or changed (FR-08).
 
-### BE-12 Guards (M3) — `app/auth/deps.py`
+### BE-12 Guards (M3) — `app/auth/deps.py` ✅
 
 | Dependency              | Passes when                                                | Otherwise             |
 | ----------------------- | ---------------------------------------------------------- | --------------------- |
@@ -269,11 +269,11 @@ Passwordless, no identity provider. A code is `f"{secrets.randbelow(10**6):06d}"
 
 The role is read from `user_roles` on **every request** (one indexed lookup), so revocation is immediate. Apply guards at router level: `admin/*` routers depend on `require_admin`, and super-admin endpoints add `require_super_admin`.
 
-### BE-13 CSRF (M3) — `app/auth/csrf.py`
+### BE-13 CSRF (M3) — `app/auth/csrf.py` ✅
 
 Double-submit: at session creation set a readable cookie `csrf_token` equal to `sessions.csrf_token`. Middleware: for POST, PUT, PATCH, DELETE under `/api/` and `/auth/logout`, require header `X-CSRF-Token` equal to the session's token, else 403 `csrf_failed`. Exempt `/api/verify/*` (public, no session).
 
-### BE-14 Session endpoint (M3) — `GET /api/session`
+### BE-14 Session endpoint (M3) — `GET /api/session` ✅
 
 ```json
 {

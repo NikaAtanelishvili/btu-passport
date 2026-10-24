@@ -57,14 +57,14 @@ Every page is a client component that fetches through one typed API client with 
 
 Page codes (P1, S1, A7 …) are those of the Web App Design document; follow its section tables for what each page contains.
 
-### FE-02 API client and types (M3) — `web/lib/`
+### FE-02 API client and types (M3) — `web/lib/` ✅
 
 - `api-types.ts`: generated, never edited. `make types` runs `openapi-typescript http://localhost:8000/openapi.json -o web/lib/api-types.ts`.
 - `api.ts`: an `openapi-fetch` client with `baseUrl: ""` (same origin) and `credentials: "include"`. A middleware adds `X-CSRF-Token` (read from the `csrf_token` cookie) to every POST, PUT, PATCH and DELETE, and turns non-2xx responses into `ApiError {status, error, message, fields}`. On 401 from a guarded page, redirect to `/login?next=<current path>`.
 - `query-keys.ts`: one place for TanStack Query keys, so mutations invalidate the right lists.
 - `forms.ts`: `applyServerErrors(form, apiError)` calls `form.setError(name, ...)` for each entry in `fields`, and shows `message` in a toast when there are no field errors.
 
-### FE-03 Session and guards (M3)
+### FE-03 Session and guards (M3) ✅
 
 - `useSession()` = query on `GET /api/session` (stale time 30 s).
 - `<RequireRole role="student" | "admin" | "super_admin">` in the `me/` and `admin/` layouts: skeleton while loading; signed out → redirect to `/login?next=…`; wrong role → a shadcn `Alert` "You don't have access to this page" with a link home. The server enforces the same rules; this is only for a sensible screen.
@@ -83,7 +83,7 @@ Page codes (P1, S1, A7 …) are those of the Web App Design document; follow its
 | `EmptyState`, `ErrorState` | `card`, `alert`             | Every list and detail page                                                                                                                                                                                                   |
 | `StudentPicker`            | `command`, `popover`        | Multi-select search over `/api/admin/students?q=`                                                                                                                                                                            |
 
-### FE-04 Sign in `/login` (M3)
+### FE-04 Sign in `/login` (M3) ✅
 
 One client page, two steps (Web App Design P4), stock shadcn `Card`, `field`, `Input`, `InputOTP`, `Button`.
 
