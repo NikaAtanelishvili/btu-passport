@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_BTU_ISSUER: JSON.stringify(btuIssuer) },
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Every page is a client component that fetches its own data (Frontend tab §2), so no
+    // page can render instantly from the prefetch; validate only segments that opt in with
+    // `export const instant`. Stops "Could not validate … instant navigation" on each load.
+    instantInsights: { validationLevel: "manual-warning" },
+  },
   turbopack: {
     rules: {
       "*.css": {
