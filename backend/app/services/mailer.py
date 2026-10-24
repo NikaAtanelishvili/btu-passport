@@ -1,0 +1,28 @@
+"""Outgoing email (BE-10). Dev: Mailpit on localhost:1025; demo: a real SMTP account."""
+
+import smtplib
+import ssl
+from email.message import EmailMessage
+
+from app.config import get_settings
+
+
+def send_login_code(email: str, code: str) -> None:
+    s = get_settings()
+    msg = EmailMessage()
+    msg["From"] = s.smtp_from
+    msg["To"] = email
+    msg["Subject"] = f"{code} is your BTU AI Skills Passport sign-in code"
+    msg.set_content(
+        f"Your sign-in code is {code}\n\n"
+        f"It expires in {s.login_code_ttl_minutes} minutes and works once.\n"
+        "If you didn't ask for it, ignore this email: nobody can sign in without the code.\n"
+    )
+
+    smtp_class = smtplib.SMTP_SSL if s.smtp_port == 465 else smtplib.SMTP
+    with smtp_class(s.smtp_host, s.smtp_port, timeout=15) as smtp:
+        if s.smtp_port == 587:
+            smtp.starttls(context=ssl.create_default_context())
+        if s.smtp_user:
+            smtp.login(s.smtp_user, s.smtp_password.get_secret_value())
+        smtp.send_message(msg)

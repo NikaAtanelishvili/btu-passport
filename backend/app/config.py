@@ -8,7 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import SecretStr, field_validator
+from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -74,6 +74,15 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [d.strip().lower() for d in value.split(",") if d.strip()]
         return value
+
+    @model_validator(mode="after")
+    def _no_logged_codes_outside_dev(self) -> "Settings":
+        if self.dev_log_login_codes and self.env not in ("dev", "test"):
+            raise ValueError(
+                f"DEV_LOG_LOGIN_CODES=true is refused when ENV={self.env}: sign-in codes would "
+                "be written to the log. Set DEV_LOG_LOGIN_CODES=false."
+            )
+        return self
 
 
 @lru_cache

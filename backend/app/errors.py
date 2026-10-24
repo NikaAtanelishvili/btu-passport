@@ -26,16 +26,23 @@ class AppError(Exception):
         message: str,
         status: int = 400,
         fields: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
         self.status = status
         self.fields = fields or {}
+        self.extra = extra or {}  # additional top-level keys, e.g. attempts_left
 
 
-def error_body(code: str, message: str, fields: dict[str, str] | None = None) -> dict[str, Any]:
-    return {"error": code, "message": message, "fields": fields or {}}
+def error_body(
+    code: str,
+    message: str,
+    fields: dict[str, str] | None = None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {"error": code, "message": message, "fields": fields or {}, **(extra or {})}
 
 
 def _field_name(loc: tuple[int | str, ...]) -> str:
@@ -46,7 +53,9 @@ def _field_name(loc: tuple[int | str, ...]) -> str:
 
 async def _app_error(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AppError)
-    return JSONResponse(error_body(exc.code, exc.message, exc.fields), status_code=exc.status)
+    return JSONResponse(
+        error_body(exc.code, exc.message, exc.fields, exc.extra), status_code=exc.status
+    )
 
 
 async def _validation_error(_: Request, exc: Exception) -> JSONResponse:

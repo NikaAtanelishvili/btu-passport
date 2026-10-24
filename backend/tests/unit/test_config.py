@@ -25,3 +25,35 @@ def test_login_defaults_match_overview(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.login_code_max_attempts == 5
     assert (settings.login_rate_per_email_hour, settings.login_rate_per_ip_hour) == (5, 20)
     assert settings.dev_log_login_codes is True
+
+
+@pytest.mark.parametrize("env", ["dev", "test"])
+def test_dev_log_login_codes_allowed_in_dev_and_test(
+    monkeypatch: pytest.MonkeyPatch, env: str
+) -> None:
+    monkeypatch.setenv("ENV", env)
+    monkeypatch.setenv("DEV_LOG_LOGIN_CODES", "true")
+    assert Settings(_env_file=None).dev_log_login_codes is True
+
+
+def test_dev_log_login_codes_refused_in_demo(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ENV", "demo")
+    monkeypatch.setenv("DEV_LOG_LOGIN_CODES", "true")
+    with pytest.raises(ValueError, match="DEV_LOG_LOGIN_CODES"):
+        Settings(_env_file=None)
+    monkeypatch.setenv("DEV_LOG_LOGIN_CODES", "false")
+    assert Settings(_env_file=None).env == "demo"
+
+
+def test_api_refuses_to_start_with_dev_log_in_demo(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.config import get_settings
+    from app.main import create_app
+
+    monkeypatch.setenv("ENV", "demo")
+    monkeypatch.setenv("DEV_LOG_LOGIN_CODES", "true")
+    get_settings.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="DEV_LOG_LOGIN_CODES"):
+            create_app()
+    finally:
+        get_settings.cache_clear()

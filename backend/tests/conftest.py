@@ -105,3 +105,25 @@ def client_as(db: Session) -> Callable[[str | None], TestClient]:
         return client
 
     return make
+
+
+class FakeMailer:
+    """Records sign-in codes instead of sending email (BE-10 tests)."""
+
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, str]] = []
+
+    def send_login_code(self, email: str, code: str) -> None:
+        self.sent.append((email, code))
+
+    def last_code(self, email: str) -> str:
+        return next(code for to, code in reversed(self.sent) if to == email)
+
+
+@pytest.fixture
+def fake_mailer(monkeypatch: pytest.MonkeyPatch) -> FakeMailer:
+    from app.services import mailer
+
+    fake = FakeMailer()
+    monkeypatch.setattr(mailer, "send_login_code", fake.send_login_code)
+    return fake
