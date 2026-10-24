@@ -482,6 +482,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Events */
+        get: operations["my_events_api_me_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/.well-known/ai-passport-issuer.json": {
         parameters: {
             query?: never;
@@ -962,6 +979,35 @@ export interface components {
             contract_address: string;
             /** Issuer Address */
             issuer_address: string;
+        };
+        /** MyEvent */
+        MyEvent: {
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Name */
+            name: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Event Date
+             * Format: date
+             */
+            event_date: string;
+            /** Skill Name */
+            skill_name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "WAITING" | "AWARDED" | "ALREADY_HELD" | "NOT_CONFIRMED" | "EVENT_DELETED";
+            /** Version No */
+            version_no?: number | null;
         };
         /** Page[EventRow] */
         Page_EventRow_: {
@@ -2408,6 +2454,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_events_api_me_events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyEvent"][];
                 };
             };
         };

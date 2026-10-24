@@ -22,10 +22,12 @@ from app.models import (
     AwardSubmission,
     Event,
     EventParticipant,
+    PassportVersion,
     Skill,
     SkillAward,
     SkillCategory,
     Student,
+    VersionAward,
 )
 from app.schemas.event import (
     AwardedStudent,
@@ -35,6 +37,7 @@ from app.schemas.event import (
     EventDetail,
     EventPatch,
     EventSkill,
+    MyEvent,
     Participant,
 )
 from app.services import audit, issuance
@@ -525,3 +528,49 @@ def remove_participant(db: Session, actor: "Principal", event_id: uuid.UUID, ema
         before={"email": email, "student_id": row.student_id},
     )
     db.flush()
+
+
+def my_events(db: Session, student_id: str, email: str) -> list[MyEvent]:
+    """BE-46: the student's check-ins, newest event first. Per row: removed → NOT_CONFIRMED;
+    event deleted → EVENT_DELETED; completed with an award from the event's submission →
+    AWARDED with the first version holding it; completed without → ALREADY_HELD; else
+    WAITING."""
+    rows = db.execute(
+        select(EventParticipant, Event, Skill.name)
+        .join(Event, Event.event_id == EventParticipant.event_id)
+        .join(Skill, Skill.skill_id == Event.skill_id)
+        .where((EventParticipant.email == email) | (EventParticipant.student_id == student_id))
+        .order_by(Event.starts_at.desc(), Event.event_id)
+    ).all()
+    out = []
+    for p, event, skill_name in rows:
+        version_no = None
+        if p.removed_at is not None:
+            status = "NOT_CONFIRMED"
+        elif event.deleted_at is not None:
+            status = "EVENT_DELETED"
+        elif event.status == "COMPLETED":
+            version_no = db.scalar(
+                select(func.min(PassportVersion.version_no))
+                .join(VersionAward, VersionAward.version_id == PassportVersion.version_id)
+                .join(SkillAward, SkillAward.award_id == VersionAward.award_id)
+                .join(AwardSubmission, AwardSubmission.submission_id == SkillAward.submission_id)
+                .where(
+                    AwardSubmission.event_id == event.event_id, SkillAward.student_id == student_id
+                )
+            )
+            status = "AWARDED" if version_no is not None else "ALREADY_HELD"
+        else:
+            status = "WAITING"
+        out.append(
+            MyEvent(
+                event_id=event.event_id,
+                name=event.name,
+                starts_at=event.starts_at,
+                event_date=event_date(event),
+                skill_name=skill_name,
+                status=status,
+                version_no=version_no,
+            )
+        )
+    return out
