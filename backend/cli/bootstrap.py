@@ -29,14 +29,7 @@ def _grant(db: Session, email: str, role: str) -> bool:
         db.add(UserRole(email=email, role=role))
     else:
         existing.role = role
-    audit.record(
-        db,
-        action="role.grant",
-        entity="user_role",
-        entity_id=email,
-        before=before,
-        after={"role": role},
-    )
+    audit.record(db, None, "role.grant", "user_role", email, before=before, after={"role": role})
     db.flush()
     return True
 

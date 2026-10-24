@@ -1,28 +1,30 @@
 """Audit log writes (BE-21). Rows are append-only (trigger audit_log_append_only).
 
-Started in M2 for `cli bootstrap`; BE-21 (M4) adds the request-actor helpers.
+Action names: student.create, student.update, award.direct, version.retry, event.create,
+event.update, event.open, event.close, event.reopen, event.delete, event.complete,
+participant.add, participant.remove, skill.*, category.*, role.grant, role.revoke, bootstrap.
 """
 
-import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import Session
 
 from app.models import AuditLog
 
+if TYPE_CHECKING:
+    from app.auth.deps import Principal
+
 
 def record(
     db: Session,
-    *,
+    actor: "Principal | None",
     action: str,
     entity: str,
     entity_id: str,
     before: dict[str, Any] | None = None,
     after: dict[str, Any] | None = None,
-    actor_user_id: uuid.UUID | None = None,
-    actor_email: str | None = None,
 ) -> None:
-    """Add an audit row in the caller's transaction. A NULL actor means the system."""
+    """Add an audit row in the caller's transaction. `actor` None means the system."""
     db.add(
         AuditLog(
             action=action,
@@ -30,7 +32,7 @@ def record(
             entity_id=entity_id,
             before=before,
             after=after,
-            actor_user_id=actor_user_id,
-            actor_email=actor_email,
+            actor_user_id=actor.user.user_id if actor else None,
+            actor_email=actor.user.email if actor else None,
         )
     )
