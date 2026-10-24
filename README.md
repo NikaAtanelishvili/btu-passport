@@ -16,9 +16,23 @@ cp .env.example .env                      # fill the change-me values
 make infra-up                             # Postgres, MinIO, Mailpit, Anvil
 make chain-deploy                         # PassportRegistry on Anvil; writes CONTRACT_ADDRESS to .env
 make migrate seed bootstrap               # schema, hackathon seed data, dev admins
-make api                                  # http://localhost:8000
-make web                                  # http://localhost:3000
+mkdir -p secrets && grep ^DEPLOYER_PRIVATE_KEY= .env.example | cut -d= -f2 > secrets/issuer_key
+                                          # DEV ONLY: Anvil account 0's published key, for the signer
+make dev                                  # api :8000, worker, signer :8100, web :3000
 ```
+
+`make dev` runs the four dev servers together; `make api`, `make worker`, `make signer` and
+`make web` run one each. `make issue-pending` gives every seed student a new version (18
+PENDING versions on a fresh seed) and the worker renders and anchors them.
+
+## Issuance (dev)
+
+A direct award (`POST /api/admin/awards`) creates a PENDING version; the worker renders the
+PDF (RENDERED), batches rendered versions into one Merkle root every `ANCHOR_INTERVAL_SECONDS`
+and asks the signer to anchor it (ANCHORING → ANCHORED). Issued PDFs live in MinIO under
+`pdf/<sha256>.pdf` in the `passports` bucket (console: http://localhost:9001, `minio` /
+`S3_SECRET_KEY`); an admin can download any ANCHORED one from
+`GET /api/admin/versions/{id}/pdf`. `make test-chain` runs the tests that need Anvil.
 
 `make lint` and `make test` run the backend, web and contract checks; integration tests need
 `make infra-up`.

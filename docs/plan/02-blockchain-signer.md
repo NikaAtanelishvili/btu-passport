@@ -137,7 +137,7 @@ Three consumers, all in `make test`: `backend/tests/unit/test_merkle.py` (rebuil
 
 ## 4. Signer service
 
-### BC-07 Signer (M4) — `backend/signer/`
+### BC-07 Signer (M4) — `backend/signer/` ✅
 
 A tiny FastAPI app (`uvicorn signer.main:app --port 8100`) and the only code that ever loads the issuer private key. It does one thing: put a given root on-chain, safely and idempotently.
 

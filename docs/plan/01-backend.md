@@ -324,7 +324,7 @@ The complete contract, grouped by router. Shapes are written as Pydantic field l
 | `GET /api/checkin/{event_id}?t=` | token in query | `{event: {name, starts_at, location?, skill: {name, category, stamp_sha256}}, state}`; `state` ∈ `CONFIRM`, `CHECKED_IN`, `TOKEN_EXPIRED`, `NOT_OPEN`, `CLOSED`, REMOVED, `NOT_FOUND` |
 | `POST /api/checkin/{event_id}`   | `{t}`          | `{state: "CHECKED_IN", unregistered: bool, already_holds_skill: bool}`; a repeat returns the same body                                                                                |
 
-### Admin, both roles (BE-24, BE-29, BE-35)
+### Admin, both roles (BE-24 ✅, BE-29 ✅, BE-35)
 
 | Method, path                                           | Request                                                                                     | Response                                                                                                                                                | Notes                                                                                               |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
@@ -382,21 +382,21 @@ The complete contract, grouped by router. Shapes are written as Pydantic field l
 
 Routers stay thin: they validate input, call one service function inside the request transaction, and map `AppError`s. All business rules live here.
 
-### BE-20 Codes and IDs (M4) — `app/services/codes.py`
+### BE-20 Codes and IDs (M4) — `app/services/codes.py` ✅
 
 - `new_verification_code()`: 10 characters from Crockford base32 `0123456789ABCDEFGHJKMNPQRSTVWXYZ` via `secrets.choice` (50 bits). Stored without dashes; on a unique-violation, generate again.
 - `format_code("K7QM3XWP9D")` → `"K7QM-3XWP-9D"`. `normalize_code(text)`: upper-case, drop dashes and spaces, map `O` → `0` and `I`, `L` → `1`; reject anything else outside the alphabet.
 - `next_passport_id(db)` → `BTU-AI-` + 6-digit `nextval('passport_number_seq')`. `next_skill_id`, `next_badge_code`: highest existing number + 1, zero-padded to 3.
 
-### BE-21 Audit (M4) — `app/services/audit.py`
+### BE-21 Audit (M4) — `app/services/audit.py` ✅
 
 `record(db, actor, action, entity, entity_id, before=None, after=None)` inserts in the caller's transaction. `actor` is the request `Principal` or `None` for the system. Action names: `student.create`, `student.update`, `award.direct`, `version.retry`, `event.create`, `event.update`, `event.open`, `event.close`, `event.reopen`, `event.delete`, `event.complete`, `participant.add`, `participant.remove`, `skill.*`, `category.*`, `role.grant`, `role.revoke`, `bootstrap`.
 
-### BE-22 Storage (M4) — `app/services/storage.py`
+### BE-22 Storage (M4) — `app/services/storage.py` ✅
 
 `put(key, data, content_type)` (skips the upload if the key already exists — keys are content hashes), `get(key) -> bytes`, `ensure_bucket()` at API start in dev. Keys: `pdf/<sha256>.pdf`, `stamps/<sha256>.<ext>`. Files are always streamed through the API; MinIO is never exposed to browsers.
 
-### BE-23 Issuance (M4) — `app/services/issuance.py`
+### BE-23 Issuance (M4) — `app/services/issuance.py` ✅
 
 - `preview_award(db, student_ids, skill_id)` → one row per student: `SKIP_ALREADY_HELD` if a `skill_awards` row exists, else `NEW_VERSION` with `from_version` / `to_version`.
 - `create_direct_award(db, actor, body, idempotency_key)`:
@@ -412,7 +412,7 @@ Routers stay thin: they validate input, call one service function inside the req
   5. Enqueue an `ISSUE_VERSION` job `{version_id}`.
 - **Deviation from FR-04:** the rule "date earned not before the first-issued date" is dropped, because an event can happen before a student is registered. Record this in the Deviations list.
 
-### BE-25 Content snapshot — `app/services/content.py`
+### BE-25 Content snapshot — `app/services/content.py` ✅
 
 `build_content(db, version)` returns the JSON that is both stored in `content_json` and rendered into the PDF:
 
@@ -492,7 +492,7 @@ Per participant row: removed → `NOT_CONFIRMED`; event deleted → `EVENT_DELET
 
 One process (`python -m worker`) that loops forever: claim a job, run it in its own transaction, repeat; plus two timers. Several worker processes can run safely because claiming uses `SKIP LOCKED`.
 
-### BE-26 Job loop (M4) — `worker/__main__.py`
+### BE-26 Job loop (M4) — `worker/__main__.py` ✅
 
 ```sql
 UPDATE jobs SET status = 'RUNNING', locked_at = now(), attempts = attempts + 1
@@ -514,7 +514,7 @@ RETURNING *;
 | Anchor tick | `ANCHOR_INTERVAL_SECONDS` | If any version is `RENDERED` or a batch is `SUBMITTING`, enqueue `ANCHOR_BATCH` with `dedupe_key = 'anchor'` |
 | Event tick  | 15 s                      | `events.tick(now)` (BE-40)                                                                                   |
 
-### BE-27 `ISSUE_VERSION {version_id}` (M4) — `worker/jobs.py`
+### BE-27 `ISSUE_VERSION {version_id}` (M4) — `worker/jobs.py` ✅
 
 1. Load the version; continue only if `PENDING` (a repeat run is a no-op).
 2. `build_content()` (BE-25), new verification code, `issued_at = now()`.
@@ -522,14 +522,14 @@ RETURNING *;
 4. Update the version: `content_json`, `verification_code`, `pdf_sha256`, `pdf_key`, `issued_at`, status `RENDERED`. Commit.
 5. On a render error after the last attempt: status `FAILED`, `error` = the message.
 
-### BE-28 `ANCHOR_BATCH` (M4)
+### BE-28 `ANCHOR_BATCH` (M4) ✅
 
 1. **Pick the batch.** If a batch with status `SUBMITTING` exists, reuse it (a retry keeps the same root). Otherwise lock up to `BATCH_MAX_LEAVES` `RENDERED` versions (`FOR UPDATE SKIP LOCKED`, oldest first); none → done. Build the tree from their `pdf_sha256` (BC-04); insert the batch (`SUBMITTING`); set each version to `ANCHORING` with `batch_id` and its `merkle_proof`. **Commit** before calling the signer, so a crash can't lose the batch.
 2. **Anchor.** `POST {SIGNER_URL}/anchor` with `{root, leaf_count}` and the HMAC header (BC-07), timeout 120 s.
 3. **Success** → batch `ANCHORED` with `tx_hash`, `block_number`, `anchored_at`. Versions → `ANCHORED`. For each passport, set `latest_version_id` to the version if its `version_no` is higher than the current latest's. Commit.
 4. **Failure** → batch `attempts += 1`, `last_error`; raise so the job loop backs off and retries the same batch. When `attempts` reaches `ANCHOR_MAX_ATTEMPTS`: batch `FAILED`; its versions → `FAILED` with `error = "anchoring failed: …"`.
 
-### Retry (BE-29)
+### Retry (BE-29) ✅
 
 `POST /api/admin/versions/{id}/retry` on a `FAILED` version: if it has a `pdf_sha256` → back to `RENDERED`, clear `batch_id`, `merkle_proof`, `error` (the next anchor tick re-batches it); otherwise → `PENDING` and enqueue `ISSUE_VERSION`. Audit `version.retry`.
 
@@ -537,7 +537,7 @@ RETURNING *;
 
 ## 8. PDF rendering
 
-### BE-25 (continued) Renderer and template (M4) — `app/pdf/`
+### BE-25 (continued) Renderer and template (M4) — `app/pdf/` ✅
 
 `render_passport(content: dict) -> bytes` renders only from `content_json`; it never queries the database, so the same content always gives the same PDF.
 
