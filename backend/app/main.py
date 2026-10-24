@@ -2,9 +2,10 @@
 
 import logging
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from pydantic import BaseModel
 
+from app.auth.csrf import csrf_protect
 from app.config import get_settings
 from app.errors import install_error_handlers
 from app.routers import admin, auth
@@ -27,7 +28,11 @@ def _configure_logging() -> None:
 def create_app() -> FastAPI:
     get_settings()  # fail fast on bad configuration (e.g. DEV_LOG_LOGIN_CODES outside dev)
     _configure_logging()
-    app = FastAPI(title="BTU AI Skills Passport API", version="0.1.0")
+    app = FastAPI(
+        title="BTU AI Skills Passport API",
+        version="0.1.0",
+        dependencies=[Depends(csrf_protect)],
+    )
     install_error_handlers(app)
     app.include_router(auth.router)
     app.include_router(admin.router)
