@@ -14,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop types migrate migrate-test seed bootstrap demo-users issue-pending chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -59,6 +59,10 @@ api:
 web:
 	$(call port-free,3000)
 	cd web && exec ./node_modules/.bin/next dev --port 3000
+
+# The address a phone on the same Wi-Fi uses (README "Phone test over the LAN").
+lan-url:
+	@ip -4 route get 1.1.1.1 | awk '{for (i = 1; i < NF; i++) if ($$i == "src") print "http://" $$(i + 1) ":3000"}'
 
 # api, worker, signer and web together (Procfile.dev); Ctrl-C stops all four.
 dev:

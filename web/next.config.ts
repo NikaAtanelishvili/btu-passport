@@ -12,7 +12,13 @@ const btuIssuer = {
   issuer_address: process.env.ISSUER_ADDRESS ?? "",
 };
 
+// Phone test over the LAN (README "Phone test over the LAN"): PUBLIC_BASE_URL is the laptop's
+// LAN address, and the dev server must serve its assets (HMR, chunks) to pages opened there;
+// Next.js blocks cross-origin dev resources unless the host is listed. Dev only.
+const publicHost = new URL(process.env.PUBLIC_BASE_URL ?? "http://localhost:3000").hostname;
+
 const nextConfig: NextConfig = {
+  allowedDevOrigins: [publicHost],
   env: { NEXT_PUBLIC_BTU_ISSUER: JSON.stringify(btuIssuer) },
   cacheComponents: true,
   partialPrefetching: true,

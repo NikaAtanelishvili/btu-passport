@@ -81,6 +81,43 @@ to start with code logging on unless `ENV` is `dev` or `test`. Send yourself a c
 check it doesn't land in spam. There is no second factor for staff: whoever controls an
 admin's inbox can sign in as that admin (accepted trade-off).
 
+## Phone test over the LAN (same Wi-Fi, plain http)
+
+Phones scan the presenter QR, so the QR must point at an address they can reach: the
+laptop's LAN IP. Only port 3000 needs to be reachable; Next.js proxies `/api` and `/auth` to
+the API, which stays on 127.0.0.1. Cookies work over plain http because `.env` keeps
+`SESSION_SECURE=false` and `SESSION_COOKIE_NAME=session` (the demo's `__Host-` cookie needs
+HTTPS).
+
+1. Put the laptop and the phone on the same Wi-Fi and get the laptop's address:
+   `make lan-url` prints e.g. `http://192.168.1.27:3000`.
+2. In `.env`, set `PUBLIC_BASE_URL` to that address. Leave everything else.
+3. Stop any running dev servers (Ctrl-C; `make stop` if something was suspended with Ctrl-Z)
+   and run `make dev`. All four must restart: the API and worker put `PUBLIC_BASE_URL` into
+   check-in QR codes and verify links, and the web server only serves its dev assets to
+   that host (`allowedDevOrigins` in `web/next.config.ts`).
+4. If the laptop runs a firewall, allow port 3000 from the Wi-Fi (Ubuntu:
+   `sudo ufw status`; if active, `sudo ufw allow from 192.168.1.0/24 to any port 3000 proto tcp`
+   with your network's range). Add port 8025 too if phones should read Mailpit themselves.
+5. On the phone, open `http://192.168.1.27:3000/verify` (your address). The page must load
+   and react to typing; if it doesn't load, the Wi-Fi may isolate devices: use a phone
+   hotspot instead.
+6. On the laptop, sign in as `superadmin@btu.test` (at `http://localhost:3000` is fine),
+   create an event, press **Open check-in now**, then **Open presenter view**.
+7. On the phone, scan the QR with the camera app. Sign in with a test email, e.g.
+   `btu-t-0012@example.org` (a student) or `newcomer@btu.test` (shows as Unregistered). The
+   code is in Mailpit: http://localhost:8025 on the laptop, `http://<laptop-ip>:8025` on the
+   phone, or the `make dev` log. After signing in the phone returns to the check-in page; if
+   it says the code has expired (signing in took over a minute), scan the screen again.
+   Tap **Check in**: the participant appears on the event page within 3 seconds.
+8. Afterwards, set `PUBLIC_BASE_URL=http://localhost:3000` again and restart `make dev`.
+
+Passports issued while `PUBLIC_BASE_URL` is the LAN address keep that address in their
+printed verify link and QR for good (issued content is frozen), so don't issue real
+passports in this mode. The verify page's independent blockchain check reads
+`NEXT_PUBLIC_RPC_URL` (Anvil on the laptop's localhost), which a phone can't reach; it says
+so and the server's result still shows.
+
 ## Demo accounts (real inboxes)
 
 The test emails above go to Mailpit. For a demo, sign-in codes must reach real inboxes, so
