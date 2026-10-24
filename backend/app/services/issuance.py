@@ -244,3 +244,44 @@ def issue_pending(db: Session) -> int:
     """`python -m cli issue-pending` (BE-04 step 8): a new version for every student whose
     awards aren't all in their latest version. Re-running creates nothing new."""
     return len(create_versions(db, list(db.scalars(_PENDING_STUDENTS))))
+
+
+def retry_version(db: Session, actor: "Principal", version_id: int) -> PassportVersion:
+    """BE-29: a FAILED version goes back to RENDERED if it has a PDF (the next anchor tick
+    re-batches it), otherwise to PENDING with a new ISSUE_VERSION job."""
+    version = db.get(PassportVersion, version_id, with_for_update=True)
+    if version is None:
+        raise AppError("not_found", "No such version.", 404)
+    if version.status != "FAILED":
+        raise AppError("not_failed", "Only failed versions can be retried.", 409)
+    before = {"status": version.status, "error": version.error}
+    version.error = None
+    if version.pdf_sha256:
+        version.status = "RENDERED"
+        version.batch_id = None
+        version.merkle_proof = None
+    else:
+        version.status = "PENDING"
+        jobs.enqueue(db, "ISSUE_VERSION", {"version_id": version.version_id})
+    audit.record(
+        db,
+        actor,
+        "version.retry",
+        "passport_version",
+        str(version.version_id),
+        before=before,
+        after={"status": version.status},
+    )
+    db.flush()
+    return version
+
+
+def retry_failed(db: Session, actor: "Principal") -> int:
+    failed = db.scalars(
+        select(PassportVersion.version_id)
+        .where(PassportVersion.status == "FAILED")
+        .order_by(PassportVersion.version_id)
+    ).all()
+    for version_id in failed:
+        retry_version(db, actor, version_id)
+    return len(failed)

@@ -92,6 +92,117 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/awards/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Award
+         * @description What the award would do for each student. No writes.
+         */
+        post: operations["preview_award_api_admin_awards_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/awards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Award
+         * @description Award a skill to students. The same Idempotency-Key again returns the stored response.
+         */
+        post: operations["create_award_api_admin_awards_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Versions */
+        get: operations["list_versions_api_admin_versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/versions/retry-failed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Failed */
+        post: operations["retry_failed_api_admin_versions_retry_failed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/versions/{version_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Version */
+        post: operations["retry_version_api_admin_versions__version_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/versions/{version_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Version Pdf
+         * @description Only ANCHORED versions are downloadable.
+         */
+        get: operations["version_pdf_api_admin_versions__version_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/healthz": {
         parameters: {
             query?: never;
@@ -113,6 +224,41 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AwardIn */
+        AwardIn: {
+            /** Student Ids */
+            student_ids: string[];
+            /** Skill Id */
+            skill_id: string;
+            /**
+             * Date Earned
+             * Format: date
+             */
+            date_earned: string;
+            /** Reason */
+            reason: string;
+        };
+        /** AwardOut */
+        AwardOut: {
+            /**
+             * Submission Id
+             * Format: uuid
+             */
+            submission_id: string;
+            /** Versions */
+            versions: components["schemas"]["CreatedVersion"][];
+            /** Skipped */
+            skipped: string[];
+        };
+        /** CreatedVersion */
+        CreatedVersion: {
+            /** Student Id */
+            student_id: string;
+            /** Version Id */
+            version_id: number;
+            /** Version No */
+            version_no: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -134,10 +280,47 @@ export interface components {
             /** Page Size */
             page_size: number;
         };
+        /** Page[VersionRow] */
+        Page_VersionRow_: {
+            /** Items */
+            items: components["schemas"]["VersionRow"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** PreviewOut */
+        PreviewOut: {
+            /** Rows */
+            rows: components["schemas"]["PreviewRow"][];
+        };
+        /** PreviewRow */
+        PreviewRow: {
+            /** Student Id */
+            student_id: string;
+            /** Name */
+            name: string;
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "NEW_VERSION" | "SKIP_ALREADY_HELD";
+            /** From Version */
+            from_version?: number | null;
+            /** To Version */
+            to_version?: number | null;
+        };
         /** RequestCodeIn */
         RequestCodeIn: {
             /** Email */
             email: string;
+        };
+        /** RetryCount */
+        RetryCount: {
+            /** Count */
+            count: number;
         };
         /**
          * SessionInfo
@@ -210,6 +393,30 @@ export interface components {
         VerifyCodeOut: {
             /** Redirect */
             redirect: string;
+        };
+        /** VersionRow */
+        VersionRow: {
+            /** Version Id */
+            version_id: number;
+            /** Passport Id */
+            passport_id: string;
+            /** Student Id */
+            student_id: string;
+            /** Student Name */
+            student_name: string;
+            /** Version No */
+            version_no: number;
+            /** Status */
+            status: string;
+            /** Error */
+            error: string | null;
+            /** Issued At */
+            issued_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
     };
     responses: never;
@@ -344,6 +551,191 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_StudentRow_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_award_api_admin_awards_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AwardIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_award_api_admin_awards_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AwardIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_versions_api_admin_versions_get: {
+        parameters: {
+            query?: {
+                /** @description Comma-separated statuses */
+                status?: string | null;
+                passport_id?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_VersionRow_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_failed_api_admin_versions_retry_failed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetryCount"];
+                };
+            };
+        };
+    };
+    retry_version_api_admin_versions__version_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    version_pdf_api_admin_versions__version_id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
                 };
             };
             /** @description Validation Error */
