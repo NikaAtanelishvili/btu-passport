@@ -5,6 +5,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated
 
+import segno
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -22,8 +23,9 @@ from app.schemas.event import (
     EventStatus,
     Participant,
     ParticipantAdd,
+    QrOut,
 )
-from app.services import events
+from app.services import events, qr_tokens
 
 router = APIRouter(tags=["admin: events"])
 DB = Annotated[Session, Depends(get_db)]
@@ -149,3 +151,22 @@ def remove_participant(
 ) -> Response:
     events.remove_participant(db, principal, event_id, email)
     return Response(status_code=204)
+
+
+@router.get("/events/{event_id}/qr", response_model=QrOut)
+def presenter_qr(event_id: uuid.UUID, principal: SuperAdminUser, db: DB) -> QrOut:
+    """BE-45, presenter view: the current check-in URL as an SVG QR while check-in is open.
+    The page refetches after `refresh_in_seconds` (tokens rotate every 30 s, BE-41)."""
+    event = events.get_live(db, event_id)
+    now = _now()
+    url = svg = None
+    if event.status == "CHECKIN_OPEN":
+        url = qr_tokens.checkin_url(event.qr_secret, event.event_id, now)
+        svg = segno.make(url, error="m").svg_inline(scale=10, border=2, light="#fff", omitsize=True)
+    return QrOut(
+        url=url,
+        svg=svg,
+        refresh_in_seconds=qr_tokens.refresh_in_seconds(now),
+        participant_count=events.participant_count(db, event_id),
+        status=event.status,
+    )

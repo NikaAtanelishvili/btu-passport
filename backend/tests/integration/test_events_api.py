@@ -142,3 +142,32 @@ def test_Q14_admin_reads_but_cannot_write(db: Session, client_as: ClientAs) -> N
     for method, path, body in writes:
         r = admin.request(method, path, json=body)
         assert (r.status_code, r.json()["error"]) == (403, "forbidden"), (method, path)
+
+
+def test_presenter_qr(db: Session, boss_client: TestClient) -> None:
+    """BE-45: the QR carries a live check-in URL only while check-in is open."""
+    import uuid as uuid_
+
+    from app.models import Event
+    from app.services import qr_tokens
+
+    eid = _create(boss_client)["event_id"]
+    draft = boss_client.get(f"/api/admin/events/{eid}/qr").json()
+    assert (draft["status"], draft["url"], draft["svg"]) == ("DRAFT", None, None)
+    boss_client.post(f"/api/admin/events/{eid}/open")
+    qr = boss_client.get(f"/api/admin/events/{eid}/qr").json()
+    assert qr["status"] == "CHECKIN_OPEN" and qr["svg"].startswith("<svg")
+    assert qr["url"].startswith(f"http://localhost:3000/checkin/{eid}?t=")
+    assert 1 <= qr["refresh_in_seconds"] <= 30 and qr["participant_count"] == 0
+    event = db.get(Event, uuid_.UUID(eid))
+    assert event is not None
+    token = qr["url"].rpartition("=")[2]
+    assert qr_tokens.is_valid(event.qr_secret, event.event_id, token, datetime.now(UTC))
+
+
+def test_admin_cannot_see_the_qr(db: Session, client_as: ClientAs) -> None:
+    factories.skill(db, "SKL-001")
+    db.commit()
+    eid = _create(client_as("super_admin"))["event_id"]
+    r = client_as("admin").get(f"/api/admin/events/{eid}/qr")
+    assert (r.status_code, r.json()["error"]) == (403, "forbidden")

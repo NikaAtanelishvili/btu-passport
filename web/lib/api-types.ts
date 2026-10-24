@@ -443,6 +443,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/events/{event_id}/qr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Presenter Qr
+         * @description BE-45, presenter view: the current check-in URL as an SVG QR while check-in is open.
+         *     The page refetches after `refresh_in_seconds` (tokens rotate every 30 s, BE-41).
+         */
+        get: operations["presenter_qr_api_admin_events__event_id__qr_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/.well-known/ai-passport-issuer.json": {
         parameters: {
             query?: never;
@@ -1027,6 +1048,22 @@ export interface components {
             anchored_at: string;
             /** Issuer File Url */
             issuer_file_url: string;
+        };
+        /** QrOut */
+        QrOut: {
+            /** Url */
+            url: string | null;
+            /** Svg */
+            svg: string | null;
+            /** Refresh In Seconds */
+            refresh_in_seconds: number;
+            /** Participant Count */
+            participant_count: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "DRAFT" | "CHECKIN_OPEN" | "CHECKIN_CLOSED" | "COMPLETED";
         };
         /** RequestCodeIn */
         RequestCodeIn: {
@@ -2186,6 +2223,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    presenter_qr_api_admin_events__event_id__qr_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QrOut"];
+                };
             };
             /** @description Validation Error */
             422: {

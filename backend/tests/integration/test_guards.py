@@ -137,6 +137,7 @@ def test_admin_routes_exist() -> None:
         "/api/admin/events/{event_id}/complete",
         "/api/admin/events/{event_id}/participants",
         "/api/admin/events/{event_id}/participants/{email}",
+        "/api/admin/events/{event_id}/qr",
     } <= paths
 
 
