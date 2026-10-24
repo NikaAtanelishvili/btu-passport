@@ -37,6 +37,22 @@ and asks the signer to anchor it (ANCHORING → ANCHORED). Issued PDFs live in M
 `make lint` and `make test` run the backend, web and contract checks; integration tests need
 `make infra-up`.
 
+## Verifying a passport without BTU
+
+The verification page (`/verify`) offers each passport's `proof.json`. With the PDF, that file
+and any RPC for the chain, `shared/verify_proof.py` checks it without BTU's server: the PDF's
+hash, the Merkle proof, that the root is anchored, and that BTU's issuer key (from BTU's issuer
+file) owns the registry. It needs only `web3` and `pycryptodome`:
+
+```bash
+pip install web3 pycryptodome
+python shared/verify_proof.py passport.pdf proof.json --rpc http://localhost:8545
+# --issuer-file <url or path> overrides the issuer_file_url written in proof.json
+```
+
+It prints `VALID` (exit 0) or `NOT VALID: <reason>` (exit 1). Whether the version is the
+passport's latest is known only to BTU's server.
+
 ## Signing in (dev)
 
 There are no passwords. Open http://localhost:3000/login, enter one of the test emails below
