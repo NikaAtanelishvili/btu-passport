@@ -2,9 +2,8 @@
 signer app (in-process), which sends a real transaction to the registry."""
 
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 
-import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -12,25 +11,12 @@ from sqlalchemy.orm import Session
 from app.models import AnchorBatch, PassportVersion
 from app.services import merkle
 from signer.config import get_signer_settings
-from signer.main import create_app, load_signer
+from signer.main import load_signer
 
 pytestmark = pytest.mark.chain
 
 ClientAs = Callable[[str | None], TestClient]
 RunJobs = Callable[[], int]
-
-
-@pytest.fixture
-def real_signer(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """Route anchoring.anchor_root's HTTP call to the signer app instead of SIGNER_URL."""
-    with TestClient(create_app()) as signer_client:
-
-        def post(url: str, **kwargs: object) -> object:
-            assert url.endswith("/anchor")
-            return signer_client.post("/anchor", **kwargs)
-
-        monkeypatch.setattr(httpx, "post", post)
-        yield
 
 
 def test_A1_additional_award_on_chain(

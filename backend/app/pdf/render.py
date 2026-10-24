@@ -27,7 +27,6 @@ from app.services.codes import format_code
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 FONTS_DIR = Path(__file__).resolve().parent / "fonts"
-STAMP_EXTENSIONS = ("svg", "png")
 MONTHS = [
     "January",
     "February",
@@ -75,15 +74,6 @@ def _environment(directory: Path) -> jinja2.Environment:
     return env
 
 
-def storage_stamp(sha256: str) -> tuple[bytes, str] | None:
-    """Stamps are stored as stamps/<sha256>.<ext>."""
-    for ext in STAMP_EXTENSIONS:
-        key = f"stamps/{sha256}.{ext}"
-        if storage.exists(key):
-            return storage.get(key), ext
-    return None
-
-
 def _pdf_identifier(content: dict[str, Any]) -> bytes:
     """A fixed PDF /ID derived from the content instead of a random one."""
     canonical = json.dumps(content, sort_keys=True, ensure_ascii=False).encode()
@@ -106,7 +96,7 @@ def _source_date_epoch(moment: datetime) -> Iterator[None]:
             os.environ["SOURCE_DATE_EPOCH"] = previous
 
 
-def render_passport(content: dict[str, Any], load_stamp: StampLoader = storage_stamp) -> bytes:
+def render_passport(content: dict[str, Any], load_stamp: StampLoader = storage.get_stamp) -> bytes:
     directory = template_dir()
     template = _environment(directory).get_template("passport.html.j2")
     qr = segno.make(content["verify_url"], error="m").svg_data_uri(scale=4)

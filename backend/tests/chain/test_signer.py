@@ -17,7 +17,7 @@ from signer.main import StartupError, create_app, load_signer
 pytestmark = pytest.mark.chain
 
 # DEV ONLY: Anvil account 1's published test key (not the issuer).
-ANVIL_KEY_1 = "0x59c6995e998f97a648fc61ef7ecc6d2b5a7ac04ed2e09e9bd3b9e6f78b9d4ad2"
+ANVIL_KEY_1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
 
 
 def _sign(body: bytes, *, secret: str | None = None, ts: int | None = None) -> dict[str, str]:

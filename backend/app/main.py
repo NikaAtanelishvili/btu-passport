@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from app.auth.csrf import csrf_protect
 from app.config import get_settings
 from app.errors import install_error_handlers
-from app.routers import admin, auth, public, session
+from app.routers import admin, auth, public, session, verify
 from app.services import storage
 
 
@@ -49,6 +49,7 @@ def create_app() -> FastAPI:
     app.include_router(session.router)
     app.include_router(admin.router)
     app.include_router(public.router)
+    app.include_router(verify.router)
 
     @app.get("/api/healthz", response_model=Health, tags=["health"])
     def healthz() -> Health:

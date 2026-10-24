@@ -66,3 +66,18 @@ def put(key: str, data: bytes, content_type: str) -> None:
 
 def get(key: str) -> bytes:
     return client().get_object(Bucket=_bucket(), Key=key)["Body"].read()
+
+
+STAMP_EXTENSIONS = ("svg", "png")
+
+
+def get_stamp(sha256: str) -> tuple[bytes, str] | None:
+    """A stamp by its hash, stored as stamps/<sha256>.<ext>: (bytes, ext), or None.
+
+    By hash rather than through the category row, so a stamp an old version printed is still
+    found after its category gets a new one."""
+    for ext in STAMP_EXTENSIONS:
+        key = f"stamps/{sha256}.{ext}"
+        if exists(key):
+            return get(key), ext
+    return None

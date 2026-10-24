@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 Verdict = Literal[
     "VALID", "SUPERSEDED", "NOT_FOUND", "UNKNOWN_CODE", "NOT_ISSUED_BY_BTU", "REVOKED"
@@ -70,6 +70,8 @@ class IssuerFile(BaseModel):
 
 class ProofFile(BaseModel):
     """proof.json (Blockchain tab §5): with the PDF and any RPC, enough to check without BTU."""
+
+    model_config = ConfigDict(populate_by_name=True)
 
     schema_: Annotated[str, Field(alias="schema")] = "btu-ai-passport-proof/1"
     passport_id: str

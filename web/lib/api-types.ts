@@ -224,6 +224,100 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stamps/{sha256}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stamp
+         * @description Stamp images by content hash (check-in and verify pages). Never changes, so cacheable.
+         */
+        get: operations["stamp_api_stamps__sha256__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/verify/hash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Hash
+         * @description The browser hashes the PDF itself and sends only this fingerprint (FE-10).
+         */
+        post: operations["verify_hash_api_verify_hash_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/verify/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verify Code */
+        get: operations["verify_code_api_verify__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/verify/{code}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Official Pdf
+         * @description The stored bytes, to compare against the copy the verifier received.
+         */
+        get: operations["official_pdf_api_verify__code__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/verify/{code}/proof.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Proof File */
+        get: operations["proof_file_api_verify__code__proof_json_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/healthz": {
         parameters: {
             query?: never;
@@ -285,6 +379,11 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** HashQuery */
+        HashQuery: {
+            /** Sha256 */
+            sha256: string;
+        };
         /** Health */
         Health: {
             /** Ok */
@@ -343,6 +442,45 @@ export interface components {
             from_version?: number | null;
             /** To Version */
             to_version?: number | null;
+        };
+        /**
+         * ProofFile
+         * @description proof.json (Blockchain tab §5): with the PDF and any RPC, enough to check without BTU.
+         */
+        ProofFile: {
+            /**
+             * Schema
+             * @default btu-ai-passport-proof/1
+             */
+            schema: string;
+            /** Passport Id */
+            passport_id: string;
+            /** Version No */
+            version_no: number;
+            /** Verification Code */
+            verification_code: string;
+            /** Pdf Sha256 */
+            pdf_sha256: string;
+            /** Leaf */
+            leaf: string;
+            /** Proof */
+            proof: string[];
+            /** Merkle Root */
+            merkle_root: string;
+            /** Chain Id */
+            chain_id: number;
+            /** Contract Address */
+            contract_address: string;
+            /** Issuer Address */
+            issuer_address: string;
+            /** Tx Hash */
+            tx_hash: string;
+            /** Block Number */
+            block_number: number;
+            /** Anchored At */
+            anchored_at: string;
+            /** Issuer File Url */
+            issuer_file_url: string;
         };
         /** RequestCodeIn */
         RequestCodeIn: {
@@ -412,6 +550,33 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** VerifyChain */
+        VerifyChain: {
+            /** Chain Id */
+            chain_id: number;
+            /** Contract Address */
+            contract_address: string;
+            /** Issuer Address */
+            issuer_address: string;
+            /** Merkle Root */
+            merkle_root: string;
+            /** Tx Hash */
+            tx_hash: string;
+            /** Block Number */
+            block_number: number;
+            /**
+             * Anchored At
+             * Format: date-time
+             */
+            anchored_at: string;
+        };
+        /** VerifyChecks */
+        VerifyChecks: {
+            /** Document */
+            document: boolean;
+            /** Issuer */
+            issuer: boolean;
+        };
         /** VerifyCodeIn */
         VerifyCodeIn: {
             /** Email */
@@ -425,6 +590,63 @@ export interface components {
         VerifyCodeOut: {
             /** Redirect */
             redirect: string;
+        };
+        /** VerifyProof */
+        VerifyProof: {
+            /** Pdf Sha256 */
+            pdf_sha256: string;
+            /** Leaf */
+            leaf: string;
+            /** Proof */
+            proof: string[];
+        };
+        /** VerifyResult */
+        VerifyResult: {
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "VALID" | "SUPERSEDED" | "NOT_FOUND" | "UNKNOWN_CODE" | "NOT_ISSUED_BY_BTU" | "REVOKED";
+            checks: components["schemas"]["VerifyChecks"];
+            version?: components["schemas"]["VerifyVersion"] | null;
+            /** Latest Version No */
+            latest_version_no?: number | null;
+            chain?: components["schemas"]["VerifyChain"] | null;
+            proof?: components["schemas"]["VerifyProof"] | null;
+        };
+        /** VerifySkill */
+        VerifySkill: {
+            /** Name */
+            name: string;
+            /** Category */
+            category: string;
+            /** Badge Code */
+            badge_code: string;
+            /** Stamp Sha256 */
+            stamp_sha256: string | null;
+            /**
+             * Date Earned
+             * Format: date
+             */
+            date_earned: string;
+        };
+        /** VerifyVersion */
+        VerifyVersion: {
+            /** Passport Id */
+            passport_id: string;
+            /** Version No */
+            version_no: number;
+            /** Verification Code */
+            verification_code: string;
+            /**
+             * Issued At
+             * Format: date-time
+             */
+            issued_at: string;
+            /** Holder Name */
+            holder_name: string;
+            /** Skills */
+            skills: components["schemas"]["VerifySkill"][];
         };
         /** VersionRow */
         VersionRow: {
@@ -797,6 +1019,164 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IssuerFile"];
+                };
+            };
+        };
+    };
+    stamp_api_stamps__sha256__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sha256: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/svg+xml": unknown;
+                    "image/png": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_hash_api_verify_hash_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HashQuery"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_code_api_verify__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerifyResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    official_pdf_api_verify__code__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proof_file_api_verify__code__proof_json_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofFile"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
