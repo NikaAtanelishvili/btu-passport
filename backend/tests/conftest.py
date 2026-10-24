@@ -2,6 +2,7 @@
 
 import os
 from collections.abc import Callable, Iterator
+from typing import Any
 
 from sqlalchemy.engine import make_url
 
@@ -156,3 +157,43 @@ def run_jobs() -> Callable[[], int]:
             ran += 1
 
     return drain
+
+
+class FakeSigner:
+    """In-process stand-in for the signer (BE-28 tests): records roots and returns a fake
+    receipt, or fails while `fail` is set. A root seen before returns the first receipt."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, int]] = []
+        self.fail = False
+        self.receipts: dict[str, Any] = {}
+
+    def anchor_root(self, root: str, leaf_count: int) -> Any:
+        import dataclasses
+        import hashlib
+        from datetime import UTC, datetime
+
+        from app.services.anchoring import AnchorError, AnchorReceipt
+
+        self.calls.append((root, leaf_count))
+        if self.fail:
+            raise AnchorError("signer unreachable: connection refused")
+        if root in self.receipts:
+            return dataclasses.replace(self.receipts[root], already_anchored=True)
+        receipt = AnchorReceipt(
+            tx_hash="0x" + hashlib.sha256(root.encode()).hexdigest(),
+            block_number=len(self.receipts) + 1,
+            anchored_at=datetime.now(UTC).replace(microsecond=0),
+            already_anchored=False,
+        )
+        self.receipts[root] = receipt
+        return receipt
+
+
+@pytest.fixture
+def fake_signer(monkeypatch: pytest.MonkeyPatch) -> FakeSigner:
+    from app.services import anchoring
+
+    fake = FakeSigner()
+    monkeypatch.setattr(anchoring, "anchor_root", fake.anchor_root)
+    return fake
