@@ -137,3 +137,22 @@ def fake_mailer(monkeypatch: pytest.MonkeyPatch) -> FakeMailer:
     fake = FakeMailer()
     monkeypatch.setattr(mailer, "send_login_code", fake.send_login_code)
     return fake
+
+
+@pytest.fixture
+def run_jobs() -> Callable[[], int]:
+    """Drain the job queue: run ready jobs (and the anchor tick) until nothing is left to do.
+    Jobs backing off after a failure wait for their run_after, so this stops there."""
+    from worker import loop, ticks
+
+    def drain() -> int:
+        ran = 0
+        while True:
+            with SessionLocal() as session:
+                ticks.anchor_tick(session)
+                session.commit()
+            if not loop.run_once():
+                return ran
+            ran += 1
+
+    return drain
