@@ -13,8 +13,8 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web types migrate migrate-test seed bootstrap chain-deploy chain-abi merkle-vectors \
-	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts
+.PHONY: infra-up infra-down infra-reset infra-ps api web signer types migrate migrate-test seed bootstrap chain-deploy chain-abi merkle-vectors \
+	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
 
@@ -40,6 +40,10 @@ api:
 
 web:
 	cd web && pnpm dev
+
+# Issuer-key service (BC-07). Needs secrets/issuer_key and a deployed registry.
+signer:
+	cd backend && uv run uvicorn signer.main:app --port 8100
 
 ## Database ----------------------------------------------------------------------
 
@@ -98,6 +102,10 @@ test: test-backend test-web test-contracts
 
 test-backend:
 	cd backend && uv run pytest -m "not chain"
+
+# Needs infra-up and chain-deploy (Anvil with the registry).
+test-chain:
+	cd backend && uv run pytest -m chain
 
 test-web:
 	cd web && pnpm vitest run --passWithNoTests
