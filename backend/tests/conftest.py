@@ -197,3 +197,49 @@ def fake_signer(monkeypatch: pytest.MonkeyPatch) -> FakeSigner:
     fake = FakeSigner()
     monkeypatch.setattr(anchoring, "anchor_root", fake.anchor_root)
     return fake
+
+
+class FakeChain:
+    """Stand-in for app/services/chain.py (BE-30 tests): a root is anchored when the fake
+    signer anchored it (or it was added to `roots`); `owner` and `revoked` can be changed."""
+
+    def __init__(self, signer: FakeSigner) -> None:
+        from app.config import get_settings
+
+        self.signer = signer
+        self.roots: dict[str, int] = {}
+        self.owner_address: str | None = get_settings().issuer_address
+        self.revoked: set[str] = set()
+        self.down = False
+
+    def _up(self) -> None:
+        from app.services.chain import ChainUnavailable
+
+        if self.down:
+            raise ChainUnavailable("RPC unreachable: connection refused")
+
+    def anchored_at(self, root: str) -> int:
+        self._up()
+        if root in self.roots:
+            return self.roots[root]
+        receipt = self.signer.receipts.get(root)
+        return int(receipt.anchored_at.timestamp()) if receipt else 0
+
+    def owner(self) -> str | None:
+        self._up()
+        return self.owner_address
+
+    def is_revoked(self, leaf: str) -> bool:
+        self._up()
+        return leaf in self.revoked
+
+
+@pytest.fixture
+def fake_chain(monkeypatch: pytest.MonkeyPatch, fake_signer: FakeSigner) -> FakeChain:
+    from app.services import chain
+
+    fake = FakeChain(fake_signer)
+    monkeypatch.setattr(chain, "anchored_at", fake.anchored_at)
+    monkeypatch.setattr(chain, "owner", fake.owner)
+    monkeypatch.setattr(chain, "is_revoked", fake.is_revoked)
+    return fake
