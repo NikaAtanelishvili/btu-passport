@@ -22,10 +22,9 @@ const OPERATIONS: NavItem[] = [
   { href: "/admin/issuance", label: "Issuance" },
 ];
 
-// Pages of later milestones (events M7, catalog/roles/audit M9) are listed without links
-// until they exist.
+// Catalog, roles and audit (M9) are listed without links until they exist.
 const SUPER_ADMIN: (NavItem & { later?: boolean })[] = [
-  { href: "/admin/events", label: "Events", later: true },
+  { href: "/admin/events", label: "Events" },
   { href: "/admin/skills", label: "Skills", later: true },
   { href: "/admin/categories", label: "Categories & stamps", later: true },
   { href: "/admin/roles", label: "Admins & roles", later: true },

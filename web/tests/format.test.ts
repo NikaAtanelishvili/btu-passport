@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { formatCode, normalizeCode, todayInTbilisi, verdictHeadline } from "@/lib/format";
+import { fromLocalInput, shiftLocal, toLocalInput } from "@/lib/events";
 
 describe("codes", () => {
   it("formats as XXXX-XXXX-XX", () => {
@@ -49,5 +50,17 @@ describe("todayInTbilisi", () => {
   it("uses Tbilisi's date (UTC+4), not the browser's or UTC", () => {
     expect(todayInTbilisi(new Date("2026-10-25T19:59:00Z"))).toBe("2026-10-25");
     expect(todayInTbilisi(new Date("2026-10-25T20:00:00Z"))).toBe("2026-10-26");
+  });
+});
+
+describe("event datetime-local helpers", () => {
+  it("round-trips a local input through UTC", () => {
+    const local = "2026-10-21T14:30";
+    expect(toLocalInput(fromLocalInput(local))).toBe(local);
+  });
+
+  it("shifts by minutes", () => {
+    expect(shiftLocal("2026-10-21T14:30", -15)).toBe("2026-10-21T14:15");
+    expect(shiftLocal("2026-10-21T23:45", 30)).toBe("2026-10-22T00:15");
   });
 });

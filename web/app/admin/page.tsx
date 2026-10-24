@@ -1,16 +1,15 @@
 "use client";
 
-// FE-21: dashboard (Web App Design A1). Counters refetch every 15 s; event counters link to
-// the events list once it exists (M7).
+// FE-21: dashboard (Web App Design A1). Counters refetch every 15 s and link to filtered
+// lists; admins see Events only from here (the sidebar's Events is in the super admin group).
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
 import { StatusBadge } from "@/components/status-badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
 import type { components } from "@/lib/api-types";
 import { formatDateTime } from "@/lib/format";
@@ -53,14 +52,9 @@ export default function AdminDashboardPage() {
             Direct award
           </Link>
           {superAdmin && (
-            <Tooltip>
-              <TooltipTrigger render={<span />}>
-                <Button variant="outline" disabled>
-                  Create event
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Events arrive in a later milestone</TooltipContent>
-            </Tooltip>
+            <Link href="/admin/events/new" className={buttonVariants({ variant: "outline" })}>
+              Create event
+            </Link>
           )}
         </div>
       </div>
@@ -70,9 +64,13 @@ export default function AdminDashboardPage() {
       <section className="space-y-2">
         <h2 className="text-lg font-medium">Needs action</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Counter label="Check-in open now" value={d?.checkin_open} />
-          <Counter label="Waiting to be marked done" value={d?.awaiting_completion} />
-          <Counter label="Unregistered check-ins" value={d?.unregistered_checkins} />
+          <Counter label="Check-in open now" value={d?.checkin_open} href="/admin/events?status=CHECKIN_OPEN" />
+          <Counter
+            label="Waiting to be marked done"
+            value={d?.awaiting_completion}
+            href="/admin/events?status=CHECKIN_CLOSED"
+          />
+          <Counter label="Unregistered check-ins" value={d?.unregistered_checkins} href="/admin/events?status=CHECKIN_CLOSED" />
           <Counter label="Failed issuances" value={d?.failed_versions} href="/admin/issuance?tab=failed" />
         </div>
       </section>
