@@ -464,6 +464,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/checkin/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Checkin View */
+        get: operations["checkin_view_api_checkin__event_id__get"];
+        put?: never;
+        /** Checkin Post */
+        post: operations["checkin_post_api_checkin__event_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/.well-known/ai-passport-issuer.json": {
         parameters: {
             query?: never;
@@ -681,6 +699,66 @@ export interface components {
             badge_code: string;
             /** Stamp Sha256 */
             stamp_sha256: string | null;
+        };
+        /** CheckinEvent */
+        CheckinEvent: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Location */
+            location: string | null;
+            skill: components["schemas"]["CheckinEventSkill"];
+        };
+        /** CheckinEventSkill */
+        CheckinEventSkill: {
+            /** Name */
+            name: string;
+            /** Category */
+            category: string;
+            /** Stamp Sha256 */
+            stamp_sha256: string | null;
+        };
+        /** CheckinIn */
+        CheckinIn: {
+            /** T */
+            t: string;
+        };
+        /** CheckinResult */
+        CheckinResult: {
+            /**
+             * State
+             * @constant
+             */
+            state: "CHECKED_IN";
+            /** Unregistered */
+            unregistered: boolean;
+            /** Already Holds Skill */
+            already_holds_skill: boolean;
+        };
+        /** CheckinView */
+        CheckinView: {
+            event: components["schemas"]["CheckinEvent"] | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "CONFIRM" | "CHECKED_IN" | "TOKEN_EXPIRED" | "NOT_OPEN" | "CLOSED" | "REMOVED" | "NOT_FOUND";
+            /**
+             * Unregistered
+             * @default false
+             */
+            unregistered: boolean;
+            /**
+             * Already Holds Skill
+             * @default false
+             */
+            already_holds_skill: boolean;
         };
         /** CompleteOut */
         CompleteOut: {
@@ -2253,6 +2331,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QrOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    checkin_view_api_checkin__event_id__get: {
+        parameters: {
+            query?: {
+                t?: string;
+            };
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckinView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    checkin_post_api_checkin__event_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckinIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckinResult"];
                 };
             };
             /** @description Validation Error */
