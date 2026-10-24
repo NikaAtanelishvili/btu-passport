@@ -13,7 +13,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web signer types migrate migrate-test seed bootstrap chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer types migrate migrate-test seed bootstrap chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -40,6 +40,10 @@ api:
 
 web:
 	cd web && pnpm dev
+
+# Background jobs: PDF rendering and anchoring (BE-26).
+worker:
+	cd backend && uv run python -m worker
 
 # Issuer-key service (BC-07). Needs secrets/issuer_key and a deployed registry.
 signer:
