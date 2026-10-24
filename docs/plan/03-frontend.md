@@ -131,7 +131,7 @@ The public verification page lives at `/verify`. `/` stays as an alias: a `redir
 
 `independentCheck(result)`: fetch `/.well-known/ai-passport-issuer.json`; recompute the root with `processProof(leaf, proof)`; create a `viem` public client on `NEXT_PUBLIC_RPC_URL` with the ABI from `shared/PassportRegistry.abi.json` (copied into `web/lib/` by `make chain-abi`); read `anchoredAt(root)` and `owner()`. Returns `{documentOk, issuerOk}` or `{unreachable: true}`. Never blocks the page: the server verdict shows first.
 
-### FE-33 Check-in `/checkin/[eventId]?t=` (M7)
+### FE-33 Check-in `/checkin/[eventId]?t=` (M7) ✅
 
 1. `useSession()`; not signed in → `/login?next=<this URL including t>`.
 2. `GET /api/checkin/{eventId}?t=` → one `Card` per state:
@@ -153,7 +153,7 @@ Three read-only pages under `app/me/`, with a top nav (My passport, History, My 
 | ---------- | ------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FE-40 (M8) | `/me`         | `GET /api/me/passport` | Header `Card`: name, Passport ID, first issued. `Alert` "Issuing version N…" when `issuing` is set (refetch every 5 s while it is). Current version `Card`: version, issue date, `CodeDisplay`, a "Copy verify link" button (the QR lives in the PDF, not on this page), buttons Download PDF and Download proof.json. Skills: one `Card` per skill (stamp, name, category, date earned, description, source). Empty state: "No passport yet. Attend a BTU event to earn your first skill." |
 | FE-41 (M8) | `/me/history` | `GET /api/me/versions` | `Table`: version · issued · skills · what changed (`added_skills`) · `StatusBadge` (Current / Superseded / Legacy, not verifiable) · Download (ANCHORED only)                                                                                                                                                                                                                                                                                                                               |
-| FE-34 (M7) | `/me/events`  | `GET /api/me/events`   | `Table`: event · date · skill · status (`Waiting for organiser`, `Awarded in vN` linking to `/me`, `Already held`, `Not confirmed`, `Event deleted`)                                                                                                                                                                                                                                                                                                                                        |
+| FE-34 (M7) ✅ | `/me/events`  | `GET /api/me/events`   | `Table`: event · date · skill · status (`Waiting for organiser`, `Awarded in vN` linking to `/me`, `Already held`, `Not confirmed`, `Event deleted`)                                                                                                                                                                                                                                                                                                                                        |
 
 **Done when (M8):** signed in as `btu-t-0002@example.org`, the student sees only BTU-AI-000126 and can download its PDF; requesting another student's PDF URL returns 404 (A8).
 
@@ -195,12 +195,12 @@ Two steps on one page:
 
 Events (M7) first, because they are the main award path; then catalog, roles and audit (M9). Write controls are hidden for `ADMIN`, who gets read-only views of Events, Skills and Categories.
 
-### FE-30 Events list and form (M7) — `/admin/events`, `/new`, `/[id]/edit`
+### FE-30 Events list and form (M7) — `/admin/events`, `/new`, `/[id]/edit` ✅
 
 - List: `Tabs` by status (Draft · Check-in open · Check-in closed · Completed) on `GET /api/admin/events?status=`. Columns: name · skill · date · participants · `StatusBadge`. "Create event" for super admins.
 - Form: fields from Web App Design A6. Inputs use local time (`datetime-local`), sent as UTC ISO. When the end time changes and the window fields are untouched, update their suggested values (end − 15 min, end + 30 min). On edit, the skill `Select` is disabled with the note "Locked: participants have checked in" when the server returns 409 `skill_locked` or the detail shows participants.
 
-### FE-31 Event detail (M7) — `/admin/events/[id]`
+### FE-31 Event detail (M7) — `/admin/events/[id]` ✅
 
 `GET /api/admin/events/{id}` plus `GET .../participants` polled every 3 s while the status is CHECKIN_OPEN (every 15 s otherwise).
 
@@ -214,7 +214,7 @@ Events (M7) first, because they are the main award path; then catalog, roles and
 
 **Mark as done dialog:** an `AlertDialog` that lists who will receive the skill and who is skipped (computed from the participant flags), states the date earned, and has a checkbox "I checked the participant list" that enables Confirm. Confirm → `POST .../complete`. Afterwards the page is read-only and shows the `completion` block from `EventDetail` (awarded students with their new version number, skipped students), each linking to the student's detail page, plus a link to the Issuance page for live status.
 
-### FE-32 Presenter view (M7) — `/admin/events/[id]/present`
+### FE-32 Presenter view (M7) — `/admin/events/[id]/present` ✅
 
 Full-screen page with no shell: event name (large), the QR from `GET .../qr` (`svg` rendered with `dangerouslySetInnerHTML` — the SVG comes from our own server), the short URL as text, and "N checked in". Refetch `.../qr` when `refresh_in_seconds` runs out (and at least every 30 s); when status isn't CHECKIN_OPEN show "Check-in closed" instead of the QR.
 

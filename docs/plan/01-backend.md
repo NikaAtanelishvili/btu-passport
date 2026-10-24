@@ -317,7 +317,7 @@ The complete contract, grouped by router. Shapes are written as Pydantic field l
 
 `VersionSummary` = `{version_no, status, issued_at?, verification_code?, skill_count, added_skills: [name], superseded: bool}`.
 
-### Check-in (BE-42, M7) — guard: signed in (any BTU user)
+### Check-in (BE-42, M7) — guard: signed in (any BTU user) ✅
 
 | Method, path                     | Request        | Response                                                                                                                                                                              |
 | -------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -344,7 +344,7 @@ The complete contract, grouped by router. Shapes are written as Pydantic field l
 
 `VersionRow` = `{version_id, passport_id, student_id, student_name, version_no, status, error?, issued_at?, created_at}`.
 
-### Events (BE-40 – BE-45, M7) — writes need super admin
+### Events (BE-40 – BE-45, M7) — writes need super admin ✅
 
 | Method, path                                                | Request                                                                                                           | Response                                                                                                                                                                    | Notes                                                               |
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -448,7 +448,7 @@ Routers stay thin: they validate input, call one service function inside the req
 
 Skills are sorted by `date_earned`, then `award_id`. If the passport has no `first_issued_on` yet, set it (today) and copy the holder names from the student, in the same transaction; the trigger then freezes them.
 
-### BE-40 Events (M7) — `app/services/events.py`
+### BE-40 Events (M7) — `app/services/events.py` ✅
 
 | Function          | Allowed from                | Effect                                                                                                       |
 | ----------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------ |
@@ -465,18 +465,18 @@ Skills are sorted by `date_earned`, then `award_id`. If the passport has no `fir
 
 **Linking Unregistered check-ins:** when a student is created (or an email changes), set `event_participants.student_id` on rows with that email and a NULL `student_id`.
 
-### BE-41 QR tokens (M7) — `app/services/qr_tokens.py`
+### BE-41 QR tokens (M7) — `app/services/qr_tokens.py` ✅
 
 - `window(now) = floor(unix_seconds / 30)`.
 - `token(secret, event_id, w)` = first 16 characters of `base32(HMAC-SHA256(secret, f"{event_id}:{w}"))`, no padding.
 - `is_valid(secret, event_id, t, now)`: constant-time compare against windows `w` and `w − 1` — a token lives 30–60 s (FR-28).
 - `checkin_url` = `PUBLIC_BASE_URL/checkin/{event_id}?t={token}`; `refresh_in_seconds` = 30 − (unix_seconds mod 30).
 
-### BE-42 Check-in logic (M7)
+### BE-42 Check-in logic (M7) ✅
 
 In order: event missing or deleted → `NOT_FOUND`; the caller's row exists and is removed → `REMOVED`; the caller's row exists → `CHECKED_IN` (no token needed); status DRAFT → `NOT_OPEN`; CLOSED or COMPLETED → `CLOSED`; token invalid → `TOKEN_EXPIRED`; else GET returns `CONFIRM` and POST inserts the row (`ON CONFLICT (event_id, email) DO NOTHING`), with `student_id` from the email match, `display_name` from the user, method `QR`.
 
-### BE-43 Participants (M7)
+### BE-43 Participants (M7) ✅
 
 Manual add takes a `student_id`, uses that student's email, method `MANUAL`; if a removed row exists, clear `removed_at`. Remove sets `removed_at`, `removed_by`. Flags: `UNREGISTERED` when `student_id` is NULL; `ALREADY_HOLDS` when an award exists for (student, event skill). Both actions are audited.
 
@@ -484,7 +484,7 @@ Manual add takes a `student_id`, uses that student's email, method `MANUAL`; if 
 
 `chain.py` holds a read-only web3 client with three calls: `anchored_at(root)`, `owner()`, `is_revoked(leaf)`; results cached in-process for 60 s. `verify(version)`: issuer check = config contract address and `owner() == ISSUER_ADDRESS`; document check = recompute the root from `pdf_sha256` + `merkle_proof` (BC-04) and `anchored_at(root) > 0`; then `REVOKED`, else `SUPERSEDED` if `version_no` < the passport's latest ANCHORED `version_no`, else `VALID`. Verification never trusts `status` alone (dataset rule: use the chain proof).
 
-### BE-46 My events status (M7)
+### BE-46 My events status (M7) ✅
 
 Per participant row: removed → `NOT_CONFIRMED`; event deleted → `EVENT_DELETED`; event completed and an award exists from that event's submission → `AWARDED` with the first version containing it; completed without such an award → `ALREADY_HELD`; otherwise `WAITING`.
 
