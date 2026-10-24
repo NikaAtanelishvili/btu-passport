@@ -75,8 +75,11 @@ def request_code(db: Session, email: str, ip: str | None) -> None:
         stmt = select(func.count()).select_from(LoginCode).where(LoginCode.created_at > window)
         return db.scalar(stmt.where(*where)) or 0  # type: ignore[arg-type]
 
+    # A loopback address means "real IP unknown" (dev, behind the Next.js proxy): limiting it
+    # would be one shared limit for everybody, so only the per-email limit applies there.
+    ip_known = ip is not None and not ipaddress.ip_address(ip).is_loopback
     if recent(LoginCode.email == email) >= s.login_rate_per_email_hour or (
-        ip is not None and recent(LoginCode.requested_ip == ip) >= s.login_rate_per_ip_hour
+        ip_known and recent(LoginCode.requested_ip == ip) >= s.login_rate_per_ip_hour
     ):
         raise AppError("rate_limited", "Too many codes requested, try again later.", 429)
 

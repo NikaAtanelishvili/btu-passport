@@ -98,10 +98,17 @@ def test_rate_limit_per_email(db: Session, fake_mailer: FakeMailer) -> None:
 
 
 def test_rate_limit_per_ip(db: Session, fake_mailer: FakeMailer) -> None:
-    client = _client()
+    client = _client("8.8.8.8")
     statuses = [_request(client, f"user{i}@btu.test") for i in range(21)]
     assert statuses == [204] * 20 + [429]
-    assert _request(_client("127.0.0.2"), "other@btu.test") == 204  # other IP unaffected
+    assert _request(_client("8.8.4.4"), "other@btu.test") == 204  # other IP unaffected
+
+
+def test_no_ip_limit_when_the_real_ip_is_unknown(db: Session, fake_mailer: FakeMailer) -> None:
+    # Through the Next.js dev proxy every caller is 127.0.0.1; an IP limit there would be
+    # one shared limit for everybody. The per-email limit still applies.
+    client = _client("127.0.0.1")
+    assert [_request(client, f"user{i}@btu.test") for i in range(25)] == [204] * 25
 
 
 def test_old_requests_fall_out_of_the_window(db: Session, fake_mailer: FakeMailer) -> None:
