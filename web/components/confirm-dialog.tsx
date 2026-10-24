@@ -19,17 +19,22 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   disabled,
+  children,
 }: {
+  /** The trigger element (e.g. a Button), rendered with `children` as its label. */
   trigger: React.ReactElement;
   title: string;
   description: React.ReactNode;
   confirmLabel: string;
   onConfirm: () => void;
   disabled?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger render={trigger} disabled={disabled} />
+      <AlertDialogTrigger render={trigger} disabled={disabled}>
+        {children}
+      </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
