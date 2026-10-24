@@ -284,6 +284,165 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Events
+         * @description Deleted events are excluded.
+         */
+        get: operations["list_events_api_admin_events_get"];
+        put?: never;
+        /**
+         * Create Event
+         * @description Window defaults: opens = ends - 15 min, closes = ends + 30 min.
+         */
+        post: operations["create_event_api_admin_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/events/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Event */
+        get: operations["get_event_api_admin_events__event_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Event
+         * @description Soft delete; 409 event_completed (A16).
+         */
+        delete: operations["delete_event_api_admin_events__event_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Event
+         * @description 409 skill_locked once someone has checked in; 409 event_completed.
+         */
+        patch: operations["update_event_api_admin_events__event_id__patch"];
+        trace?: never;
+    };
+    "/api/admin/events/{event_id}/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open Checkin */
+        post: operations["open_checkin_api_admin_events__event_id__open_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/events/{event_id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close Checkin */
+        post: operations["close_checkin_api_admin_events__event_id__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/events/{event_id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen Checkin */
+        post: operations["reopen_checkin_api_admin_events__event_id__reopen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/events/{event_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Event
+         * @description Mark as done. 409 cannot_complete with `blockers`; a repeat returns the stored
+         *     response and creates nothing (A15).
+         */
+        post: operations["complete_event_api_admin_events__event_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/events/{event_id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Participants */
+        get: operations["list_participants_api_admin_events__event_id__participants_get"];
+        put?: never;
+        /**
+         * Add Participant
+         * @description Manual add; 409 already_checked_in if present.
+         */
+        post: operations["add_participant_api_admin_events__event_id__participants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/events/{event_id}/participants/{email}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Participant */
+        delete: operations["remove_participant_api_admin_events__event_id__participants__email__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/.well-known/ai-passport-issuer.json": {
         parameters: {
             query?: never;
@@ -484,6 +643,13 @@ export interface components {
             /** Awarded By */
             awarded_by: string | null;
         };
+        /** AwardedStudent */
+        AwardedStudent: {
+            /** Student Id */
+            student_id: string;
+            /** Version No */
+            version_no: number;
+        };
         /** CategoryRef */
         CategoryRef: {
             /** Category Id */
@@ -494,6 +660,18 @@ export interface components {
             badge_code: string;
             /** Stamp Sha256 */
             stamp_sha256: string | null;
+        };
+        /** CompleteOut */
+        CompleteOut: {
+            /**
+             * Submission Id
+             * Format: uuid
+             */
+            submission_id: string;
+            /** Awarded */
+            awarded: components["schemas"]["AwardedStudent"][];
+            /** Skipped */
+            skipped: string[];
         };
         /** CreatedVersion */
         CreatedVersion: {
@@ -516,6 +694,149 @@ export interface components {
             failed_versions: number;
             /** Recent */
             recent: components["schemas"]["VersionRow"][];
+        };
+        /** EventCounts */
+        EventCounts: {
+            /** Total */
+            total: number;
+            /** Unregistered */
+            unregistered: number;
+            /** Already Held */
+            already_held: number;
+        };
+        /**
+         * EventCreate
+         * @description Field rules are checked in app/services/events.py, so all errors come back at once.
+         */
+        EventCreate: {
+            /** Name */
+            name: string;
+            /** Skill Id */
+            skill_id: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Location */
+            location?: string | null;
+            /** Checkin Opens At */
+            checkin_opens_at?: string | null;
+            /** Checkin Closes At */
+            checkin_closes_at?: string | null;
+        };
+        /** EventDetail */
+        EventDetail: {
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Name */
+            name: string;
+            /** Skill Id */
+            skill_id: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Location */
+            location: string | null;
+            /**
+             * Checkin Opens At
+             * Format: date-time
+             */
+            checkin_opens_at: string;
+            /**
+             * Checkin Closes At
+             * Format: date-time
+             */
+            checkin_closes_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "DRAFT" | "CHECKIN_OPEN" | "CHECKIN_CLOSED" | "COMPLETED";
+            skill: components["schemas"]["EventSkill"];
+            /** Skill Locked */
+            skill_locked: boolean;
+            counts: components["schemas"]["EventCounts"];
+            /** Can Complete */
+            can_complete: boolean;
+            /** Complete Blockers */
+            complete_blockers: ("DRAFT" | "CHECKIN_OPEN" | "UNREGISTERED_PRESENT" | "NO_PARTICIPANTS")[];
+            completion: components["schemas"]["CompleteOut"] | null;
+            /** Completed At */
+            completed_at: string | null;
+        };
+        /** EventPatch */
+        EventPatch: {
+            /** Name */
+            name?: string | null;
+            /** Skill Id */
+            skill_id?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Starts At */
+            starts_at?: string | null;
+            /** Ends At */
+            ends_at?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Checkin Opens At */
+            checkin_opens_at?: string | null;
+            /** Checkin Closes At */
+            checkin_closes_at?: string | null;
+        };
+        /** EventRow */
+        EventRow: {
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Name */
+            name: string;
+            /** Skill Name */
+            skill_name: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Participant Count */
+            participant_count: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "DRAFT" | "CHECKIN_OPEN" | "CHECKIN_CLOSED" | "COMPLETED";
+        };
+        /** EventSkill */
+        EventSkill: {
+            /** Skill Id */
+            skill_id: string;
+            /** Name */
+            name: string;
+            /** Category */
+            category: string;
+            /** Stamp Sha256 */
+            stamp_sha256: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -543,6 +864,17 @@ export interface components {
             /** Issuer Address */
             issuer_address: string;
         };
+        /** Page[EventRow] */
+        Page_EventRow_: {
+            /** Items */
+            items: components["schemas"]["EventRow"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** Page[StudentRow] */
         Page_StudentRow_: {
             /** Items */
@@ -564,6 +896,34 @@ export interface components {
             page: number;
             /** Page Size */
             page_size: number;
+        };
+        /** Participant */
+        Participant: {
+            /** Email */
+            email: string;
+            /** Student Id */
+            student_id: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Checked In At
+             * Format: date-time
+             */
+            checked_in_at: string;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "QR" | "MANUAL";
+            /** Flags */
+            flags: ("UNREGISTERED" | "ALREADY_HOLDS")[];
+            /** Removed At */
+            removed_at: string | null;
+        };
+        /** ParticipantAdd */
+        ParticipantAdd: {
+            /** Student Id */
+            student_id: string;
         };
         /** ParticipationRow */
         ParticipationRow: {
@@ -1443,6 +1803,389 @@ export interface operations {
                 content: {
                     "application/pdf": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_events_api_admin_events_get: {
+        parameters: {
+            query?: {
+                status?: ("DRAFT" | "CHECKIN_OPEN" | "CHECKIN_CLOSED" | "COMPLETED") | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_EventRow_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_event_api_admin_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_event_api_admin_events__event_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_event_api_admin_events__event_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_event_api_admin_events__event_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_checkin_api_admin_events__event_id__open_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_checkin_api_admin_events__event_id__close_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reopen_checkin_api_admin_events__event_id__reopen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_event_api_admin_events__event_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompleteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_participants_api_admin_events__event_id__participants_get: {
+        parameters: {
+            query?: {
+                include_removed?: boolean;
+            };
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Participant"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_participant_api_admin_events__event_id__participants_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParticipantAdd"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Participant"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_participant_api_admin_events__event_id__participants__email__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+                email: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

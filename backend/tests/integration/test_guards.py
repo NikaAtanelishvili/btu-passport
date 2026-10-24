@@ -115,7 +115,7 @@ def _admin_routes() -> list[tuple[str, str]]:
     )
 
 
-def test_admin_routes_exist_for_m6() -> None:
+def test_admin_routes_exist() -> None:
     paths = {path for _, path in _admin_routes()}
     assert {
         "/api/admin/dashboard",
@@ -129,6 +129,14 @@ def test_admin_routes_exist_for_m6() -> None:
         "/api/admin/versions/{version_id}/retry",
         "/api/admin/versions/retry-failed",
         "/api/admin/versions/{version_id}/pdf",
+        "/api/admin/events",
+        "/api/admin/events/{event_id}",
+        "/api/admin/events/{event_id}/open",
+        "/api/admin/events/{event_id}/close",
+        "/api/admin/events/{event_id}/reopen",
+        "/api/admin/events/{event_id}/complete",
+        "/api/admin/events/{event_id}/participants",
+        "/api/admin/events/{event_id}/participants/{email}",
     } <= paths
 
 
@@ -138,7 +146,12 @@ def test_A11_student_forbidden_on_every_admin_route(
 ) -> None:
     """Every /api/admin/* route, with any path parameters filled in, refuses a student before
     looking at the request (403, not 404 or 422)."""
-    url = path.replace("{student_id}", "BTU-T-0001").replace("{version_id}", "1")
+    url = (
+        path.replace("{student_id}", "BTU-T-0001")
+        .replace("{version_id}", "1")
+        .replace("{event_id}", "6b1f5d1e-6a43-4e0e-9d6c-2f1f5c3b9a10")
+        .replace("{email}", "btu-t-0001@example.org")
+    )
     response = client_as("student").request(method, url, json={})
     assert response.status_code == 403, response.text
     assert response.json()["error"] == "forbidden"
