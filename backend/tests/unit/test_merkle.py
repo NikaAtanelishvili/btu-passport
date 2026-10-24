@@ -1,11 +1,13 @@
 """BC-04: Merkle tree spec (sorted-pair keccak256, double-hashed leaves)."""
 
 import hashlib
+import json
 
 import pytest
 from Crypto.Hash import keccak
 
 from app.services import merkle
+from cli import merkle_vectors
 
 
 def _keccak(data: bytes) -> bytes:
@@ -82,3 +84,20 @@ def test_duplicate_hashes_rejected() -> None:
 def test_malformed_hash_rejected(bad: str) -> None:
     with pytest.raises(ValueError):
         merkle.leaf(bad)
+
+
+def test_shared_vectors_rebuild_exactly() -> None:
+    """Every case in shared/merkle-vectors.json is reproduced by this implementation."""
+    data = json.loads(merkle_vectors.VECTORS_PATH.read_text(encoding="utf-8"))
+    assert [c["name"] for c in data["cases"]] == list(merkle_vectors.CASES)
+    for case in data["cases"]:
+        root, proofs = merkle.build_tree(case["pdf_sha256"])
+        assert root == case["root"], case["name"]
+        assert [merkle.leaf(h) for h in case["pdf_sha256"]] == case["leaves"]
+        assert proofs == case["proofs"], case["name"]
+        for pdf, proof in case["proofs"].items():
+            assert merkle.process_proof(merkle.leaf(pdf), proof) == case["root"]
+
+
+def test_shared_vectors_file_is_current() -> None:
+    assert merkle_vectors.VECTORS_PATH.read_text(encoding="utf-8") == merkle_vectors.render()
