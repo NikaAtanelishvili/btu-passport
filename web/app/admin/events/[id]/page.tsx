@@ -342,7 +342,8 @@ function CompleteCard({ event: e, rows, readOnly }: { event: EventDetail; rows: 
                 <AlertDialogDescription>
                   {receive.length} student{receive.length === 1 ? "" : "s"} will receive {e.skill.name}, dated{" "}
                   {formatDate(eventDate(e.starts_at))}.{" "}
-                  {skipped.length > 0 && `${skipped.length} already hold it and will be skipped.`}
+                  {skipped.length === 1 && "1 already holds it and will be skipped."}
+                  {skipped.length > 1 && `${skipped.length} already hold it and will be skipped.`}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="max-h-64 space-y-3 overflow-y-auto text-sm">
