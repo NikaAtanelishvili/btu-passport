@@ -1,7 +1,7 @@
 """Shared fixtures (Backend tab §9). Integration tests use the real `passport_test` database."""
 
 import os
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 from sqlalchemy.engine import make_url
 
@@ -18,6 +18,7 @@ os.environ.setdefault("S3_SECRET_KEY", "minio-secret")
 os.environ.setdefault("SIGNER_HMAC_SECRET", "test")
 
 import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
@@ -63,3 +64,44 @@ def s3_bucket() -> str:
     assert bucket == "passports-test"
     storage.ensure_bucket()
     return bucket
+
+
+ROLE_EMAILS = {
+    "super_admin": "superadmin@btu.test",
+    "admin": "admin@btu.test",
+    "student": "btu-t-0001@example.org",
+    "unregistered": "newcomer@btu.test",
+}
+
+
+@pytest.fixture
+def client_as(db: Session) -> Callable[[str | None], TestClient]:
+    """`client_as("admin")`: a TestClient with a real session row and CSRF cookie + header.
+
+    Skips the email-code flow by inserting the session directly. Roles: super_admin, admin,
+    student (BTU-T-0001 with a passport), unregistered (BTU email, no student), None.
+    """
+    from app.auth import sessions
+    from app.config import get_settings
+    from app.main import create_app
+    from app.models import User, UserRole
+    from tests import factories
+
+    def make(role: str | None) -> TestClient:
+        client = TestClient(create_app())
+        if role is None:
+            return client
+        email = ROLE_EMAILS[role]
+        if role == "student":
+            factories.student(db, 1)
+        if role in ("super_admin", "admin"):
+            db.add(UserRole(email=email, role=role.upper()))
+        user = db.query(User).filter_by(email=email).one_or_none() or factories.user(db, email)
+        token, row = sessions.create_session(db, user)
+        db.commit()
+        client.cookies.set(get_settings().session_cookie_name, token)
+        client.cookies.set(sessions.CSRF_COOKIE, row.csrf_token)
+        client.headers["X-CSRF-Token"] = row.csrf_token
+        return client
+
+    return make
