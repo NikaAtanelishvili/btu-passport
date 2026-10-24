@@ -203,6 +203,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/.well-known/ai-passport-issuer.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Issuer File
+         * @description Binds BTU to its registry and issuer key (FR-21). Verifiers check that the registry's
+         *     owner() is this issuer_address; the browser and the standalone script read it too.
+         */
+        get: operations["issuer_file__well_known_ai_passport_issuer_json_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/healthz": {
         parameters: {
             query?: never;
@@ -268,6 +289,17 @@ export interface components {
         Health: {
             /** Ok */
             ok: boolean;
+        };
+        /** IssuerFile */
+        IssuerFile: {
+            /** Issuer Name */
+            issuer_name: string;
+            /** Chain Id */
+            chain_id: number;
+            /** Contract Address */
+            contract_address: string;
+            /** Issuer Address */
+            issuer_address: string;
         };
         /** Page[StudentRow] */
         Page_StudentRow_: {
@@ -745,6 +777,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    issuer_file__well_known_ai_passport_issuer_json_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuerFile"];
                 };
             };
         };
