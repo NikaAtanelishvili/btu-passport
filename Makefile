@@ -13,7 +13,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web migrate migrate-test chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web migrate migrate-test seed chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts
 
 ## Infrastructure ------------------------------------------------------------
@@ -49,6 +49,9 @@ migrate:
 # Same migrations on passport_test (tests also rebuild it themselves).
 migrate-test:
 	cd backend && DATABASE_URL=$(DATABASE_URL:%/passport=%/passport_test) uv run alembic upgrade head
+
+seed:
+	cd backend && uv run python -m cli seed
 
 ## Chain -------------------------------------------------------------------------
 

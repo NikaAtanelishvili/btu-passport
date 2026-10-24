@@ -51,3 +51,15 @@ def db(_migrated: None) -> Iterator[Session]:
         with get_engine().begin() as conn:
             conn.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
             conn.execute(text("ALTER SEQUENCE passport_number_seq RESTART WITH 1"))
+
+
+@pytest.fixture(scope="session")
+def s3_bucket() -> str:
+    """The test bucket in the dev MinIO, created if missing. Keys are content-addressed."""
+    from app.config import get_settings
+    from app.services import storage
+
+    bucket = get_settings().s3_bucket
+    assert bucket == "passports-test"
+    storage.ensure_bucket()
+    return bucket
