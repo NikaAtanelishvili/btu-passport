@@ -59,3 +59,8 @@ export function formatDateTime(value: string): string {
     minute: "2-digit",
   });
 }
+
+/** Today's date as YYYY-MM-DD in BTU's timezone (the API's TIMEZONE default), for date checks. */
+export function todayInTbilisi(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tbilisi" }).format(now);
+}

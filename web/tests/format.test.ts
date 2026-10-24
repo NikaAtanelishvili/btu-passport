@@ -2,7 +2,7 @@
 // verdict headlines of FE-11.
 import { describe, expect, it } from "vitest";
 
-import { formatCode, normalizeCode, verdictHeadline } from "@/lib/format";
+import { formatCode, normalizeCode, todayInTbilisi, verdictHeadline } from "@/lib/format";
 
 describe("codes", () => {
   it("formats as XXXX-XXXX-XX", () => {
@@ -42,5 +42,12 @@ describe("verdictHeadline", () => {
     expect(verdictHeadline("SUPERSEDED", 3)).toBe(
       "Authentic, but superseded by version 3 — ask the holder for the current one",
     );
+  });
+});
+
+describe("todayInTbilisi", () => {
+  it("uses Tbilisi's date (UTC+4), not the browser's or UTC", () => {
+    expect(todayInTbilisi(new Date("2026-10-25T19:59:00Z"))).toBe("2026-10-25");
+    expect(todayInTbilisi(new Date("2026-10-25T20:00:00Z"))).toBe("2026-10-26");
   });
 });
