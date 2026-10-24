@@ -324,7 +324,7 @@ The complete contract, grouped by router. Shapes are written as Pydantic field l
 | `GET /api/checkin/{event_id}?t=` | token in query | `{event: {name, starts_at, location?, skill: {name, category, stamp_sha256}}, state}`; `state` ∈ `CONFIRM`, `CHECKED_IN`, `TOKEN_EXPIRED`, `NOT_OPEN`, `CLOSED`, REMOVED, `NOT_FOUND` |
 | `POST /api/checkin/{event_id}`   | `{t}`          | `{state: "CHECKED_IN", unregistered: bool, already_holds_skill: bool}`; a repeat returns the same body                                                                                |
 
-### Admin, both roles (BE-24 ✅, BE-29 ✅, BE-35)
+### Admin, both roles (BE-24 ✅, BE-29 ✅, BE-35 ✅)
 
 | Method, path                                           | Request                                                                                     | Response                                                                                                                                                | Notes                                                                                               |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |

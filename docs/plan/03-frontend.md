@@ -161,31 +161,31 @@ Three read-only pages under `app/me/`, with a top nav (My passport, History, My 
 
 The five pages both roles use, inside `AdminShell` with `<RequireRole role="admin">` in `admin/layout.tsx`. Each form uses react-hook-form + zod mirroring the server rules, and `applyServerErrors` for whatever the server rejects.
 
-### FE-20 Admin shell
+### FE-20 Admin shell ✅
 
 `AdminShell` (§2) with the user's email and role in the sidebar footer and Sign out. Super admin group hidden for `ADMIN`.
 
-### FE-21 Dashboard `/admin`
+### FE-21 Dashboard `/admin` ✅
 
 `GET /api/admin/dashboard`, refetch every 15 s. Four `Card` counters, each a link to a filtered list: check-in open now → `/admin/events?status=CHECKIN_OPEN`; waiting to be marked done → `?status=CHECKIN_CLOSED`; Unregistered check-ins → events list; failed issuances → `/admin/issuance?tab=failed`. Recent activity `Table` (last 10 versions). Quick action buttons: Register student, Direct award, Create event (super admin only).
 
-### FE-22 Students `/admin/students` and `/admin/students/new`
+### FE-22 Students `/admin/students` and `/admin/students/new` ✅
 
 - List: `DataTable` on `GET /api/admin/students` with search (debounced 300 ms) and selects for program (`GET /api/admin/programs`), level, status, has passport. Columns: Student ID · name · program · Passport ID · current version · `StatusBadge`. Row click → detail. Buttons: Register student; Import CSV shown disabled with a "Coming later" tooltip (Should-have, not in this plan).
 - Register form (`/new`): fields and rules from Web App Design A2 (Student ID, first and last name ≤ 60, BTU email, program as a select with free entry, level, status). `POST /api/admin/students` → toast "Student registered — Passport ID BTU-AI-000143" → detail page. Pre-fill `email` from `?email=` (used by Event detail for Unregistered rows).
 
-### FE-23 Student detail `/admin/students/[id]`
+### FE-23 Student detail `/admin/students/[id]` ✅
 
 `GET /api/admin/students/{id}`. Sections as `Card`s: Profile (edit inline with a form; frozen fields show a lock icon and the note "Printed on issued passports"; on `warnings: ["printed_name_differs"]` show an `Alert`), Passport (versions `Table` with `StatusBadge`, Download for ANCHORED, Retry for FAILED), Skills (`Table`: skill, date earned, source link, awarded by), Events (`Table`).
 
-### FE-24 Direct award `/admin/awards/new` (right after M5)
+### FE-24 Direct award `/admin/awards/new` (right after M5) ✅
 
 Two steps on one page:
 
 1. **Form:** `StudentPicker` (at least 1; pre-fill from `?student=`), skill `Select` with stamp preview (active skills from `GET /api/admin/skills`), date earned (`type="date"`, default today, max today), reason `Textarea` (required, ≤ 300). "Review" → `POST /api/admin/awards/preview`.
 2. **Review:** `Table` of rows; `SKIP_ALREADY_HELD` rows greyed out with "already holds this skill"; `NEW_VERSION` rows show `v2 → v3`. "Confirm and issue" → `POST /api/admin/awards` with an `Idempotency-Key` generated **once when the review step opens** (`crypto.randomUUID()`), so a double click or retry reuses it. Success → toast and redirect to `/admin/issuance?tab=in-progress`.
 
-### FE-25 Issuance `/admin/issuance`
+### FE-25 Issuance `/admin/issuance` ✅
 
 `Tabs`: Failed · In progress (PENDING, RENDERED, ANCHORING) · Recent (ANCHORED, newest first). `DataTable` on `GET /api/admin/versions?status=…`, refetch every 5 s on In progress. Columns: student · Passport ID · version · `StatusBadge` · error · time. Retry per row; "Retry all failed" with `ConfirmDialog`.
 
