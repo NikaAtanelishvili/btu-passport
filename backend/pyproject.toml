@@ -51,6 +51,10 @@ strict = true
 plugins = ["pydantic.mypy"]
 files = ["app", "cli", "signer", "worker", "tests"]
 
+[[tool.mypy.overrides]]
+module = ["weasyprint", "weasyprint.*"]  # ships no type information
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]

@@ -1,0 +1,85 @@
+<!doctype html>
+{#- Plain placeholder passport (BE-25). Renders only from `c` (content_json). BTU's design
+    replaces this folder via PASSPORT_TEMPLATE_DIR. No random values: the PDF must be
+    byte-identical for the same content. -#}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>AI Skills Passport {{ c.passport_id }} v{{ c.version_no }}</title>
+  <meta name="author" content="{{ c.issuer.name }}">
+  <meta name="dcterms.created" content="{{ c.issued_at }}">
+  <meta name="dcterms.modified" content="{{ c.issued_at }}">
+  <link rel="stylesheet" href="{{ template_url }}/passport.css">
+  <style>
+    @font-face { font-family: "Noto Sans"; font-weight: 400;
+                 src: url("{{ fonts_url }}/NotoSans-Regular.ttf"); }
+    @font-face { font-family: "Noto Sans"; font-weight: 700;
+                 src: url("{{ fonts_url }}/NotoSans-Bold.ttf"); }
+    @font-face { font-family: "Noto Sans Georgian"; font-weight: 400;
+                 src: url("{{ fonts_url }}/NotoSansGeorgian-Regular.ttf"); }
+    @font-face { font-family: "Noto Sans Georgian"; font-weight: 700;
+                 src: url("{{ fonts_url }}/NotoSansGeorgian-Bold.ttf"); }
+    @page {
+      @bottom-center {
+        content: "{{ ('%s · v%s · %s' % (c.passport_id, c.version_no, c.verification_code | code)) | css_string }} · page " counter(page) " of " counter(pages);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<section class="page cover">
+  <p class="issuer">{{ c.issuer.name }}</p>
+  <h1>AI Skills Passport</h1>
+  <p class="holder">{{ c.holder.first_name }} {{ c.holder.last_name }}</p>
+  <dl>
+    <dt>Passport ID</dt><dd>{{ c.passport_id }}</dd>
+    {% if c.first_issued_on %}<dt>First issued</dt><dd>{{ c.first_issued_on | long_date }}</dd>{% endif %}
+  </dl>
+</section>
+
+<section class="page version">
+  <h2>Version {{ c.version_no }}</h2>
+  <dl>
+    <dt>Holder</dt><dd>{{ c.holder.first_name }} {{ c.holder.last_name }}</dd>
+    <dt>Passport ID</dt><dd>{{ c.passport_id }}</dd>
+    <dt>Issued</dt><dd>{{ c.issued_at | long_date }}</dd>
+    <dt>Skills</dt><dd>{{ c.skills | length }}</dd>
+    <dt>Verification code</dt><dd class="code">{{ c.verification_code | code }}</dd>
+  </dl>
+  <img class="qr" src="{{ qr }}" alt="QR code linking to the verification page">
+  <p class="url">{{ c.verify_url }}</p>
+  <p class="note">Scan the code or open the link to check that this document is genuine and current.</p>
+</section>
+
+<section class="skills">
+  <h2>Skills</h2>
+  {% for s in c.skills %}
+  <article class="skill">
+    {% if s.stamp_sha256 in stamps %}<img class="stamp" src="{{ stamps[s.stamp_sha256] }}" alt="">{% endif %}
+    <div class="body">
+      <h3>{{ s.name }}</h3>
+      <p class="meta">{{ s.category }} · {{ s.badge_code }} · earned {{ s.date_earned | long_date }}{% if s.source.type == "event" %} · {{ s.source.event_name }}{% endif %}</p>
+      <p>{{ s.description }}</p>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+
+<section class="page last">
+  <h2>How to verify this passport</h2>
+  <ol>
+    <li>Open <span class="url">{{ c.verify_url }}</span>, or go to the verification page and enter the code <span class="code">{{ c.verification_code | code }}</span>.</li>
+    <li>For the strongest check, upload this PDF there. Your browser computes its SHA-256 fingerprint and checks it against the blockchain; any change to the file makes the check fail.</li>
+    <li>The page also says whether this is the latest version of the passport.</li>
+  </ol>
+  <p>Each issued version's fingerprint is part of a Merkle root recorded by {{ c.issuer.name }} in the registry contract below. No personal data is stored on the blockchain. Anyone can repeat the check without BTU's servers, using the proof file offered on the verification page.</p>
+  <dl>
+    <dt>Chain ID</dt><dd>{{ c.issuer.chain_id }}</dd>
+    <dt>Registry contract</dt><dd class="hex">{{ c.issuer.contract_address }}</dd>
+    <dt>Issuer address</dt><dd class="hex">{{ c.issuer.issuer_address }}</dd>
+  </dl>
+</section>
+
+</body>
+</html>
