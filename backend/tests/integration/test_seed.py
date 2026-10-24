@@ -70,4 +70,4 @@ def test_stamps_are_uploaded_by_hash(db: Session, s3_bucket: str) -> None:
         assert category.stamp_sha256 == hashlib.sha256(data).hexdigest()
         assert category.stamp_key == f"stamps/{category.stamp_sha256}.svg"
         assert category.stamp_mime == "image/svg+xml"
-        assert storage.get_bytes(category.stamp_key) == data
+        assert storage.get(category.stamp_key) == data

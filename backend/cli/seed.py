@@ -142,7 +142,7 @@ def _categories(db: Session, rows: list[SeedRow]) -> int:
         data = stamp.read_bytes()
         sha = hashlib.sha256(data).hexdigest()
         key = f"stamps/{sha}.svg"
-        storage.put_bytes(key, data, "image/svg+xml")
+        storage.put(key, data, "image/svg+xml")
         category.stamp_sha256, category.stamp_key, category.stamp_mime = sha, key, "image/svg+xml"
     db.flush()
     return new

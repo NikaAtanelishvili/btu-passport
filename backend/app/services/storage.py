@@ -1,6 +1,7 @@
 """MinIO / S3 object storage (BE-22). Objects are keyed by their SHA-256 and never overwritten.
 
-Started in M2 for the seed's stamp images; BE-22 (M4) adds PDFs.
+Keys: `pdf/<sha256>.pdf`, `stamps/<sha256>.<ext>`. Files are always streamed through the API;
+MinIO is never exposed to browsers.
 """
 
 from functools import lru_cache
@@ -53,11 +54,15 @@ def exists(key: str) -> bool:
     return True
 
 
-def put_bytes(key: str, data: bytes, content_type: str) -> None:
+def pdf_key(sha256_hex: str) -> str:
+    return f"pdf/{sha256_hex}.pdf"
+
+
+def put(key: str, data: bytes, content_type: str) -> None:
     """Upload unless the key already exists (keys are content hashes, so the bytes match)."""
     if not exists(key):
         client().put_object(Bucket=_bucket(), Key=key, Body=data, ContentType=content_type)
 
 
-def get_bytes(key: str) -> bytes:
+def get(key: str) -> bytes:
     return client().get_object(Bucket=_bucket(), Key=key)["Body"].read()

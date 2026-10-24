@@ -1,6 +1,8 @@
 """FastAPI application: `uvicorn app.main:app`."""
 
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 from pydantic import BaseModel
@@ -9,6 +11,7 @@ from app.auth.csrf import csrf_protect
 from app.config import get_settings
 from app.errors import install_error_handlers
 from app.routers import admin, auth, session
+from app.services import storage
 
 
 class Health(BaseModel):
@@ -25,6 +28,13 @@ def _configure_logging() -> None:
         log.setLevel(logging.INFO)
 
 
+@asynccontextmanager
+async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
+    if get_settings().env == "dev":
+        storage.ensure_bucket()  # minio-init normally creates it; this covers a wiped volume
+    yield
+
+
 def create_app() -> FastAPI:
     get_settings()  # fail fast on bad configuration (e.g. DEV_LOG_LOGIN_CODES outside dev)
     _configure_logging()
@@ -32,6 +42,7 @@ def create_app() -> FastAPI:
         title="BTU AI Skills Passport API",
         version="0.1.0",
         dependencies=[Depends(csrf_protect)],
+        lifespan=_lifespan,
     )
     install_error_handlers(app)
     app.include_router(auth.router)
