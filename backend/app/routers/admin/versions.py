@@ -11,7 +11,7 @@ from app.db import get_db
 from app.errors import AppError
 from app.models import Passport, PassportVersion, Student
 from app.schemas.common import Page
-from app.schemas.version import RetryCount, VersionRow
+from app.schemas.version import RetryCount, VersionRow, version_row
 from app.services import issuance, storage
 
 router = APIRouter(tags=["admin: versions"])
@@ -26,26 +26,12 @@ def _rows() -> Select[PassportVersion, Student]:
     )
 
 
-def _row(version: PassportVersion, student: Student) -> VersionRow:
-    return VersionRow(
-        version_id=version.version_id,
-        passport_id=version.passport_id,
-        student_id=student.student_id,
-        student_name=f"{student.first_name} {student.last_name}",
-        version_no=version.version_no,
-        status=version.status,
-        error=version.error,
-        issued_at=version.issued_at,
-        created_at=version.created_at,
-    )
-
-
 def _one(db: Session, version_id: int) -> VersionRow:
     found = db.execute(_rows().where(PassportVersion.version_id == version_id)).one_or_none()
     if found is None:
         raise AppError("not_found", "No such version.", 404)
     version, student = found
-    return _row(version, student)
+    return version_row(version, student)
 
 
 @router.get("/versions", response_model=Page[VersionRow])
@@ -69,7 +55,9 @@ def list_versions(
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()
-    return Page(items=[_row(v, s) for v, s in rows], total=total, page=page, page_size=page_size)
+    return Page(
+        items=[version_row(v, s) for v, s in rows], total=total, page=page, page_size=page_size
+    )
 
 
 @router.post("/versions/retry-failed", response_model=RetryCount)

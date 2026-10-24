@@ -99,3 +99,46 @@ def test_promoted_user_gets_access_without_signing_in_again(
     db.add(UserRole(email="newcomer@btu.test", role="ADMIN"))
     db.commit()
     assert client.get("/api/admin/students").status_code == 200
+
+
+def _admin_routes() -> list[tuple[str, str]]:
+    """Every (method, path) under /api/admin/, from the OpenAPI schema (included routers
+    aren't expanded in app.routes)."""
+    from app.main import create_app
+
+    paths = create_app().openapi()["paths"]
+    return sorted(
+        (method.upper(), path)
+        for path, ops in paths.items()
+        if path.startswith("/api/admin/")
+        for method in ops
+    )
+
+
+def test_admin_routes_exist_for_m6() -> None:
+    paths = {path for _, path in _admin_routes()}
+    assert {
+        "/api/admin/dashboard",
+        "/api/admin/students",
+        "/api/admin/students/{student_id}",
+        "/api/admin/programs",
+        "/api/admin/skills",
+        "/api/admin/awards",
+        "/api/admin/awards/preview",
+        "/api/admin/versions",
+        "/api/admin/versions/{version_id}/retry",
+        "/api/admin/versions/retry-failed",
+        "/api/admin/versions/{version_id}/pdf",
+    } <= paths
+
+
+@pytest.mark.parametrize(("method", "path"), _admin_routes())
+def test_A11_student_forbidden_on_every_admin_route(
+    client_as: ClientAs, method: str, path: str
+) -> None:
+    """Every /api/admin/* route, with any path parameters filled in, refuses a student before
+    looking at the request (403, not 404 or 422)."""
+    url = path.replace("{student_id}", "BTU-T-0001").replace("{version_id}", "1")
+    response = client_as("student").request(method, url, json={})
+    assert response.status_code == 403, response.text
+    assert response.json()["error"] == "forbidden"

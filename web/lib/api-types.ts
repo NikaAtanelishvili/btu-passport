@@ -75,6 +75,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dashboard */
+        get: operations["dashboard_api_admin_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/students": {
         parameters: {
             query?: never;
@@ -84,6 +101,70 @@ export interface paths {
         };
         /** List Students */
         get: operations["list_students_api_admin_students_get"];
+        put?: never;
+        /**
+         * Create Student
+         * @description Registers the student with the next Passport ID. 409 duplicate_student_id /
+         *     duplicate_email, with the message under the field.
+         */
+        post: operations["create_student_api_admin_students_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/students/{student_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Student */
+        get: operations["get_student_api_admin_students__student_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Student
+         * @description `warnings: ["printed_name_differs"]` when the name no longer matches the issued
+         *     passport; the passport itself is untouched (FR-11).
+         */
+        patch: operations["update_student_api_admin_students__student_id__patch"];
+        trace?: never;
+    };
+    "/api/admin/programs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Programs
+         * @description Distinct programs in students, for the register form's select.
+         */
+        get: operations["list_programs_api_admin_programs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Skills */
+        get: operations["list_skills_api_admin_skills_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -365,6 +446,55 @@ export interface components {
             /** Skipped */
             skipped: string[];
         };
+        /** AwardRow */
+        AwardRow: {
+            /** Award Id */
+            award_id: number;
+            /** Skill Id */
+            skill_id: string;
+            /** Skill Name */
+            skill_name: string;
+            /** Category */
+            category: string;
+            /** Stamp Sha256 */
+            stamp_sha256: string | null;
+            /**
+             * Date Earned
+             * Format: date
+             */
+            date_earned: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "DIRECT" | "EVENT" | "SEED";
+            /**
+             * Submission Id
+             * Format: uuid
+             */
+            submission_id: string;
+            /** Event Id */
+            event_id: string | null;
+            /** Event Name */
+            event_name: string | null;
+            /** Legacy Record Id */
+            legacy_record_id: string | null;
+            /** Reason */
+            reason: string | null;
+            /** Awarded By */
+            awarded_by: string | null;
+        };
+        /** CategoryRef */
+        CategoryRef: {
+            /** Category Id */
+            category_id: number;
+            /** Name */
+            name: string;
+            /** Badge Code */
+            badge_code: string;
+            /** Stamp Sha256 */
+            stamp_sha256: string | null;
+        };
         /** CreatedVersion */
         CreatedVersion: {
             /** Student Id */
@@ -373,6 +503,19 @@ export interface components {
             version_id: number;
             /** Version No */
             version_no: number;
+        };
+        /** Dashboard */
+        Dashboard: {
+            /** Checkin Open */
+            checkin_open: number;
+            /** Awaiting Completion */
+            awaiting_completion: number;
+            /** Unregistered Checkins */
+            unregistered_checkins: number;
+            /** Failed Versions */
+            failed_versions: number;
+            /** Recent */
+            recent: components["schemas"]["VersionRow"][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -421,6 +564,49 @@ export interface components {
             page: number;
             /** Page Size */
             page_size: number;
+        };
+        /** ParticipationRow */
+        ParticipationRow: {
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Event Name */
+            event_name: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Event Status */
+            event_status: string;
+            /** Event Deleted */
+            event_deleted: boolean;
+            /**
+             * Checked In At
+             * Format: date-time
+             */
+            checked_in_at: string;
+            /** Method */
+            method: string;
+            /** Removed */
+            removed: boolean;
+        };
+        /** PassportInfo */
+        PassportInfo: {
+            /** Passport Id */
+            passport_id: string;
+            /** First Issued On */
+            first_issued_on: string | null;
+            /** Holder First Name */
+            holder_first_name: string | null;
+            /** Holder Last Name */
+            holder_last_name: string | null;
+            /** Frozen */
+            frozen: boolean;
+            /** Versions */
+            versions: components["schemas"]["VersionRow"][];
         };
         /** PreviewOut */
         PreviewOut: {
@@ -518,6 +704,95 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** SkillRow */
+        SkillRow: {
+            /** Skill Id */
+            skill_id: string;
+            /** Name */
+            name: string;
+            category: components["schemas"]["CategoryRef"];
+            /** Description */
+            description: string;
+            /** Times Awarded */
+            times_awarded: number;
+            /** Archived */
+            archived: boolean;
+        };
+        /**
+         * StudentCreate
+         * @description Field rules are checked in app/services/students.py, so every error comes back at
+         *     once with a readable message under its field.
+         */
+        StudentCreate: {
+            /** Student Id */
+            student_id: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Email */
+            email: string;
+            /** Program */
+            program: string;
+            /** Education Level */
+            education_level: string;
+            /** Status */
+            status: string;
+        };
+        /** StudentDetail */
+        StudentDetail: {
+            profile: components["schemas"]["StudentProfile"];
+            passport: components["schemas"]["PassportInfo"];
+            /** Awards */
+            awards: components["schemas"]["AwardRow"][];
+            /** Events */
+            events: components["schemas"]["ParticipationRow"][];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: "printed_name_differs"[];
+        };
+        /**
+         * StudentPatch
+         * @description Any StudentCreate field except student_id, which never changes.
+         */
+        StudentPatch: {
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Program */
+            program?: string | null;
+            /** Education Level */
+            education_level?: string | null;
+            /** Status */
+            status?: string | null;
+        };
+        /** StudentProfile */
+        StudentProfile: {
+            /** Student Id */
+            student_id: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Email */
+            email: string;
+            /** Program */
+            program: string;
+            /** Education Level */
+            education_level: string;
+            /** Status */
+            status: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** StudentRow */
         StudentRow: {
             /** Student Id */
@@ -536,6 +811,10 @@ export interface components {
             status: string;
             /** Passport Id */
             passport_id: string | null;
+            /** Latest Version No */
+            latest_version_no?: number | null;
+            /** Latest Status */
+            latest_status?: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -783,12 +1062,35 @@ export interface operations {
             };
         };
     };
+    dashboard_api_admin_dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+        };
+    };
     list_students_api_admin_students_get: {
         parameters: {
             query?: {
                 q?: string | null;
                 program?: string | null;
+                education_level?: string | null;
                 status?: string | null;
+                /** @description True: a passport has been issued (first_issued_on set) */
+                has_passport?: boolean | null;
                 page?: number;
                 page_size?: number;
             };
@@ -805,6 +1107,156 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_StudentRow_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_student_api_admin_students_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_student_api_admin_students__student_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                student_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_student_api_admin_students__student_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                student_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudentPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_programs_api_admin_programs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+        };
+    };
+    list_skills_api_admin_skills_get: {
+        parameters: {
+            query?: {
+                include_archived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillRow"][];
                 };
             };
             /** @description Validation Error */
