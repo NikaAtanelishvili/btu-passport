@@ -3,6 +3,7 @@
 The event tick (every 15 s, BE-40) is added with events in M7.
 """
 
+import logging
 import time
 
 from sqlalchemy import exists, or_, select
@@ -12,6 +13,9 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.models import AnchorBatch, PassportVersion
 from app.services import jobs
+
+log = logging.getLogger("worker")
+STALE_CHECK_SECONDS = 60
 
 
 def anchor_tick(db: Session) -> bool:
@@ -33,9 +37,18 @@ class Timers:
     def __init__(self) -> None:
         self.anchor_every = get_settings().anchor_interval_seconds
         self.next_anchor = 0.0
+        self.next_stale_check = time.monotonic() + STALE_CHECK_SECONDS
 
     def run_due(self) -> None:
         now = time.monotonic()
+        if now >= self.next_stale_check:
+            # Not only at start: a worker restarted within 5 minutes of a crash would
+            # otherwise leave the crashed worker's job RUNNING for good.
+            self.next_stale_check = now + STALE_CHECK_SECONDS
+            with SessionLocal() as db:
+                if n := jobs.requeue_stale(db):
+                    log.info("requeued %s job(s) left RUNNING by a crashed worker", n)
+                db.commit()
         if now >= self.next_anchor:
             self.next_anchor = now + self.anchor_every
             with SessionLocal() as db:

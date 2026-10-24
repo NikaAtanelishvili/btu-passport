@@ -115,3 +115,24 @@ def test_failure_backs_off_then_fails_after_max_attempts(
     job = _jobs(db)[0]
     assert (job.status, job.attempts) == ("FAILED", 3)
     assert fake_handler["give_up"] == [({"version_id": 7}, "boom")]
+
+
+def test_timers_requeue_stale_jobs_while_running(
+    db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A worker killed and restarted within 5 minutes must not leave its job RUNNING forever.
+    from worker import ticks
+
+    stale = jobs.enqueue(db, "ANCHOR_BATCH", {}, dedupe_key="anchor")
+    db.execute(
+        update(Job).where(Job.job_id == stale).values(status="RUNNING", locked_at=text("now()"))
+    )
+    db.commit()
+    timers = ticks.Timers()
+    timers.run_due()
+    assert _jobs(db)[0].status == "RUNNING"  # not stale yet
+    db.execute(update(Job).values(locked_at=text("now() - interval '6 minutes'")))
+    db.commit()
+    timers.next_stale_check = 0.0  # due now
+    timers.run_due()
+    assert _jobs(db)[0].status == "QUEUED"
