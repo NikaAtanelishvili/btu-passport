@@ -41,7 +41,8 @@ Every page is a client component that fetches through one typed API client with 
 
 | Route                                                                                 | Page              | Guard                                         | Task                |
 | ------------------------------------------------------------------------------------- | ----------------- | --------------------------------------------- | ------------------- |
-| `/`                                                                                   | P1 Verify         | none                                          | FE-10               |
+| `/verify`                                                                             | P1 Verify         | none                                          | FE-10               |
+| `/` (alias: redirects to `/verify`)                                                   | P1 Verify         | none                                          | FE-10               |
 | `/v/[code]`                                                                           | P2 Verify result  | none                                          | FE-11               |
 | `/login`                                                                              | P4 Sign in        | none (signed in → redirect by role)           | FE-04               |
 | `/checkin/[eventId]`                                                                  | P3 Check-in       | signed in                                     | FE-33               |
@@ -86,7 +87,7 @@ Page codes (P1, S1, A7 …) are those of the Web App Design document; follow its
 
 One client page, two steps (Web App Design P4), stock shadcn `Card`, `field`, `Input`, `InputOTP`, `Button`.
 
-1. **Email step:** email `Input` + **Send code** → `POST /auth/request-code`. Errors under the field: 422 `email_domain_not_allowed` → "Use your BTU email"; 429 → "Too many codes requested, try again later". A **Continue as guest** link goes to `/` (Verify); guests never sign in.
+1. **Email step:** email `Input` + **Send code** → `POST /auth/request-code`. Errors under the field: 422 `email_domain_not_allowed` → "Use your BTU email"; 429 → "Too many codes requested, try again later". A **Continue as guest** link goes to `/verify`; guests never sign in.
 2. **Code step:** "We sent a 6-digit code to {email}", a 6-slot `InputOTP`, **Sign in** → `POST /auth/verify-code` with `next` from the URL. 400 `code_invalid` → "Wrong code, {attempts_left} tries left"; 400 `code_expired` → "Code expired, send a new one" and back to step 1. **Resend code** is disabled for 60 s after each send; **Use a different email** returns to step 1.
 3. On success, `window.location.assign(redirect)`: a full reload, so the new cookies and `useSession()` start fresh. Already signed in → redirect by role.
 
@@ -96,7 +97,9 @@ One client page, two steps (Web App Design P4), stock shadcn `Card`, `field`, `I
 
 These must work well on a phone: most visitors are an employer opening a link or a student scanning a QR.
 
-### FE-10 Verify `/` (M5)
+### FE-10 Verify `/verify` (M5)
+
+The public verification page lives at `/verify`. `/` stays as an alias: `app/page.tsx` redirects to `/verify` (replacing the temporary FE-01 health page), so old links and the bare domain still land on Verify.
 
 - `Card` "Verify a passport": `Input` for the code (placeholder `XXXX-XXXX-XX`, accepts any case and dashes) + `Button` Verify → `router.push("/v/" + normalized)`.
 - `Card` "Or check the PDF you received": file `Input` (`accept="application/pdf"`) or drop zone. On select: `sha256File()` (BC-06) → `POST /api/verify/hash` → render `<VerifyResultView>` below, then run the independent check (FE-12). The note "Your file stays on your device; only its fingerprint is sent" sits under the input.
@@ -186,7 +189,7 @@ Two steps on one page:
 
 `Tabs`: Failed · In progress (PENDING, RENDERED, ANCHORING) · Recent (ANCHORED, newest first). `DataTable` on `GET /api/admin/versions?status=…`, refetch every 5 s on In progress. Columns: student · Passport ID · version · `StatusBadge` · error · time. Retry per row; "Retry all failed" with `ConfirmDialog`.
 
-**Done when (M6):** sign in as `admin@btu.test`, register a new student, award them a skill, watch it go PENDING → ANCHORED on the Issuance page, and verify their PDF on `/`; a form submitted with a future date shows the error under the date field (A9).
+**Done when (M6):** sign in as `admin@btu.test`, register a new student, award them a skill, watch it go PENDING → ANCHORED on the Issuance page, and verify their PDF on `/verify`; a form submitted with a future date shows the error under the date field (A9).
 
 ## 6. Super admin pages
 
@@ -243,7 +246,7 @@ Unit tests for the logic that could silently be wrong (hashing, proofs, code for
 
 ### FE-60 End-to-end flows (M10)
 
-1. **Thin slice:** sign in as `admin@btu.test` (code read from Mailpit) → direct award to BTU-T-0021 → wait for ANCHORED on the Issuance page → download the PDF → upload it on `/` → "Valid" → upload a copy with one byte changed → "Not valid".
+1. **Thin slice:** sign in as `admin@btu.test` (code read from Mailpit) → direct award to BTU-T-0021 → wait for ANCHORED on the Issuance page → download the PDF → upload it on `/verify` → "Valid" → upload a copy with one byte changed → "Not valid".
 2. **Event:** sign in as `superadmin@btu.test` → create an event → open check-in → a second browser context signed in as a student opens the check-in URL (fetch the current URL from `GET .../qr`) → checks in → the participant appears → close → Mark as done → the student's `/me/events` shows "Awarded in vN".
 3. **Access:** a student opening `/admin` sees the no-access alert, and `GET /api/admin/students` returns 403.
 

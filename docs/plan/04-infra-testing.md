@@ -45,7 +45,7 @@ Networks: `backend` (db, minio, mailpit, anvil, api, worker, web, caddy) and `si
 | `admin@btu.test` | Admin User | ADMIN | Students, direct awards |
 | `btu-t-0002@example.org` | Mariam Beridze | student (seed) | A2, A6, A8 |
 | `btu-t-0012@example.org` | Nikoloz Gelashvili | student (seed) | Check-in |
-| `btu-t-0021@example.org` | Luka Japaridze | student (seed) | A1, first passport |
+| `btu-t-0021@example.org` | Luka Japaridze | student (seed) | A1, first issued version |
 | `newcomer@btu.test` | Nino Newcomer | none (no student record) | A14, Unregistered |
 
 **Done when (M3):** every test user can sign in at `http://localhost:3000/login` with a code read from Mailpit and lands on the right page.
@@ -89,7 +89,7 @@ Each scenario from the Requirements Analysis becomes at least one automated test
 
 | # | Scenario (short) | Test | Layer | Milestone |
 | --- | --- | --- | --- | --- |
-| A1 | BTU-T-0021's first award gives passport BTU-AI-000139, one PDF, anchored | `tests/integration/test_issuance.py::test_A1_first_passport` (+ `tests/chain/` variant) | API + worker | M4 |
+| A1 | An additional award for BTU-T-0021 (seed passport BTU-AI-000139, no issued version) gives V1 with both skills, one PDF, anchored | `tests/integration/test_issuance.py::test_A1_additional_award` (+ `tests/chain/` variant) | API + worker | M4 |
 | A2 | BTU-T-0002 at legacy V1 with 2 pending awards → one new version, same Passport ID, skills in date order | `test_issuance.py::test_A2_issue_pending_one_version` | CLI + worker | M4 |
 | A3 | Same Idempotency-Key twice → no duplicate award, version or transaction | `test_awards.py::test_A3_idempotent` | API | M4 |
 | A4 | Unmodified PDF uploaded → VALID | `tests/chain/test_verify.py::test_A4_valid` + e2e flow 1 | full | M5 |

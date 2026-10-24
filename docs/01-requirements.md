@@ -355,7 +355,7 @@ Events FR-26 – FR-32 are **Must**: they are now the main way skills are awarde
 
 | # | Given | When | Then |
 | --- | --- | --- | --- |
-| A1 | Luka Japaridze (BTU-T-0021) has no issued passport | Admin awards his first skill in the form | Passport BTU-AI-000139 issued as one PDF, anchored; admin sees "Issued" |
+| A1 | Luka Japaridze (BTU-T-0021) has seed passport BTU-AI-000139 and one seed award (REC-0049), but no issued version yet | Admin gives him an additional award in the form | His first issued version, V1 of BTU-AI-000139, holds both skills as one PDF, anchored; admin sees "Issued" |
 | A2 | Mariam Beridze (BTU-T-0002) is at V1 with 2 pending awards, one dated before V1 | Admin confirms both in one submission | One new version (not two), Passport ID BTU-AI-000126 unchanged, skills in date order |
 | A3 | An award form was just submitted | Admin double-clicks or resubmits | No duplicate award, version or transaction |
 | A4 | An issued PDF | Verifier uploads it unmodified | "Valid — issued by BTU", version, date |
