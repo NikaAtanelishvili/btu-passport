@@ -13,7 +13,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts
 
 ## Infrastructure ------------------------------------------------------------
@@ -42,6 +42,13 @@ web:
 	cd web && pnpm dev
 
 ## Chain -------------------------------------------------------------------------
+
+# Deploys PassportRegistry(ISSUER_ADDRESS) and writes CONTRACT_ADDRESS into .env (BC-03).
+# Override for Sepolia: make chain-deploy RPC_URL=... DEPLOY_FLAGS=--verify (M10).
+chain-deploy:
+	cd contracts && forge script script/Deploy.s.sol --rpc-url $(RPC_URL) --broadcast \
+		--private-key $(DEPLOYER_PRIVATE_KEY) $(DEPLOY_FLAGS)
+	python3 contracts/script/post_deploy.py $$(cast chain-id --rpc-url $(RPC_URL)) $(RPC_URL)
 
 # ABI for Python (shared/) and the browser (web/lib/, typed `as const` for viem).
 chain-abi:
