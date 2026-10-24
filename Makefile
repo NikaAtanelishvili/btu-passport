@@ -13,7 +13,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web migrate migrate-test seed chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web migrate migrate-test seed bootstrap chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts
 
 ## Infrastructure ------------------------------------------------------------
@@ -52,6 +52,9 @@ migrate-test:
 
 seed:
 	cd backend && uv run python -m cli seed
+
+bootstrap:
+	cd backend && uv run python -m cli bootstrap --dev-users
 
 ## Chain -------------------------------------------------------------------------
 
