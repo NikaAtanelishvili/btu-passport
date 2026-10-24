@@ -49,8 +49,10 @@ def files(
 
 def _run(pdf: Path, proof: Path, issuer: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, "-I", str(SCRIPT), str(pdf), str(proof)]
-        + ["--rpc", get_settings().rpc_url, "--issuer-file", str(issuer)],
+        [
+            *(sys.executable, "-I", str(SCRIPT), str(pdf), str(proof)),
+            *("--rpc", get_settings().rpc_url, "--issuer-file", str(issuer)),
+        ],
         capture_output=True,
         text=True,
         timeout=60,
