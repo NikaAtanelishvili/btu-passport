@@ -32,7 +32,7 @@ One Python project (`backend/`, managed with uv) with three entry points — API
 
 ## 2. Data model
 
-### BE-02 Models (M2)
+### BE-02 Models (M2) ✅
 
 Seventeen tables. Implement them as SQLAlchemy 2 models (`Mapped[...]` style) exactly as below; the SQL is the specification, not a file to run. Two refinements over the design doc: the passport's frozen fields are filled at **first issuance**, not at registration (so a typo can be fixed before anything is printed), and events are **soft-deleted** so students can still see "Event deleted".
 
@@ -206,7 +206,7 @@ event_participants(
 
 ## 3. Migrations and seed import
 
-### BE-03 Initial migration (M2)
+### BE-03 Initial migration (M2) ✅
 
 - `migrations/versions/0001_initial.py`: autogenerate from the models, then review by hand. Add the four triggers from §2 as `op.execute()` SQL, plus `CREATE SEQUENCE passport_number_seq START 1`.
 - `make migrate` = `alembic upgrade head`; `make migrate-test` does the same on `passport_test`.
@@ -214,7 +214,7 @@ event_participants(
 
 **Done when:** `make migrate` on an empty database succeeds and the trigger tests pass.
 
-### BE-04 Seed import: `python -m cli seed` (M2)
+### BE-04 Seed import: `python -m cli seed` (M2) ✅
 
 Reads `seed/test-data.csv` (the hackathon file, unchanged). Idempotent: every insert is "insert if the natural key doesn't exist", so running twice changes nothing.
 
@@ -230,7 +230,7 @@ Reads `seed/test-data.csv` (the hackathon file, unchanged). Idempotent: every in
 
 **Done when:** a fresh seed prints 18 / 18 / 3 / 16 / 60 / 8; a second run prints all zeros; in M4, `issue-pending` creates 18 PENDING versions.
 
-### BE-05 Bootstrap: `python -m cli bootstrap [--dev-users]` (M2)
+### BE-05 Bootstrap: `python -m cli bootstrap [--dev-users]` (M2) ✅
 
 Upserts `user_roles` for `BOOTSTRAP_SUPER_ADMIN_EMAIL` as `SUPER_ADMIN`. With `--dev-users` also grants `admin@btu.test` the `ADMIN` role, matching the dev test users (Infra tab, IN-04). Writes an audit row with a NULL actor.
 

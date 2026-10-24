@@ -52,7 +52,7 @@ Networks: `backend` (db, minio, mailpit, anvil, api, worker, web, caddy) and `si
 
 ## 3. Makefile targets
 
-### IN-03 `Makefile` (M0, extended as milestones add pieces) ✅ M0, M1 targets
+### IN-03 `Makefile` (M0, extended as milestones add pieces) ✅ M0 – M2 targets
 
 Every command a developer or the agent needs, so nobody has to remember flags. Targets load `.env` (`include .env` + `export`).
 
