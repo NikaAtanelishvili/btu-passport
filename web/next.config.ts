@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  // FE-10: `/` is an alias of the public Verify page, kept for old links and the bare domain.
+  async redirects() {
+    return [{ source: "/", destination: "/verify", permanent: false }];
+  },
   async rewrites() {
     return [
       { source: "/api/:path*", destination: `${api}/api/:path*` },

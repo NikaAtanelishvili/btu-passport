@@ -99,7 +99,7 @@ These must work well on a phone: most visitors are an employer opening a link or
 
 ### FE-10 Verify `/verify` (M5) ✅
 
-The public verification page lives at `/verify`. `/` stays as an alias: `app/page.tsx` redirects to `/verify` (replacing the temporary FE-01 health page), so old links and the bare domain still land on Verify.
+The public verification page lives at `/verify`. `/` stays as an alias: a `redirects()` entry in `next.config.ts` (`permanent: false`) sends it to `/verify` (replacing the temporary FE-01 health page), so old links and the bare domain still land on Verify.
 
 - `Card` "Verify a passport": `Input` for the code (placeholder `XXXX-XXXX-XX`, accepts any case and dashes) + `Button` Verify → `router.push("/v/" + normalized)`.
 - `Card` "Or check the PDF you received": file `Input` (`accept="application/pdf"`) or drop zone. On select: `sha256File()` (BC-06) → `POST /api/verify/hash` → render `<VerifyResultView>` below, then run the independent check (FE-12). The note "Your file stays on your device; only its fingerprint is sent" sits under the input.
