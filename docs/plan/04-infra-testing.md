@@ -4,7 +4,7 @@
 
 During development only the infrastructure runs in Docker; the API, worker, signer and web app run on the host with hot reload. The `app` and `demo` profiles containerise everything for the demo.
 
-### IN-01 `infra/docker-compose.yml` (M0)
+### IN-01 `infra/docker-compose.yml` (M0) ✅
 
 | Service | Image (pin exact tags) | Ports | Profile | Notes |
 | --- | --- | --- | --- | --- |
@@ -21,7 +21,7 @@ During development only the infrastructure runs in Docker; the API, worker, sign
 
 Networks: `backend` (db, minio, mailpit, anvil, api, worker, web, caddy) and `signing` (worker, signer, anvil). Only the worker can reach the signer; the API reaches the chain only for read-only calls.
 
-### IN-02 Environment files (M0)
+### IN-02 Environment files (M0) ✅
 
 `.env.example` (committed, every variable from Overview §4 with dev defaults), `.env` (git-ignored, copied from the example), `.env.demo` (git-ignored, demo values), `secrets/issuer_key` (git-ignored; in dev it holds Anvil account 0's published test key). `.gitignore` covers `.env`, `.env.demo`, `secrets/`, `infra/*state*.json`.
 
@@ -52,7 +52,7 @@ Networks: `backend` (db, minio, mailpit, anvil, api, worker, web, caddy) and `si
 
 ## 3. Makefile targets
 
-### IN-03 `Makefile` (M0, extended as milestones add pieces)
+### IN-03 `Makefile` (M0, extended as milestones add pieces) ✅ M0 targets
 
 Every command a developer or the agent needs, so nobody has to remember flags. Targets load `.env` (`include .env` + `export`).
 

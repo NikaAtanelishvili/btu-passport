@@ -4,7 +4,7 @@
 
 One Python project (`backend/`, managed with uv) with three entry points — API, worker, signer — plus a CLI for seeding. Everything below uses synchronous SQLAlchemy; at this scale async adds complexity without benefit.
 
-### BE-01 Scaffold (M0)
+### BE-01 Scaffold (M0) ✅
 
 **Dependencies:** `fastapi`, `uvicorn[standard]`, `pydantic`, `pydantic-settings`, `sqlalchemy>=2`, `alembic`, `psycopg[binary]`, `httpx`, `python-multipart`, `jinja2`, `weasyprint`, `segno`, `boto3`, `pycryptodome` (keccak), `web3` (read-only chain calls in the API; key use only in the signer). Dev group: `pytest`, `pytest-cov`, `time-machine`, `ruff`, `mypy`.
 

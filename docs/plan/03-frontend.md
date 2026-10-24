@@ -4,7 +4,7 @@
 
 A Next.js app built entirely from stock shadcn/ui components. Visual design is out of scope: default theme, default spacing, no custom CSS beyond layout.
 
-### FE-01 Scaffold (M0) — `web/`
+### FE-01 Scaffold (M0) — `web/` ✅
 
 1. `pnpm create next-app web --ts --tailwind --eslint --app --import-alias "@/*"` (no `src/` folder).
 2. `pnpm dlx shadcn@latest init` with defaults, then add: `button input label textarea select checkbox form card table badge tabs dialog alert-dialog alert dropdown-menu command popover separator skeleton sheet sonner tooltip`.
