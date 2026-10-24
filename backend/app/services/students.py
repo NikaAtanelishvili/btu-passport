@@ -108,9 +108,9 @@ def _flush_unique(db: Session, values: dict[str, str], own_id: str | None) -> No
         raise error or AppError("conflict", "The student was changed concurrently.", 409) from None
 
 
-def create_student(db: Session, actor: "Principal", body: StudentCreate) -> Student:
+def create_student(db: Session, actor: "Principal | None", body: StudentCreate) -> Student:
     """FR-02/FR-10: the student and their one passport, with the next Passport ID. Frozen
-    fields stay empty until the first version is issued (BE-02)."""
+    fields stay empty until the first version is issued (BE-02). `actor` None: the CLI."""
     values, fields = _clean(body.model_dump())
     if fields:
         raise AppError("validation_error", "Some fields are invalid.", 422, fields)

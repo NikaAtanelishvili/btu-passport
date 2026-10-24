@@ -81,6 +81,32 @@ to start with code logging on unless `ENV` is `dev` or `test`. Send yourself a c
 check it doesn't land in spam. There is no second factor for staff: whoever controls an
 admin's inbox can sign in as that admin (accepted trade-off).
 
+## Demo accounts (real inboxes)
+
+The test emails above go to Mailpit. For a demo, sign-in codes must reach real inboxes, so
+the super admin, an admin and at least one student are created with real addresses. Their
+domains are allowed only in the demo env file (`.env.demo`, git-ignored), never in `.env`:
+
+```sh
+# .env.demo (on top of the demo values: SMTP_*, ENV=demo, DEV_LOG_LOGIN_CODES=false, ...)
+ALLOWED_EMAIL_DOMAINS=btu.edu.ge,btu.test,example.org,gmail.com   # + the real domains
+DEMO_SUPER_ADMIN_EMAIL=you@gmail.com
+DEMO_ADMIN_EMAIL=colleague@gmail.com
+DEMO_STUDENT_EMAIL=student@gmail.com
+DEMO_STUDENT_ID=BTU-T-0900            # optional; also DEMO_STUDENT_FIRST_NAME / _LAST_NAME
+```
+
+```sh
+make demo-users            # reads .env.demo over .env; DEMO_ENV=path/to/file for another file
+```
+
+It grants SUPER_ADMIN and ADMIN to the two staff addresses and registers the student (with a
+new Passport ID; their first version is issued with their first skill, e.g. a direct award).
+Every change is in the audit log with the system as actor. Re-running changes nothing. It
+refuses an address whose domain isn't in `ALLOWED_EMAIL_DOMAINS`, so it can't run against the
+dev configuration by mistake. The API must run with the same `.env.demo`, or those addresses
+can't sign in.
+
 ## Resetting the local chain
 
 Anvil keeps its chain in the `anvildata` volume (`--state`), so contracts and anchored roots

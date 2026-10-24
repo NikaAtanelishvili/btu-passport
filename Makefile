@@ -14,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop types migrate migrate-test seed bootstrap issue-pending chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop types migrate migrate-test seed bootstrap demo-users issue-pending chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -101,6 +101,13 @@ seed:
 
 bootstrap:
 	cd backend && uv run python -m cli bootstrap --dev-users
+
+# Demo super admin, admin and student with real inboxes, from DEMO_* in the demo env file,
+# which is read on top of .env (its ALLOWED_EMAIL_DOMAINS must include their domains).
+DEMO_ENV ?= .env.demo
+demo-users:
+	@test -f $(DEMO_ENV) || { echo "$(DEMO_ENV) not found; see 'Demo accounts' in README.md" >&2; exit 1; }
+	set -a && . $(abspath $(DEMO_ENV)) && set +a && cd backend && uv run python -m cli demo-users
 
 # A new version for every student whose awards aren't all in their latest one (BE-04 step 8).
 issue-pending:

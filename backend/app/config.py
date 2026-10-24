@@ -53,6 +53,14 @@ class Settings(BaseSettings):
     ]
     bootstrap_super_admin_email: str = "superadmin@btu.test"
 
+    # Demo accounts with real inboxes (`python -m cli demo-users`); set in the demo env only.
+    demo_super_admin_email: str = ""
+    demo_admin_email: str = ""
+    demo_student_email: str = ""
+    demo_student_id: str = "BTU-T-0900"
+    demo_student_first_name: str = "Demo"
+    demo_student_last_name: str = "Student"
+
     session_cookie_name: str = "session"
     session_secure: bool = False
     session_absolute_hours: int = 8

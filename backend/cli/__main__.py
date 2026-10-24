@@ -2,7 +2,7 @@
 
 import argparse
 
-from cli import bootstrap, merkle_vectors, seed
+from cli import bootstrap, demo_users, merkle_vectors, seed
 
 
 def main() -> None:
@@ -12,6 +12,9 @@ def main() -> None:
     commands.add_parser("seed", help="import seed/test-data.csv (BE-04)")
     boot = commands.add_parser("bootstrap", help="grant the first super admin (BE-05)")
     boot.add_argument("--dev-users", action="store_true", help="also make admin@btu.test ADMIN")
+    commands.add_parser(
+        "demo-users", help="demo super admin, admin and student with real inboxes (DEMO_*)"
+    )
     commands.add_parser(
         "issue-pending", help="new version for students with awards not yet in one (BE-04)"
     )
@@ -23,6 +26,8 @@ def main() -> None:
         seed.main()
     elif args.command == "bootstrap":
         bootstrap.main(dev_users=args.dev_users)
+    elif args.command == "demo-users":
+        demo_users.main()
     elif args.command == "issue-pending":
         issue_pending()
 

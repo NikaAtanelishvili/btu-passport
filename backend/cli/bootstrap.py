@@ -15,7 +15,7 @@ def _super_admin_email() -> str:
     return get_settings().bootstrap_super_admin_email
 
 
-def _grant(db: Session, email: str, role: str) -> bool:
+def grant(db: Session, email: str, role: str) -> bool:
     """Upsert one role; returns True (and writes an audit row) only if something changed."""
     email = email.strip().lower()
     domain = email.rpartition("@")[2]
@@ -39,7 +39,7 @@ def run(db: Session, *, dev_users: bool) -> int:
     grants = [(_super_admin_email(), "SUPER_ADMIN")]
     if dev_users:
         grants.append((DEV_ADMIN_EMAIL, "ADMIN"))
-    return sum(_grant(db, email, role) for email, role in grants)
+    return sum(grant(db, email, role) for email, role in grants)
 
 
 def main(*, dev_users: bool) -> None:
