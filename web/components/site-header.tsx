@@ -1,9 +1,14 @@
+"use client";
+
 import Link from "next/link";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { hasRole, signOut, useSession } from "@/lib/session";
 
-// Sign out and the session-aware state arrive with FE-03 (M3).
 export function SiteHeader() {
+  const session = useSession();
+  const info = session.data;
+
   return (
     <header className="border-b">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
@@ -14,10 +19,28 @@ export function SiteHeader() {
           <Link href="/" className={buttonVariants({ variant: "ghost" })}>
             Verify
           </Link>
-          {/* Plain <a>: /auth/* is proxied to the API, not a Next.js route. */}
-          <a href="/auth/login" className={buttonVariants({ variant: "outline" })}>
-            Sign in
-          </a>
+          {info && hasRole(info, "student") && (
+            <Link href="/me" className={buttonVariants({ variant: "ghost" })}>
+              My passport
+            </Link>
+          )}
+          {info && hasRole(info, "admin") && (
+            <Link href="/admin" className={buttonVariants({ variant: "ghost" })}>
+              Admin
+            </Link>
+          )}
+          {info?.authenticated ? (
+            <>
+              <span className="hidden text-sm text-muted-foreground sm:inline">{info.user?.email}</span>
+              <Button variant="outline" onClick={() => void signOut()}>
+                Sign out
+              </Button>
+            </>
+          ) : (
+            <Link href="/login" className={buttonVariants({ variant: "outline" })}>
+              Sign in
+            </Link>
+          )}
         </nav>
       </div>
     </header>
