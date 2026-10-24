@@ -42,8 +42,8 @@ class Timers:
     def run_due(self) -> None:
         now = time.monotonic()
         if now >= self.next_stale_check:
-            # Not only at start: a worker restarted within 5 minutes of a crash would
-            # otherwise leave the crashed worker's job RUNNING for good.
+            # Not only at start: a worker restarted within the stale timeout of a crash
+            # would otherwise leave the crashed worker's job RUNNING for good.
             self.next_stale_check = now + STALE_CHECK_SECONDS
             with SessionLocal() as db:
                 if n := jobs.requeue_stale(db):

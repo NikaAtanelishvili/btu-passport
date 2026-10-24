@@ -3,15 +3,23 @@
 Claiming uses FOR UPDATE SKIP LOCKED, so several worker processes can run safely.
 """
 
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from app.db import SessionLocal
 from app.models import Job
 
-STALE_AFTER = "5 minutes"
+# A running job's locked_at is refreshed every HEARTBEAT_SECONDS; one not refreshed for
+# STALE_AFTER belongs to a crashed worker. Anchoring takes seconds, so a crashed worker's
+# job is back in the queue within about two minutes (this plus the worker's 60 s check).
+HEARTBEAT_SECONDS: float = 15
+STALE_AFTER = "60 seconds"
 
 
 def enqueue(
@@ -83,8 +91,36 @@ def fail(db: Session, job_id: int, error: str) -> bool:
     return bool(status == "FAILED")
 
 
+@contextmanager
+def heartbeat(job_id: int) -> Iterator[None]:
+    """Keep the job's locked_at fresh from a background thread while the caller runs it, so
+    a slow job (an anchor waiting up to 120 s for its receipt) is never taken for stale."""
+    stop = threading.Event()
+
+    def beat() -> None:
+        while not stop.wait(HEARTBEAT_SECONDS):
+            with SessionLocal() as db:
+                db.execute(
+                    text(
+                        "UPDATE jobs SET locked_at = now() "
+                        "WHERE job_id = :id AND status = 'RUNNING'"
+                    ),
+                    {"id": job_id},
+                )
+                db.commit()
+
+    thread = threading.Thread(target=beat, name=f"heartbeat-{job_id}", daemon=True)
+    thread.start()
+    try:
+        yield
+    finally:
+        stop.set()
+        thread.join()
+
+
 def requeue_stale(db: Session) -> int:
-    """RUNNING jobs locked more than 5 minutes ago belong to a crashed worker: requeue them."""
+    """RUNNING jobs whose lock wasn't refreshed for STALE_AFTER belong to a crashed worker:
+    requeue them."""
     result = db.execute(
         text(f"""
             UPDATE jobs SET status = 'QUEUED', locked_at = NULL

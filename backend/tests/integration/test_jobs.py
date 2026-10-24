@@ -1,5 +1,6 @@
 """BE-26: the Postgres job queue and the worker loop (one iteration at a time)."""
 
+import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -58,16 +59,40 @@ def test_two_workers_never_claim_the_same_job(db: Session) -> None:
 
 
 def test_stale_running_jobs_are_requeued_on_start(db: Session) -> None:
+    # A live worker refreshes locked_at every 15 s, so 60 s without one means it crashed.
     stale = jobs.enqueue(db, "ISSUE_VERSION", {"version_id": 1})
     fresh = jobs.enqueue(db, "ISSUE_VERSION", {"version_id": 2})
-    old = datetime.now(UTC) - timedelta(minutes=6)
+    old = datetime.now(UTC) - timedelta(seconds=90)
+    recent = datetime.now(UTC) - timedelta(seconds=30)
     db.execute(update(Job).where(Job.job_id == stale).values(status="RUNNING", locked_at=old))
-    db.execute(
-        update(Job).where(Job.job_id == fresh).values(status="RUNNING", locked_at=text("now()"))
-    )
+    db.execute(update(Job).where(Job.job_id == fresh).values(status="RUNNING", locked_at=recent))
     db.commit()
     assert jobs.requeue_stale(db) == 1
     assert [j.status for j in _jobs(db)] == ["QUEUED", "RUNNING"]
+
+
+def test_a_running_job_keeps_its_lock_fresh(
+    db: Session, fake_handler: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A job slower than the stale timeout (an anchor waiting for its receipt) must not be
+    # taken for a crashed worker's: the heartbeat keeps locked_at recent while it runs.
+    monkeypatch.setattr(jobs, "HEARTBEAT_SECONDS", 0.05)
+    seen: list[bool] = []
+
+    def slow(db: Session, payload: dict[str, Any]) -> None:
+        with SessionLocal() as other:
+            other.execute(update(Job).values(locked_at=text("now() - interval '10 minutes'")))
+            other.commit()
+            time.sleep(0.3)
+            seen.append(jobs.requeue_stale(other) == 0)
+            other.commit()
+
+    monkeypatch.setitem(HANDLERS, "ISSUE_VERSION", JobHandler(run=slow, give_up=None))
+    jobs.enqueue(db, "ISSUE_VERSION", {"version_id": 7})
+    db.commit()
+    assert loop.run_once() is True
+    assert seen == [True]
+    assert _jobs(db)[0].status == "DONE"
 
 
 @pytest.fixture
@@ -120,7 +145,7 @@ def test_failure_backs_off_then_fails_after_max_attempts(
 def test_timers_requeue_stale_jobs_while_running(
     db: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # A worker killed and restarted within 5 minutes must not leave its job RUNNING forever.
+    # A worker killed and restarted within the stale timeout must not leave its job RUNNING.
     from worker import ticks
 
     stale = jobs.enqueue(db, "ANCHOR_BATCH", {}, dedupe_key="anchor")
@@ -131,7 +156,7 @@ def test_timers_requeue_stale_jobs_while_running(
     timers = ticks.Timers()
     timers.run_due()
     assert _jobs(db)[0].status == "RUNNING"  # not stale yet
-    db.execute(update(Job).values(locked_at=text("now() - interval '6 minutes'")))
+    db.execute(update(Job).values(locked_at=text("now() - interval '90 seconds'")))
     db.commit()
     timers.next_stale_check = 0.0  # due now
     timers.run_due()

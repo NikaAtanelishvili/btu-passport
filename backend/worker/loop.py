@@ -23,7 +23,7 @@ def run_once() -> bool:
     handler = HANDLERS[job.type]
     log.info("job %s %s %s (attempt %s)", job.job_id, job.type, job.payload, job.attempts)
     try:
-        with SessionLocal() as db:
+        with jobs.heartbeat(job.job_id), SessionLocal() as db:
             handler.run(db, job.payload)
             db.commit()
     except Exception as exc:
