@@ -6,6 +6,12 @@ export const queryKeys = {
     independent: (input: unknown) => ["verify", "independent", input] as const,
   },
   admin: {
+    all: ["admin"] as const,
+    dashboard: ["admin", "dashboard"] as const,
     students: (params: Record<string, unknown> = {}) => ["admin", "students", params] as const,
+    student: (id: string) => ["admin", "student", id] as const,
+    programs: ["admin", "programs"] as const,
+    skills: ["admin", "skills"] as const,
+    versions: (params: Record<string, unknown> = {}) => ["admin", "versions", params] as const,
   },
 };
