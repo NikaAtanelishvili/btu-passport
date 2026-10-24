@@ -35,12 +35,15 @@ infra-ps:
 	$(COMPOSE) ps -a
 
 ## Dev servers (host, hot reload) ---------------------------------------------
+# Each recipe execs its server, so Ctrl-C (SIGINT from the terminal) and honcho's SIGTERM
+# reach the server itself rather than a wrapper shell. Ctrl-Z only suspends: a stopped
+# server keeps its port, which port-free then reports.
 
 api:
-	cd backend && uv run uvicorn app.main:app --reload --port 8000
+	cd backend && exec uv run uvicorn app.main:app --reload --port 8000
 
-# exec, not `pnpm dev`: pnpm's shell wrapper forwards only SIGINT, so honcho's SIGTERM
-# left next-server running on its port with web/.next/dev/lock held. Port matches PUBLIC_BASE_URL.
+# Runs next directly: pnpm's shell wrapper forwards
+# only SIGINT, so honcho's SIGTERM left next-server holding the port and web/.next/dev/lock.
 web:
 	cd web && exec ./node_modules/.bin/next dev --port 3000
 
@@ -48,12 +51,12 @@ web:
 dev:
 	backend/.venv/bin/honcho -f Procfile.dev start
 
-# Fallback when a dev server outlived its terminal: kills this checkout's dev processes
-# (stopped ones too) and removes the Next.js lock. Skips its own ancestors, whose command
-# lines may contain the patterns.
+# Fallback only, for servers left behind (e.g. suspended with Ctrl-Z): kills this checkout's
+# dev processes and their make/pnpm parents, stopped ones too, and removes the Next.js lock.
+# Skips its own ancestors, whose command lines may contain the patterns.
 stop:
 	@self=" $$$$ "; p=$$$$; while [ "$$p" -gt 1 ]; do p=$$(awk '{print $$4}' /proc/$$p/stat); self+="$$p "; done; \
-	pids=$$(for p in $$(pgrep -f 'honcho -f Procfile[.]dev|next dev|next-server|web/[.]next/dev/build|uvicorn (app|signer)[.]main|python -m worker'); do \
+	pids=$$(for p in $$(pgrep -f '^make (api|web|worker|signer|dev)$$|^pnpm dev|honcho -f Procfile[.]dev|next dev|next-server|web/[.]next/dev/build|uvicorn (app|signer)[.]main|python -m worker'); do \
 		[[ "$$self" != *" $$p "* && $$(readlink /proc/$$p/cwd 2>/dev/null) == $(CURDIR)* ]] && echo $$p; done); \
 	if [ -n "$$pids" ]; then \
 		echo "stopping: $$(echo $$pids)"; kill -TERM $$pids 2>/dev/null; kill -CONT $$pids 2>/dev/null; \
@@ -64,11 +67,11 @@ stop:
 
 # Background jobs: PDF rendering and anchoring (BE-26).
 worker:
-	cd backend && uv run python -m worker
+	cd backend && exec uv run python -m worker
 
 # Issuer-key service (BC-07). Needs secrets/issuer_key and a deployed registry.
 signer:
-	cd backend && uv run uvicorn signer.main:app --port 8100
+	cd backend && exec uv run uvicorn signer.main:app --port 8100
 
 ## Database ----------------------------------------------------------------------
 
