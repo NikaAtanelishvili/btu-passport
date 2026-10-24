@@ -291,14 +291,15 @@ def participants(db: Session, event: Event, *, include_removed: bool = False) ->
             .exists()
         )
     stmt = (
-        select(EventParticipant, holds)
+        select(EventParticipant, holds, Student.first_name, Student.last_name)
+        .outerjoin(Student, Student.student_id == EventParticipant.student_id)
         .where(EventParticipant.event_id == event.event_id)
         .order_by(EventParticipant.checked_in_at, EventParticipant.id)
     )
     if not include_removed:
         stmt = stmt.where(EventParticipant.removed_at.is_(None))
     rows = []
-    for p, already in db.execute(stmt).all():
+    for p, already, first_name, last_name in db.execute(stmt).all():
         flags: list[Any] = []
         if p.student_id is None:
             flags.append("UNREGISTERED")
@@ -308,7 +309,8 @@ def participants(db: Session, event: Event, *, include_removed: bool = False) ->
             Participant(
                 email=p.email,
                 student_id=p.student_id,
-                name=p.display_name,
+                # A linked student's record name; the sign-in name for Unregistered rows.
+                name=f"{first_name} {last_name}" if first_name else p.display_name,
                 checked_in_at=p.checked_in_at,
                 method=p.method,
                 flags=flags,

@@ -93,3 +93,16 @@ def test_no_changes_once_completed(db: Session, boss: Principal, event: Event) -
         with pytest.raises(AppError) as err:
             action()
         assert err.value.code == "event_completed"
+
+
+def test_linked_participant_shows_the_student_name(
+    db: Session, boss: Principal, event: Event
+) -> None:
+    factories.participant(db, event, "newcomer@btu.test").display_name = "newcomer"
+    db.flush()
+    assert [p.name for p in events.participants(db, event)] == ["newcomer"]
+    student = factories.student(db, 9)
+    student.email = "newcomer@btu.test"
+    db.flush()
+    events.link_participants(db, student.student_id, student.email)
+    assert [p.name for p in events.participants(db, event)] == ["Nino Test"]
