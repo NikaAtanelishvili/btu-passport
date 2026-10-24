@@ -13,7 +13,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web migrate migrate-test seed bootstrap chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web types migrate migrate-test seed bootstrap chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts
 
 ## Infrastructure ------------------------------------------------------------
@@ -74,6 +74,15 @@ chain-abi:
 
 merkle-vectors:
 	cd backend && uv run python -m cli merkle-vectors
+
+## API types ---------------------------------------------------------------------
+
+# web/lib/api-types.ts from the API's OpenAPI schema (FE-02). Reads the schema from the
+# FastAPI app directly, so the API doesn't have to be running.
+types:
+	@tmp=$$(mktemp --suffix=.json) && \
+	(cd backend && uv run python -c "import json; from app.main import app; print(json.dumps(app.openapi()))") > $$tmp && \
+	cd web && pnpm exec openapi-typescript $$tmp -o lib/api-types.ts && rm -f $$tmp
 
 ## Quality ----------------------------------------------------------------------
 
