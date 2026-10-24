@@ -1,4 +1,4 @@
-"""CLI entry point: `python -m cli <command>` (issue-pending arrives in M4)."""
+"""CLI entry point: `python -m cli <command>`."""
 
 import argparse
 
@@ -12,6 +12,9 @@ def main() -> None:
     commands.add_parser("seed", help="import seed/test-data.csv (BE-04)")
     boot = commands.add_parser("bootstrap", help="grant the first super admin (BE-05)")
     boot.add_argument("--dev-users", action="store_true", help="also make admin@btu.test ADMIN")
+    commands.add_parser(
+        "issue-pending", help="new version for students with awards not yet in one (BE-04)"
+    )
     args = parser.parse_args()
 
     if args.command == "merkle-vectors":
@@ -20,6 +23,17 @@ def main() -> None:
         seed.main()
     elif args.command == "bootstrap":
         bootstrap.main(dev_users=args.dev_users)
+    elif args.command == "issue-pending":
+        issue_pending()
+
+
+def issue_pending() -> None:
+    from app.db import SessionLocal
+    from app.services import issuance
+
+    with SessionLocal() as db, db.begin():
+        created = issuance.issue_pending(db)
+    print(f"issue-pending: pending versions created {created}")
 
 
 if __name__ == "__main__":

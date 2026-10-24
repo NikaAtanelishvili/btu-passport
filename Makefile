@@ -13,7 +13,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer types migrate migrate-test seed bootstrap chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer types migrate migrate-test seed bootstrap issue-pending chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -63,6 +63,10 @@ seed:
 
 bootstrap:
 	cd backend && uv run python -m cli bootstrap --dev-users
+
+# A new version for every student whose awards aren't all in their latest one (BE-04 step 8).
+issue-pending:
+	cd backend && uv run python -m cli issue-pending
 
 ## Chain -------------------------------------------------------------------------
 

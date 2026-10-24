@@ -66,6 +66,16 @@ def s3_bucket() -> str:
     return bucket
 
 
+@pytest.fixture
+def seeded(db: Session, s3_bucket: str) -> Session:
+    """The real seed CSV imported: 18 students, 60 awards, 8 LEGACY versions."""
+    from cli import seed
+
+    seed.run(db)
+    db.commit()
+    return db
+
+
 ROLE_EMAILS = {
     "super_admin": "superadmin@btu.test",
     "admin": "admin@btu.test",
