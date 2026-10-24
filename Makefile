@@ -39,12 +39,25 @@ infra-ps:
 # reach the server itself rather than a wrapper shell. Ctrl-Z only suspends: a stopped
 # server keeps its port, which port-free then reports.
 
+# Fails when a port is taken instead of letting a server pick another one, and names the
+# holder; state T means a suspended (Ctrl-Z) server.
+define port-free
+@if ss -ltnH "sport = :$(1)" | grep -q .; then \
+	pid=$$(ss -ltnpH "sport = :$(1)" | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2); \
+	echo "Port $(1) is already in use$${pid:+ by PID $$pid: $$(ps -o stat=,args= -p $$pid)}" >&2; \
+	echo "State T = suspended with Ctrl-Z: run fg and press Ctrl-C, or make stop." >&2; \
+	exit 1; \
+fi
+endef
+
 api:
+	$(call port-free,8000)
 	cd backend && exec uv run uvicorn app.main:app --reload --port 8000
 
-# Runs next directly: pnpm's shell wrapper forwards
+# Always 3000 to match PUBLIC_BASE_URL. Runs next directly: pnpm's shell wrapper forwards
 # only SIGINT, so honcho's SIGTERM left next-server holding the port and web/.next/dev/lock.
 web:
+	$(call port-free,3000)
 	cd web && exec ./node_modules/.bin/next dev --port 3000
 
 # api, worker, signer and web together (Procfile.dev); Ctrl-C stops all four.
@@ -71,6 +84,7 @@ worker:
 
 # Issuer-key service (BC-07). Needs secrets/issuer_key and a deployed registry.
 signer:
+	$(call port-free,8100)
 	cd backend && exec uv run uvicorn signer.main:app --port 8100
 
 ## Database ----------------------------------------------------------------------

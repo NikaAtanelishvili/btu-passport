@@ -59,8 +59,8 @@ Every command a developer or the agent needs, so nobody has to remember flags. T
 | Target | Runs | Added in |
 | --- | --- | --- |
 | `infra-up` / `infra-down` / `infra-reset` | `docker compose -f infra/docker-compose.yml up -d` / `down` / `down -v` (wipes data, asks for confirmation) | M0 |
-| `api` | `cd backend && exec uv run uvicorn app.main:app --reload --port 8000` | M0 |
-| `web` | `cd web && exec ./node_modules/.bin/next dev --port 3000` | M0 |
+| `api` | `cd backend && exec uv run uvicorn app.main:app --reload --port 8000`; fails (naming the holder) if 8000 is taken | M0 |
+| `web` | `cd web && exec ./node_modules/.bin/next dev --port 3000`; fails (naming the holder) if 3000 is taken | M0 |
 | `worker` | `cd backend && exec uv run python -m worker` | M4 |
 | `signer` | `cd backend && exec uv run uvicorn signer.main:app --port 8100` | M4 |
 | `dev` | `api`, `worker`, `signer`, `web` together (e.g. with `honcho` and a `Procfile.dev`) | M4 |
