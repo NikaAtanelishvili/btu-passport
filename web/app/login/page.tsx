@@ -138,7 +138,7 @@ function EmailStep({ notice, onSent }: { notice: string | null; onSent: (email: 
             Send code
           </Button>
           {/* "/" is the alias of /verify (FE-10); guests never sign in. */}
-          <Link href="/" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+          <Link href="/verify" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
             Continue as guest
           </Link>
         </CardFooter>

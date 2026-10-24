@@ -189,3 +189,59 @@ export function VerifyResultView({
     </div>
   );
 }
+
+/** NFR-09: BTU's server is unreachable, so the browser checks the file on the chain alone. */
+export function ChainOnlyResult({ input, hasProofFile }: { input: CheckInput; hasProofFile: boolean }) {
+  const check = useQuery({
+    queryKey: queryKeys.verify.independent(input),
+    queryFn: () => independentCheck(input),
+    staleTime: Infinity,
+    retry: false,
+  });
+  if (check.isPending) {
+    return <p className="text-sm text-muted-foreground">Checking directly on the blockchain from your browser…</p>;
+  }
+  const result = check.data;
+  if (!result || result.unreachable) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>The blockchain can&apos;t be reached from your browser either</AlertTitle>
+        <AlertDescription>Try again later.</AlertDescription>
+      </Alert>
+    );
+  }
+  const valid = result.documentOk && result.issuerOk && !result.revoked;
+  return (
+    <div className="space-y-2" data-testid="verify-result">
+      <Alert variant={valid ? "default" : "destructive"}>
+        <AlertTitle data-testid="verdict">
+          {valid
+            ? "Valid on the blockchain — issued by BTU"
+            : !result.issuerOk
+              ? verdictHeadline("NOT_ISSUED_BY_BTU")
+              : result.revoked
+                ? verdictHeadline("REVOKED")
+                : hasProofFile
+                  ? "Not valid — this file doesn't match its proof"
+                  : "Not found on the blockchain by this file alone"}
+        </AlertTitle>
+        <AlertDescription>
+          {valid
+            ? "Checked directly on the blockchain from your browser. Whether this is the passport's latest version can only be checked when BTU's server is back."
+            : !hasProofFile && result.issuerOk
+              ? "Most passports need their proof file for this check. Add the proof.json that came with the passport."
+              : "Even a one-character change gives a different fingerprint."}
+        </AlertDescription>
+      </Alert>
+      <ul className="space-y-1">
+        <CheckRow ok={result.documentOk} label="Document unchanged since issue" />
+        <CheckRow ok={result.issuerOk} label="Issued by BTU" />
+      </ul>
+      {result.issuerSource === "bundled" && (
+        <p className="text-xs text-muted-foreground">
+          BTU&apos;s issuer file couldn&apos;t be fetched; the issuer identity built into this page was used.
+        </p>
+      )}
+    </div>
+  );
+}

@@ -16,7 +16,7 @@ export function SiteHeader() {
           BTU AI Skills Passport
         </Link>
         <nav className="flex items-center gap-2">
-          <Link href="/" className={buttonVariants({ variant: "ghost" })}>
+          <Link href="/verify" className={buttonVariants({ variant: "ghost" })}>
             Verify
           </Link>
           {info && hasRole(info, "student") && (

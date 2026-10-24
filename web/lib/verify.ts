@@ -154,12 +154,38 @@ export function checkInputFor(result: VerifyResult, localSha256?: string): Check
   };
 }
 
+export async function lookupHash(sha256: string, client = api): Promise<VerifyResult> {
+  const { data } = await client.POST("/api/verify/hash", { body: { sha256 } });
+  return data as VerifyResult;
+}
+
 /** FE-10: hash the PDF here and send only the hash. The file itself never leaves the device. */
 export async function lookupFile(
   file: Blob,
   client = api,
 ): Promise<{ sha256: Hex32; result: VerifyResult }> {
   const sha256 = await sha256File(file);
-  const { data } = await client.POST("/api/verify/hash", { body: { sha256 } });
-  return { sha256, result: data as VerifyResult };
+  return { sha256, result: await lookupHash(sha256, client) };
+}
+
+/** A proof.json the holder downloaded with the passport, for checking while BTU is down. */
+export async function readProofFile(file: Blob): Promise<ProofFile> {
+  const parsed = JSON.parse(await file.text()) as Partial<ProofFile>;
+  if (parsed.schema !== "btu-ai-passport-proof/1" || !Array.isArray(parsed.proof)) {
+    throw new Error("This is not a BTU passport proof file.");
+  }
+  return parsed as ProofFile;
+}
+
+/** Input for checking a file on the chain alone: with its proof.json if there is one, else
+ * the PDF's own leaf as the root (true when its batch held only this passport). */
+export function chainOnlyInput(localSha256: string, proofFile?: ProofFile): CheckInput {
+  if (!proofFile) return { pdfSha256: localSha256, proof: [] };
+  return {
+    pdfSha256: localSha256,
+    proof: proofFile.proof,
+    merkleRoot: proofFile.merkle_root,
+    chainId: proofFile.chain_id,
+    contractAddress: proofFile.contract_address,
+  };
 }

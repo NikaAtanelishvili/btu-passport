@@ -9,8 +9,11 @@ import { hashPair, leafFromPdfSha256 } from "@/lib/merkle";
 import {
   type ChainReader,
   type IssuerFile,
+  type ProofFile,
+  chainOnlyInput,
   independentCheck,
   lookupFile,
+  readProofFile,
 } from "@/lib/verify";
 
 const CONTRACT = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
@@ -160,5 +163,41 @@ describe("lookupFile", () => {
     expect(JSON.parse(body)).toEqual({ sha256: sha(marker) });
     expect(body).not.toContain("SECRET-CONTENT-MARKER");
     expect(requests[0].headers.get("content-type")).toBe("application/json");
+  });
+});
+
+describe("checking on the chain alone (BTU's API down)", () => {
+  const proofFile = {
+    schema: "btu-ai-passport-proof/1",
+    pdf_sha256: pdfSha256,
+    proof: [sibling],
+    merkle_root: root,
+    chain_id: 31337,
+    contract_address: CONTRACT,
+  } as ProofFile;
+  const deps = { chain: chain(), fetchIssuer: async () => issuer };
+
+  it("confirms the file with its proof.json", async () => {
+    const result = await independentCheck(chainOnlyInput(pdfSha256, proofFile), deps);
+    expect(result).toMatchObject({ documentOk: true, issuerOk: true });
+  });
+
+  it("a proof.json for another file does not vouch for this one", async () => {
+    const result = await independentCheck(chainOnlyInput(sha("edited"), proofFile), deps);
+    expect(result).toMatchObject({ documentOk: false });
+  });
+
+  it("without proof.json a passport from a bigger batch is not found", async () => {
+    const result = await independentCheck(chainOnlyInput(pdfSha256), deps);
+    expect(result).toMatchObject({ documentOk: false, issuerOk: true });
+  });
+
+  it("reads only proof files", async () => {
+    const file = (text: string) => new Blob([text], { type: "application/json" });
+    await expect(readProofFile(file(JSON.stringify(proofFile)))).resolves.toMatchObject({
+      merkle_root: root,
+    });
+    await expect(readProofFile(file('{"schema": "other"}'))).rejects.toThrow(/not a BTU/);
+    await expect(readProofFile(file("not json"))).rejects.toThrow();
   });
 });
