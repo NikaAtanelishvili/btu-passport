@@ -1,5 +1,6 @@
 # BTU AI Skills Passport — dev commands (IN-03). Targets are added per milestone.
-# First-time setup: cp .env.example .env  →  make infra-up  →  make api / make web
+# First-time setup: cp .env.example .env  →  make infra-up  →  make chain-deploy  →
+# make migrate seed bootstrap  →  make dev
 
 SHELL := /bin/bash
 
@@ -13,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer types migrate migrate-test seed bootstrap issue-pending chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev types migrate migrate-test seed bootstrap issue-pending chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -40,6 +41,10 @@ api:
 
 web:
 	cd web && pnpm dev
+
+# api, worker, signer and web together (Procfile.dev); Ctrl-C stops all four.
+dev:
+	backend/.venv/bin/honcho -f Procfile.dev start
 
 # Background jobs: PDF rendering and anchoring (BE-26).
 worker:

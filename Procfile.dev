@@ -1,0 +1,5 @@
+# `make dev` (IN-03): API, worker, signer and web together, each with its own make target.
+api: make api
+worker: make worker
+signer: make signer
+web: make web
