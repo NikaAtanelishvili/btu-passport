@@ -25,6 +25,7 @@ from app.models import (
     Skill,
     SkillAward,
     SkillCategory,
+    Student,
 )
 from app.schemas.event import (
     AwardedStudent,
@@ -449,3 +450,78 @@ def participant_count(db: Session, event_id: uuid.UUID) -> int:
         EventParticipant.event_id == event_id, EventParticipant.removed_at.is_(None)
     )
     return db.scalar(stmt) or 0
+
+
+def _participant(db: Session, event: Event, email: str) -> Participant:
+    return next(p for p in participants(db, event, include_removed=True) if p.email == email)
+
+
+def add_participant(
+    db: Session, actor: "Principal", event_id: uuid.UUID, student_id: str
+) -> Participant:
+    """BE-43: manual add by Student ID (method MANUAL); restores a removed row."""
+    event = _editable(db, event_id)
+    student = db.get(Student, student_id.strip().upper())
+    if student is None:
+        raise AppError(
+            "validation_error", "Unknown student.", 422, {"student_id": "No such student."}
+        )
+    row = db.scalar(
+        select(EventParticipant).where(
+            EventParticipant.event_id == event_id, EventParticipant.email == student.email
+        )
+    )
+    if row is not None and row.removed_at is None:
+        raise AppError("already_checked_in", f"{student.student_id} is already on the list.", 409)
+    if row is None:
+        row = EventParticipant(
+            event_id=event_id,
+            email=student.email,
+            student_id=student.student_id,
+            display_name=f"{student.first_name} {student.last_name}",
+            method="MANUAL",
+            added_by=actor.user.user_id,
+        )
+        db.add(row)
+    else:
+        row.removed_at = None
+        row.removed_by = None
+        row.student_id = student.student_id
+    db.flush()
+    audit.record(
+        db,
+        actor,
+        "participant.add",
+        "event",
+        str(event_id),
+        after={"email": student.email, "student_id": student.student_id},
+    )
+    db.flush()
+    return _participant(db, event, student.email)
+
+
+def remove_participant(db: Session, actor: "Principal", event_id: uuid.UUID, email: str) -> None:
+    """BE-43: sets removed_at; removing a removed row again changes nothing."""
+    _editable(db, event_id)
+    email = email.strip().lower()
+    row = db.scalar(
+        select(EventParticipant).where(
+            EventParticipant.event_id == event_id, EventParticipant.email == email
+        )
+    )
+    if row is None:
+        raise AppError("not_found", "No such participant.", 404)
+    if row.removed_at is not None:
+        return
+    row.removed_at = _now()
+    row.removed_by = actor.user.user_id
+    db.flush()
+    audit.record(
+        db,
+        actor,
+        "participant.remove",
+        "event",
+        str(event_id),
+        before={"email": email, "student_id": row.student_id},
+    )
+    db.flush()

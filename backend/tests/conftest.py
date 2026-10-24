@@ -118,6 +118,21 @@ def client_as(db: Session) -> Callable[[str | None], TestClient]:
     return make
 
 
+@pytest.fixture
+def boss(db: Session) -> Any:
+    """A super admin Principal for calling services directly (actor of audit rows)."""
+    from app.auth import sessions
+    from app.auth.deps import Principal
+    from app.models import UserRole
+    from tests import factories
+
+    user = factories.user(db, "superadmin@btu.test")
+    db.add(UserRole(email=user.email, role="SUPER_ADMIN"))
+    _, row = sessions.create_session(db, user)
+    db.flush()
+    return Principal(user=user, role="SUPER_ADMIN", student=None, session=row)
+
+
 class FakeMailer:
     """Records sign-in codes instead of sending email (BE-10 tests)."""
 

@@ -9,7 +9,6 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
-from app.auth import sessions
 from app.auth.deps import Principal
 from app.errors import AppError
 from app.models import (
@@ -21,7 +20,6 @@ from app.models import (
     Skill,
     SkillAward,
     Student,
-    UserRole,
 )
 from app.schemas.event import EventCreate, EventPatch
 from app.schemas.student import StudentCreate
@@ -30,15 +28,6 @@ from tests import factories
 
 NOW = datetime(2026, 10, 21, 9, 0, tzinfo=UTC)
 START = datetime(2026, 10, 21, 10, 0, tzinfo=UTC)
-
-
-@pytest.fixture
-def boss(db: Session) -> Principal:
-    user = factories.user(db, "superadmin@btu.test")
-    db.add(UserRole(email=user.email, role="SUPER_ADMIN"))
-    _, row = sessions.create_session(db, user)
-    db.flush()
-    return Principal(user=user, role="SUPER_ADMIN", student=None, session=row)
 
 
 def _body(**over: Any) -> EventCreate:
