@@ -48,3 +48,14 @@ export function formatDate(value: string): string {
     timeZone: "UTC",
   });
 }
+
+/** An instant in the viewer's local time, e.g. '25 Oct 2026, 14:05' (admin tables). */
+export function formatDateTime(value: string): string {
+  return new Date(value).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

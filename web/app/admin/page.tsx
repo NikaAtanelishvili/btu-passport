@@ -1,21 +1,105 @@
 "use client";
 
-// Placeholder until FE-21 (M6): proves sign-in lands admins here.
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSession } from "@/lib/session";
+// FE-21: dashboard (Web App Design A1). Counters refetch every 15 s; event counters link to
+// the events list once it exists (M7).
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+
+import { DataTable } from "@/components/data-table";
+import { ErrorAlert } from "@/components/error-alert";
+import { StatusBadge } from "@/components/status-badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { api } from "@/lib/api";
+import type { components } from "@/lib/api-types";
+import { formatDateTime } from "@/lib/format";
+import { queryKeys } from "@/lib/query-keys";
+import { hasRole, useSession } from "@/lib/session";
+
+type VersionRow = components["schemas"]["VersionRow"];
+
+function Counter({ label, value, href }: { label: string; value: number | undefined; href?: string }) {
+  const card = (
+    <Card className={href ? "transition-colors hover:bg-muted/50" : undefined}>
+      <CardHeader>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className="text-3xl">{value ?? "–"}</CardTitle>
+      </CardHeader>
+    </Card>
+  );
+  return href ? <Link href={href}>{card}</Link> : card;
+}
 
 export default function AdminDashboardPage() {
-  const { data } = useSession();
+  const session = useSession();
+  const superAdmin = session.data ? hasRole(session.data, "super_admin") : false;
+  const dashboard = useQuery({
+    queryKey: queryKeys.admin.dashboard,
+    queryFn: async () => (await api.GET("/api/admin/dashboard")).data!,
+    refetchInterval: 15_000,
+  });
+  const d = dashboard.data;
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Admin</CardTitle>
-        <CardDescription>The dashboard arrives in a later milestone.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-1 text-sm">
-        <p>Signed in as {data?.user?.email}</p>
-        <p>Role: {data?.role}</p>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/students/new" className={buttonVariants({ variant: "outline" })}>
+            Register student
+          </Link>
+          <Link href="/admin/awards/new" className={buttonVariants({ variant: "outline" })}>
+            Direct award
+          </Link>
+          {superAdmin && (
+            <Tooltip>
+              <TooltipTrigger render={<span />}>
+                <Button variant="outline" disabled>
+                  Create event
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Events arrive in a later milestone</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+
+      {dashboard.isError && <ErrorAlert error={dashboard.error} />}
+
+      <section className="space-y-2">
+        <h2 className="text-lg font-medium">Needs action</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Counter label="Check-in open now" value={d?.checkin_open} />
+          <Counter label="Waiting to be marked done" value={d?.awaiting_completion} />
+          <Counter label="Unregistered check-ins" value={d?.unregistered_checkins} />
+          <Counter label="Failed issuances" value={d?.failed_versions} href="/admin/issuance?tab=failed" />
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-lg font-medium">Recent activity</h2>
+        <DataTable<VersionRow>
+          rows={d?.recent}
+          loading={dashboard.isPending}
+          rowKey={(v) => v.version_id}
+          empty="No passports issued yet."
+          columns={[
+            {
+              header: "Student",
+              cell: (v) => (
+                <Link href={`/admin/students/${v.student_id}`} className="underline-offset-4 hover:underline">
+                  {v.student_name}
+                </Link>
+              ),
+            },
+            { header: "Passport ID", cell: (v) => v.passport_id },
+            { header: "Version", cell: (v) => `v${v.version_no}` },
+            { header: "Status", cell: (v) => <StatusBadge status={v.status} /> },
+            { header: "Issued", cell: (v) => (v.issued_at ? formatDateTime(v.issued_at) : "–") },
+          ]}
+        />
+      </section>
+    </div>
   );
 }
