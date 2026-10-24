@@ -57,3 +57,15 @@ def test_api_refuses_to_start_with_dev_log_in_demo(monkeypatch: pytest.MonkeyPat
             create_app()
     finally:
         get_settings.cache_clear()
+
+
+def test_settings_errors_never_echo_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ENV", "demo")
+    monkeypatch.setenv("DEV_LOG_LOGIN_CODES", "true")
+    monkeypatch.setenv("SIGNER_HMAC_SECRET", "super-secret-hmac-value")
+    monkeypatch.setenv("SMTP_PASSWORD", "super-secret-smtp-value")
+    with pytest.raises(ValueError) as excinfo:
+        Settings(_env_file=None)
+    message = str(excinfo.value)
+    assert "super-secret" not in message
+    assert "input_value" not in message  # pydantic truncates, so check nothing is echoed at all

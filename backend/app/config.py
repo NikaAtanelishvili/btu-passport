@@ -16,7 +16,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=REPO_ROOT / ".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=REPO_ROOT / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        # Validation errors must not print the input: it holds every secret from .env.
+        hide_input_in_errors=True,
     )
 
     env: Literal["dev", "test", "demo"] = "dev"
