@@ -4,7 +4,7 @@
 
 The whole on-chain part is one small contract that stores Merkle roots with a timestamp and accepts writes only from BTU's issuer address. No personal data goes on-chain (NFR-03).
 
-### BC-01 Foundry project and contract (M1) — `contracts/`
+### BC-01 Foundry project and contract (M1) — `contracts/` ✅
 
 - `forge init contracts --no-git`; `forge install OpenZeppelin/openzeppelin-contracts` (v5.x, pinned); remapping `@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/`.
 - `foundry.toml`: `solc` pinned (0.8.24 or newer), `optimizer = true`, `fs_permissions = [{ access = "read-write", path = "./deployments" }, { access = "read", path = "../shared" }]`.
@@ -55,7 +55,7 @@ contract PassportRegistry is Ownable2Step {
 
 ## 2. Foundry tests and deploy scripts
 
-### BC-02 Contract tests (M1) — `contracts/test/PassportRegistry.t.sol`
+### BC-02 Contract tests (M1) — `contracts/test/PassportRegistry.t.sol` ✅
 
 | Test | Expect |
 | --- | --- |
@@ -70,7 +70,7 @@ contract PassportRegistry is Ownable2Step {
 
 Read the vectors with `vm.readFile("../shared/merkle-vectors.json")` and `vm.parseJson*` helpers.
 
-### BC-03 Deploy script (M1) — `contracts/script/Deploy.s.sol`
+### BC-03 Deploy script (M1) — `contracts/script/Deploy.s.sol` ✅
 
 - Reads `ISSUER_ADDRESS` from the environment, deploys `PassportRegistry(issuer)`, and writes `deployments/<chainId>.json`:
 
@@ -88,7 +88,7 @@ Read the vectors with `vm.readFile("../shared/merkle-vectors.json")` and `vm.par
 
 Python builds trees, Python and the browser verify proofs, and Solidity's `verify()` checks them too — so the format is fixed here once and tested in all three languages against the same vectors.
 
-### BC-04 Spec and Python implementation (M1) — `backend/app/services/merkle.py`
+### BC-04 Spec and Python implementation (M1) — `backend/app/services/merkle.py` ✅
 
 All hashes are keccak-256; all values are 32 bytes, written as `0x` + 64 lowercase hex.
 
@@ -115,7 +115,7 @@ A single-leaf tree has `root = leaf` and an empty proof. Reject an empty batch a
 
 Python API: `leaf(pdf_sha256_hex) -> str`, `build_tree(pdf_sha256_hexes) -> (root, {pdf_sha256_hex: proof})`, `process_proof(leaf, proof) -> str`. Keccak via `Crypto.Hash.keccak` (pycryptodome).
 
-### BC-05 Shared vectors (M1) — `shared/merkle-vectors.json`
+### BC-05 Shared vectors (M1) — `shared/merkle-vectors.json` ✅
 
 Generated once by `python -m cli merkle-vectors` and committed. Inputs are deterministic: `pdf_sha256_i = sha256("vector-leaf-<i>")`. Cases with 1, 2, 3, 4, 5 and 7 leaves.
 
@@ -129,7 +129,7 @@ Generated once by `python -m cli merkle-vectors` and committed. Inputs are deter
 
 Three consumers, all in `make test`: `backend/tests/unit/test_merkle.py` (rebuilds every case and compares), `contracts/test/PassportRegistry.t.sol` (anchors each root and calls `verify` for each proof), `web/tests/merkle.test.ts` (Vitest: `processProof` gives the root for every proof).
 
-### BC-06 TypeScript verification library (M1, used in M5) — `web/lib/merkle.ts`
+### BC-06 TypeScript verification library (M1, used in M5) — `web/lib/merkle.ts` ✅
 
 `leafFromPdfSha256(hex)`, `hashPair(a, b)`, `processProof(leaf, proof)` with `keccak_256` from `@noble/hashes/sha3`, plus `sha256File(file: File)` using `crypto.subtle.digest("SHA-256", …)`. No tree building in the browser.
 
