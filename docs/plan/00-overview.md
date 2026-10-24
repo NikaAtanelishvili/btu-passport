@@ -233,11 +233,12 @@ Anything built differently from this plan, with the reason. Tasks are ticked ✅
 | --- | --- | --- |
 | IN-01 | MinIO images are `cgr.dev/chainguard/minio` and `cgr.dev/chainguard/minio-client`, pinned by digest | MinIO stopped publishing official Docker images in Oct 2025 and archived the project in 2026; Chainguard's free images are rebuilt from MinIO's source. Still MinIO and the S3 API, so no code changes. Chainguard's free tier only tags `latest`, hence the digest pin |
 | IN-01 | Anvil's command is `exec anvil …` and the container runs as root | The image's entrypoint is `/bin/sh -c`; without `exec`, anvil never receives SIGTERM and `--state` is never written. The named volume is root-owned |
-| IN-01 | Healthchecks for MinIO and Keycloak use bash `/dev/tcp`; Keycloak runs with `KC_HEALTH_ENABLED=true` | Neither image ships curl (MinIO doesn't ship grep either) |
+| IN-01 | MinIO's healthcheck uses bash `/dev/tcp`; Mailpit's uses its built-in `/mailpit readyz` | The MinIO image ships neither curl nor grep |
 | IN-01 | `signer` (profile `app`) reads `../.env` for now | Its own signer-only env file arrives with IN-05 |
-| IN-02 | `.env.example` also has `KC_BOOTSTRAP_ADMIN_USERNAME` / `KC_BOOTSTRAP_ADMIN_PASSWORD`; secrets are `change-me` placeholders | Keycloak needs an admin login; IN-01 names these variables |
-| BE-01 | `SessionMiddleware` is not mounted yet | It needs a signing secret that no variable in §4 provides; it gets added with BE-10 (M3) once that variable is decided |
+| IN-02 | Secrets in `.env.example` are `change-me` placeholders (the `KC_*` variables added in M0 were removed with Keycloak) | Keeps real values out of git |
+| BE-01 | No `SessionMiddleware` and no `SESSION_SECRET` (resolved 2026-10-24) | With email-code sign-in there is no OAuth handshake to sign (BE-10) |
 | BE-01 | `web3` resolved to 8.0.0 | Current stable at scaffold time; BC-07 is written against the v7 API, so check it then |
 | FE-01 | shadcn `field` instead of `form`; the shadcn style is the current default (`base-nova`, Base UI primitives) | The registry has replaced `form` (FE-01 step 4) |
 | IN-01, IN-02, BE-01 | **Superseded on 2026-10-24:** Keycloak (OIDC, staff MFA) is replaced by passwordless email-code sign-in built into FastAPI (BE-10, FE-04, IN-04); Mailpit catches dev mail. The Keycloak service, realm folder, `KC_*`/`OIDC_*`/MFA variables and `authlib`/`itsdangerous` are removed, and there is no `SESSION_SECRET` or `SessionMiddleware` | Product decision: simpler to run and demo, no IdP to configure. Accepted trade-off (IN-04): no second factor for staff — whoever controls an admin's inbox can sign in as that admin |
 | docs | `docs/01-requirments.md` renamed to `docs/01-requirements.md` | Match the name CLAUDE.md and §7 use |
+| IN-04 | Mailpit pinned to `v1.32.0` by digest and accepts any SMTP login (`MP_SMTP_AUTH_ACCEPT_ANY`, `MP_SMTP_AUTH_ALLOW_INSECURE`) | Lets a dev `.env` set `SMTP_USER`/`SMTP_PASSWORD` the way the demo does without breaking local mail |

@@ -13,7 +13,7 @@ class Health(BaseModel):
 def create_app() -> FastAPI:
     app = FastAPI(title="BTU AI Skills Passport API", version="0.1.0")
     install_error_handlers(app)
-    # SessionMiddleware (OAuth handshake only) and the routers arrive with M3 (BE-10).
+    # Routers arrive with their milestones (auth: BE-10, M3).
 
     @app.get("/api/healthz", response_model=Health, tags=["health"])
     def healthz() -> Health:

@@ -18,7 +18,7 @@ COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 ## Infrastructure ------------------------------------------------------------
 
 infra-up:
-	$(COMPOSE) up -d --wait db minio keycloak anvil
+	$(COMPOSE) up -d --wait db minio mailpit anvil
 	$(COMPOSE) up minio-init --exit-code-from minio-init
 	$(COMPOSE) ps
 

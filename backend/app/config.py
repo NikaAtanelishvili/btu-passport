@@ -30,12 +30,18 @@ class Settings(BaseSettings):
     s3_secret_key: SecretStr
     s3_bucket: str = "passports"
 
-    oidc_issuer: str = "http://localhost:8080/realms/btu"
-    oidc_client_id: str = "passport-web"
-    oidc_client_secret: SecretStr
-    oidc_redirect_uri: str = "http://localhost:3000/auth/callback"
-    require_mfa_claim: bool = False
-    mfa_acr_value: str = "2"
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    smtp_user: str = ""
+    smtp_password: SecretStr = SecretStr("")
+    smtp_from: str = "passport@btu.test"
+
+    login_code_ttl_minutes: int = 10
+    login_code_max_attempts: int = 5
+    login_rate_per_email_hour: int = 5
+    login_rate_per_ip_hour: int = 20
+    dev_log_login_codes: bool = True
+
     allowed_email_domains: Annotated[list[str], NoDecode] = [
         "btu.edu.ge",
         "btu.test",
