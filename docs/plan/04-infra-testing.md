@@ -60,10 +60,11 @@ Every command a developer or the agent needs, so nobody has to remember flags. T
 | --- | --- | --- |
 | `infra-up` / `infra-down` / `infra-reset` | `docker compose -f infra/docker-compose.yml up -d` / `down` / `down -v` (wipes data, asks for confirmation) | M0 |
 | `api` | `cd backend && uv run uvicorn app.main:app --reload --port 8000` | M0 |
-| `web` | `cd web && pnpm dev` | M0 |
+| `web` | `cd web && exec ./node_modules/.bin/next dev --port 3000` | M0 |
 | `worker` | `cd backend && uv run python -m worker` | M4 |
 | `signer` | `cd backend && uv run uvicorn signer.main:app --port 8100` | M4 |
 | `dev` | `api`, `worker`, `signer`, `web` together (e.g. with `honcho` and a `Procfile.dev`) | M4 |
+| `stop` | Kill this checkout's leftover dev processes (stopped ones too) and remove `web/.next/dev/lock` | M5 |
 | `migrate` / `migrate-test` | `alembic upgrade head` on `passport` / `passport_test` | M2 |
 | `seed` | `python -m cli seed` | M2 |
 | `bootstrap` | `python -m cli bootstrap --dev-users` | M2 |

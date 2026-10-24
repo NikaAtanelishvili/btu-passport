@@ -14,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev types migrate migrate-test seed bootstrap issue-pending chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop types migrate migrate-test seed bootstrap issue-pending chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -39,12 +39,28 @@ infra-ps:
 api:
 	cd backend && uv run uvicorn app.main:app --reload --port 8000
 
+# exec, not `pnpm dev`: pnpm's shell wrapper forwards only SIGINT, so honcho's SIGTERM
+# left next-server running on its port with web/.next/dev/lock held. Port matches PUBLIC_BASE_URL.
 web:
-	cd web && pnpm dev
+	cd web && exec ./node_modules/.bin/next dev --port 3000
 
 # api, worker, signer and web together (Procfile.dev); Ctrl-C stops all four.
 dev:
 	backend/.venv/bin/honcho -f Procfile.dev start
+
+# Fallback when a dev server outlived its terminal: kills this checkout's dev processes
+# (stopped ones too) and removes the Next.js lock. Skips its own ancestors, whose command
+# lines may contain the patterns.
+stop:
+	@self=" $$$$ "; p=$$$$; while [ "$$p" -gt 1 ]; do p=$$(awk '{print $$4}' /proc/$$p/stat); self+="$$p "; done; \
+	pids=$$(for p in $$(pgrep -f 'honcho -f Procfile[.]dev|next dev|next-server|web/[.]next/dev/build|uvicorn (app|signer)[.]main|python -m worker'); do \
+		[[ "$$self" != *" $$p "* && $$(readlink /proc/$$p/cwd 2>/dev/null) == $(CURDIR)* ]] && echo $$p; done); \
+	if [ -n "$$pids" ]; then \
+		echo "stopping: $$(echo $$pids)"; kill -TERM $$pids 2>/dev/null; kill -CONT $$pids 2>/dev/null; \
+		for i in $$(seq 50); do alive=; for p in $$pids; do [ -e /proc/$$p ] && alive=1; done; [ -z "$$alive" ] && break; sleep 0.1; done; \
+		kill -KILL $$pids 2>/dev/null; \
+	fi; true
+	rm -f web/.next/dev/lock
 
 # Background jobs: PDF rendering and anchoring (BE-26).
 worker:
