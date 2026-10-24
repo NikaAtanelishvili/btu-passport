@@ -135,6 +135,9 @@ services:
 
   caddy:
     profiles: [demo]
+    # Must see the real client address: Docker's published ports keep it for IPv4 via
+    # iptables, but the userland proxy (IPv6, hairpin) or a tunnel replaces it with a
+    # gateway address, and then every client shares one per-IP sign-in limit (IN-05/IN-07).
     image: caddy:2.11.7
     ports: ["80:80", "443:443"]
     environment:
@@ -145,7 +148,14 @@ services:
     networks: [backend]
 
 networks:
-  backend: {}
+  backend:
+    # Pinned so Caddy's address (demo) is always inside the API's trusted-proxy ranges
+    # (app/auth/login_codes.py TRUSTED_PROXY_NETS); otherwise the API ignores
+    # X-Forwarded-For and the per-IP sign-in limit sees only Caddy.
+    # Checked by tests/integration/test_demo_proxy.py.
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
   signing: {}
 
 volumes:
