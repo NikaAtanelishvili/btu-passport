@@ -1,54 +1,193 @@
-/* Plain placeholder layout (BE-25). Fonts are declared in passport.html.j2. */
+/* BTU passport design (docs/design/passport/). One page = the design's card, 871 x 554 CSS px
+   (230.5 x 146.6 mm, landscape); every length below is a pixel measured on the design PNGs.
+   DEFAULT(PDF): the PNGs carry no physical size, so the page keeps their pixels at 96 px/in. */
 
 @page {
-  size: A4;
-  margin: 18mm;
-  @bottom-center {
-    font-family: "Noto Sans", "Noto Sans Georgian";
-    font-size: 8pt;
-    color: #555;
-  }
+  size: 871px 554px;
+  margin: 0;
+}
+@page detail {
+  margin: 104px 29px 84px 31px;
+  @top-left { content: element(detail-head); vertical-align: top; width: 811px; }
+  @bottom-left { content: element(detail-foot-left); vertical-align: top; width: 400px; }
+  @bottom-right { content: element(detail-foot-right); vertical-align: top; width: 300px; }
 }
 
+* { margin: 0; padding: 0; box-sizing: border-box; }
 html {
-  font-family: "Noto Sans", "Noto Sans Georgian";
-  font-size: 10.5pt;
-  line-height: 1.45;
-  color: #111;
+  font-family: "Outfit", "Noto Sans Georgian", "Noto Sans", sans-serif;
+  font-weight: 300;
+  color: #000;
+  line-height: 1.25;
+}
+b, .label { font-weight: 900; }
+
+.page {
+  position: relative;
+  width: 871px;
+  height: 554px;
+  overflow: hidden;
+  page-break-after: always;
+}
+.page > *, .sticker { position: absolute; }
+.sticker img, .sticker svg { display: block; width: 100%; height: 100%; }
+
+.heavy { font-weight: 900; }
+.thin { font-weight: 200; }
+.display { text-transform: uppercase; line-height: 0.98; letter-spacing: -0.005em; }
+.rule { border: 0; border-top: 1px solid #c4c4c4; height: 0; }
+.divider { border-left: 1px solid #c4c4c4; width: 0; }
+
+/* Brand block: the orange "AI SKILLS / DIGITAL PASSPORT" wordmark and the BTU mark. */
+.brand { display: flex; align-items: center; }
+.wordmark {
+  display: block;
+  background: #ff6a00;
+  width: 152px;
+  padding: 4px 7px;
+  font-size: 15.5px;
+  line-height: 1;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.wordmark .heavy { font-weight: 800; }
+.logo { display: block; margin-left: 28px; }
+.logo-name {
+  display: block;
+  margin-left: 3px;
+  font-family: "Noto Sans Georgian", sans-serif;
+  font-weight: 700;
+  line-height: 1.12;
+  white-space: nowrap;
 }
 
-h1, h2, h3 { margin: 0 0 6mm; line-height: 1.2; }
-h1 { font-size: 26pt; }
-h2 { font-size: 16pt; }
-h3 { font-size: 12pt; margin-bottom: 1mm; }
+/* PASSPORT ID with the verification code, version and QR (not in the design). */
+.pid { display: flex; align-items: center; font-size: 12px; text-transform: uppercase; font-weight: 300; }
+.pid .qr { width: 44px; height: 44px; margin-right: 8px; }
+.pid .value { font-weight: 600; }
+.pid-text p + p { margin-top: 2px; font-size: 9.5px; }
 
-.page { break-after: page; }
+/* 1. Cover */
+.cover h1 { left: 61px; top: 33px; font-size: 65px; white-space: nowrap; line-height: 1.02; }
+.cover .asterisks { left: 772px; top: 31px; width: 38px; }
+.cover .asterisks svg { display: block; margin-bottom: 7px; }
+.cover .rule { left: 63px; top: 179px; width: 745px; }
+.cover .field { left: 63px; font-size: 26px; text-transform: none; }
+.cover .field .label { text-transform: uppercase; }
+.cover .field .value { font-weight: 300; margin-left: 4px; }
+.cover .name { top: 221px; }
+.cover .surname { top: 268px; }
+.cover .issue { left: 563px; top: 222px; font-size: 18px; }
+.cover .issue .label { text-transform: uppercase; }
+.cover .issue .value { font-weight: 300; }
+.cover-brand { left: 62px; top: 441px; }
+.cover-brand .wordmark { width: 221px; padding: 6px 10px; font-size: 21.5px; }
+.cover-brand .logo { margin-left: 40px; }
+/* QR above the text: the corner below the stickers is the only free space on the cover. */
+.cover-pid { right: 33px; top: 424px; flex-direction: column; align-items: flex-end; text-align: right; }
+.cover-pid .qr { margin: 0 0 7px 0; }
 
-.cover { padding-top: 60mm; text-align: center; }
-.cover .issuer { font-size: 12pt; letter-spacing: 0.04em; text-transform: uppercase; }
-.cover .holder { font-size: 20pt; font-weight: 700; margin: 14mm 0 10mm; }
-.cover dl { display: inline-block; text-align: left; }
-
-dl { display: grid; grid-template-columns: 42mm auto; gap: 2mm 4mm; margin: 0 0 8mm; }
-dt { color: #555; }
-dd { margin: 0; }
-
-.code { font-weight: 700; letter-spacing: 0.08em; }
-.url, .hex { word-break: break-all; }
-.qr { width: 45mm; height: 45mm; display: block; margin: 4mm 0; }
-.note { color: #555; }
-
-.skills { break-after: page; }
-.skill {
-  break-inside: avoid;
-  display: flex;
-  gap: 6mm;
-  padding: 5mm 0;
-  border-top: 0.3mm solid #ccc;
+/* 2. About */
+.about-left { left: 23px; top: 29px; width: 261px; font-size: 10.6px; line-height: 1.24; }
+.about-left h2 { font-size: 30px; margin-bottom: 17px; white-space: nowrap; }
+.about-left p { text-align: justify; margin-bottom: 13px; }
+.asterisk-row { left: 21px; top: 432px; width: 264px; display: flex; justify-content: space-between; }
+.about-pid { left: 23px; top: 482px; }
+.about-divider { left: 307px; top: 28px; height: 503px; }
+.stamps-title { left: 330px; top: 27px; font-size: 29px; font-weight: 900; text-transform: uppercase; color: #ff6a00; white-space: nowrap; }
+.stamps-rule { left: 330px; top: 65px; width: 514px; }
+.stamp-type { font-size: 11.3px; line-height: 1.17; }
+.stamp-type h3 { font-size: 14.8px; line-height: 0.96; text-transform: uppercase; margin-bottom: 7px; white-space: nowrap; }
+.stamp-type h3 .thin { font-weight: 200; font-size: 0.92em; }
+.stamp-type p { margin-bottom: 10px; }
+.stamp-type .just { text-align: justify; }
+.type-stamp { position: absolute; object-fit: contain; }
+.stamp-type.skill { left: 330px; top: 82px; width: 236px; }
+.stamp-type.skill .type-stamp { left: 178px; top: -14px; width: 55px; height: 48px; }
+.applied-divider { left: 590px; top: 74px; height: 157px; }
+.stamp-type.applied { left: 606px; top: 82px; width: 236px; }
+.stamp-type.applied .type-stamp { left: 134px; top: -3px; width: 102px; height: 33px; }
+.types-rule { left: 330px; top: 241px; width: 512px; }
+.stamp-type.advanced { left: 330px; top: 261px; width: 302px; font-size: 11.9px; line-height: 1.32; }
+.stamp-type.advanced p { margin-bottom: 14px; }
+.stamp-type.advanced .type-stamp { left: 231px; top: -13px; width: 46px; height: 46px; }
+.important {
+  left: 330px; top: 434px; width: 354px; height: 96px;
+  background: #e6e6e6; border-radius: 9px; padding: 7px 14px;
+  font-size: 9.4px; line-height: 1.38;
 }
-.skill .stamp { width: 22mm; height: 22mm; flex: none; }
-.skill .meta { color: #555; margin: 0 0 2mm; }
-.skill p { margin: 0; }
+.important h4 { font-size: 10.6px; font-weight: 900; text-transform: uppercase; margin-bottom: 4px; }
+.important p + p { margin-top: 10px; }
+.grows-divider { left: 696px; top: 259px; height: 272px; }
+.grows { left: 708px; top: 260px; width: 146px; text-align: center; text-transform: uppercase; }
+.grows h3 { font-size: 15.5px; font-weight: 900; line-height: 1.02; margin-bottom: 8px; }
+.grows ol { list-style: none; font-size: 11.5px; line-height: 1.05; }
+.grows li { margin-bottom: 8px; }
+.grows li svg { display: block; margin: 0 auto 4px; }
 
-.last ol { padding-left: 6mm; margin-bottom: 8mm; }
-.last li { margin-bottom: 3mm; }
+/* 3. Verified AI skillset */
+.page-title { font-size: 27px; font-weight: 900; text-transform: uppercase; line-height: 1; }
+.page-subtitle { font-size: 12.6px; font-weight: 700; margin-top: 9px; }
+.grid-page .page-title { left: 25px; top: 21px; }
+.grid-page .page-subtitle { left: 25px; top: 46px; }
+.grid { left: 27px; top: 89px; width: 820px; display: flex; flex-wrap: wrap; }
+.slot {
+  width: 156px; height: 180px; margin: 0 10px 12px 0;
+  border: 1px solid #8f8f8f; border-radius: 10px;
+  text-align: center; text-transform: uppercase;
+}
+.slot:nth-child(5n) { margin-right: 0; }
+.slot-date { height: 21px; border-bottom: 1px solid #8f8f8f; font-size: 8px; font-weight: 400; line-height: 20px; }
+.slot-stamp { height: 100px; padding: 16px 8px 12px; }
+.slot-img { width: 100%; height: 100%; object-fit: contain; }
+.slot-name { font-size: 11.6px; font-weight: 900; line-height: 1.12; padding: 0 6px; }
+.slot-category { font-size: 11.6px; font-weight: 300; line-height: 1.2; margin-top: 1px; padding: 0 6px; }
+.grid-brand { left: 31px; top: 486px; }
+.grid-pid { right: 33px; top: 478px; flex-direction: row-reverse; text-align: right; }
+.grid-pid .qr { margin: 0 0 0 8px; }
+
+/* 4. AI skills detailed information */
+.detail-head { position: running(detail-head); padding: 21px 0 0 0; }
+.detail-head .page-subtitle { margin-top: 8px; }
+.detail-foot-left { position: running(detail-foot-left); padding-top: 12px; }
+.detail-foot-left .pid { margin-left: -11px; }
+.detail-foot-right { position: running(detail-foot-right); padding-top: 14px; }
+.detail-foot-right .brand { justify-content: flex-end; }
+.detail { page: detail; }
+.detail table {
+  width: 811px;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #8f8f8f;
+  border-radius: 14px;
+  box-decoration-break: clone;
+  text-transform: uppercase;
+  text-align: center;
+}
+.detail thead { display: table-header-group; }
+.detail th {
+  height: 44px;
+  font-size: 13.6px;
+  font-weight: 900;
+  border-bottom: 1px solid #8f8f8f;
+}
+.detail th + th, .detail td + td { border-left: 1px solid #8f8f8f; }
+.detail tr { page-break-inside: avoid; }
+.detail td {
+  height: 64px;
+  padding: 6px 12px;
+  border-top: 1px solid #8f8f8f;
+  vertical-align: middle;
+  font-size: 7px;
+  font-weight: 300;
+  line-height: 1.3;
+}
+.detail tbody tr:first-child td { border-top: 0; }
+.detail .c-stamp { width: 145px; }
+.detail .c-skill { width: 132px; font-size: 12px; font-weight: 900; line-height: 1.1; }
+.detail th.c-skill { font-size: 13.6px; }
+.detail .c-desc { width: 155px; }
+.detail .c-through { width: 208px; }
+.detail .c-date { width: 171px; font-size: 9px; font-weight: 400; }
+.detail th.c-date { font-size: 13.6px; font-weight: 900; }
+.row-img { width: 105px; height: 46px; object-fit: contain; display: block; margin: 0 auto; }

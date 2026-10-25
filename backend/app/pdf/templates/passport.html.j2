@@ -1,84 +1,192 @@
 <!doctype html>
-{#- Plain placeholder passport (BE-25). Renders only from `c` (content_json). BTU's design
-    replaces this folder via PASSPORT_TEMPLATE_DIR. No random values: the PDF must be
-    byte-identical for the same content. -#}
+{#- BTU's passport design (docs/design/passport/): cover, About, Verified AI skillset grid (10 slots
+    a page) and the detailed table. Renders only from `c` (content_json); no random values, so
+    the same content gives the same bytes. Positions are the design's pixels: the page is the
+    design's card, 871 x 554 CSS px. The brand PNGs are used as they are; clip paths only hide
+    the white around a sticker's shape where stickers overlap. -#}
+{%- set code = c.verification_code | code -%}
+
+{#- A sticker on the cover. The wrapper turns (WeasyPrint clips a turned <svg> to its unturned
+    box); `clip` hides the white around a round or triangular sticker where it overlaps another. -#}
+{%- macro sticker(file, w, h, width, left, top, rotate=0, clip="") -%}
+{%- set height = (width * h / w) | round(1) -%}
+<div class="sticker" style="left: {{ left }}px; top: {{ top }}px; width: {{ width }}px; height: {{ height }}px; transform: rotate({{ rotate }}deg)">
+  {%- if clip %}
+  <svg viewBox="0 0 {{ w }} {{ h }}" width="{{ width }}" height="{{ height }}"><defs><clipPath id="clip-{{ file }}">{{ clip | safe }}</clipPath></defs><image href="{{ assets_url }}/{{ file }}" width="{{ w }}" height="{{ h }}" clip-path="url(#clip-{{ file }})"/></svg>
+  {%- else %}
+  <img src="{{ assets_url }}/{{ file }}" alt="" width="{{ width }}" height="{{ height }}">
+  {%- endif %}
+</div>
+{%- endmacro -%}
+
+{#- The BTU mark (cropped from btu-logo.png by the renderer) and BTU's Georgian name beside it. -#}
+{%- macro logo(height) -%}
+<img class="logo" src="{{ btu_mark }}" alt="BTU" style="height: {{ height }}px">
+<span class="logo-name" lang="ka" style="font-size: {{ (height * 0.115) | round(2) }}px">ბიზნესისა და<br>ტექნოლოგიების<br>უნივერსიტეტი</span>
+{%- endmacro -%}
+
+{%- macro brand(cls, height=38) -%}
+<div class="brand {{ cls }}">
+  <span class="wordmark"><span class="thin">AI Skills</span><br><span class="heavy">Digital Passport</span></span>
+  {{ logo(height) }}
+</div>
+{%- endmacro -%}
+
+{#- Not in the design: the verification code, version and a QR to /v/<code> next to PASSPORT ID. -#}
+{%- macro passport_id(cls) -%}
+<div class="pid {{ cls }}">
+  <img class="qr" src="{{ qr }}" alt="QR code to the verification page">
+  <div class="pid-text">
+    <p>Passport ID: <span class="value">{{ c.passport_id }}</span></p>
+    <p>Code <span class="value">{{ code }}</span> · Version <span class="value">{{ c.version_no }}</span></p>
+  </div>
+</div>
+{%- endmacro -%}
+
+{%- macro asterisk(size) -%}
+<svg class="asterisk" viewBox="0 0 24 24" width="{{ size }}" height="{{ size }}" fill="none" stroke="#ff6a00"
+     stroke-width="4.6" stroke-linecap="round"><path d="M12 5v14"/><path d="m18.065 8.496-12.125 7"/><path d="m5.94 8.504 12.125 7"/></svg>
+{%- endmacro -%}
+
+{%- macro stamp(s, cls) -%}
+{%- if s.stamp_sha256 in stamps %}<img class="{{ cls }}" src="{{ stamps[s.stamp_sha256] }}" alt="{{ s.category }}">{% endif -%}
+{%- endmacro -%}
+
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>AI Skills Passport {{ c.passport_id }} v{{ c.version_no }}</title>
+  <title>AI Skills Digital Passport {{ c.passport_id }} v{{ c.version_no }}</title>
   <meta name="author" content="{{ c.issuer.name }}">
   <meta name="dcterms.created" content="{{ c.issued_at }}">
   <meta name="dcterms.modified" content="{{ c.issued_at }}">
-  <link rel="stylesheet" href="{{ template_url }}/passport.css">
   <style>
-    @font-face { font-family: "Noto Sans"; font-weight: 400;
-                 src: url("{{ fonts_url }}/NotoSans-Regular.ttf"); }
-    @font-face { font-family: "Noto Sans"; font-weight: 700;
-                 src: url("{{ fonts_url }}/NotoSans-Bold.ttf"); }
-    @font-face { font-family: "Noto Sans Georgian"; font-weight: 400;
-                 src: url("{{ fonts_url }}/NotoSansGeorgian-Regular.ttf"); }
-    @font-face { font-family: "Noto Sans Georgian"; font-weight: 700;
-                 src: url("{{ fonts_url }}/NotoSansGeorgian-Bold.ttf"); }
-    @page {
-      @bottom-center {
-        content: "{{ ('%s · v%s · %s' % (c.passport_id, c.version_no, c.verification_code | code)) | css_string }} · page " counter(page) " of " counter(pages);
-      }
-    }
+    {%- for weight, file in [(200, "ExtraLight"), (300, "Light"), (400, "Regular"), (600, "SemiBold"), (700, "Bold"), (900, "Black")] %}
+    @font-face { font-family: "Outfit"; font-weight: {{ weight }}; src: url("{{ fonts_url }}/Outfit-{{ file }}.ttf"); }
+    {%- endfor %}
+    @font-face { font-family: "Noto Sans Georgian"; font-weight: 400; src: url("{{ fonts_url }}/NotoSansGeorgian-Regular.ttf"); }
+    @font-face { font-family: "Noto Sans Georgian"; font-weight: 700; src: url("{{ fonts_url }}/NotoSansGeorgian-Bold.ttf"); }
+    @font-face { font-family: "Noto Sans"; font-weight: 400; src: url("{{ fonts_url }}/NotoSans-Regular.ttf"); }
+    @font-face { font-family: "Noto Sans"; font-weight: 700; src: url("{{ fonts_url }}/NotoSans-Bold.ttf"); }
   </style>
+  <link rel="stylesheet" href="{{ template_url }}/passport.css">
 </head>
 <body>
 
+{#- 1. Cover -#}
 <section class="page cover">
-  <p class="issuer">{{ c.issuer.name }}</p>
-  <h1>AI Skills Passport</h1>
-  <p class="holder">{{ c.holder.first_name }} {{ c.holder.last_name }}</p>
-  <dl>
-    <dt>Passport ID</dt><dd>{{ c.passport_id }}</dd>
-    {% if c.first_issued_on %}<dt>First issued</dt><dd>{{ c.first_issued_on | long_date }}</dd>{% endif %}
-  </dl>
+  <h1 class="display"><span class="heavy">AI Skills</span><br><span class="thin">Digital Passport</span></h1>
+  <div class="asterisks">{{ asterisk(38) }}{{ asterisk(38) }}{{ asterisk(38) }}</div>
+  <hr class="rule">
+  <p class="field name"><span class="label">Name:</span> <span class="value">{{ c.holder.first_name }}</span></p>
+  <p class="field surname"><span class="label">Surname:</span> <span class="value">{{ c.holder.last_name }}</span></p>
+  <p class="issue"><span class="label">Date of issue:</span> <span class="value">{{ c.issued_at | dotted_date }}</span></p>
+  {{ brand("cover-brand", 57) }}
+  {{ sticker("sticker-issued-by-btu.png", 1485, 429, 250, 563, 281, 5, '<polygon points="1,5 1482,0 1483,423 2,427"/>') }}
+  {{ sticker("sticker-ai-skills-digital-passport.png", 1251, 641, 207, 572, 347, 0, '<polygon points="626,0 1251,641 0,641"/>') }}
+  {{ sticker("sticker-intl-recognised.png", 860, 860, 145, 448, 301, 0, '<circle cx="430" cy="430" r="430"/>') }}
+  {{ sticker("sticker-blockchain-verified.png", 1051, 429, 170, 721, 331, -14) }}
+  {{ sticker("sticker-latest-skillset.png", 1498, 321, 255, 462, 474, 25) }}
+  {{ passport_id("cover-pid") }}
 </section>
 
-<section class="page version">
-  <h2>Version {{ c.version_no }}</h2>
-  <dl>
-    <dt>Holder</dt><dd>{{ c.holder.first_name }} {{ c.holder.last_name }}</dd>
-    <dt>Passport ID</dt><dd>{{ c.passport_id }}</dd>
-    <dt>Issued</dt><dd>{{ c.issued_at | long_date }}</dd>
-    <dt>Skills</dt><dd>{{ c.skills | length }}</dd>
-    <dt>Verification code</dt><dd class="code">{{ c.verification_code | code }}</dd>
-  </dl>
-  <img class="qr" src="{{ qr }}" alt="QR code linking to the verification page">
-  <p class="url">{{ c.verify_url }}</p>
-  <p class="note">Scan the code or open the link to check that this document is genuine and current.</p>
+{#- 2. About the passport and its stamps (static text from the design, word for word) -#}
+<section class="page about">
+  <div class="about-left">
+    <h2 class="display"><span class="heavy">About<br>the AI Skills</span><br><span class="thin">Digital Passport</span></h2>
+    <p>The BTU AI Skills Digital Passport is your personalized and verifiable record of AI competencies developed throughout your university experience.</p>
+    <p>AI Skill Stamps may be earned through eligible academic courses, workshops, masterclasses, hackathons, intensive programs, guest speaker sessions, and other AI-related learning experiences recognized by BTU.</p>
+    <p>Participation in the Passport is voluntary. There is no required number or combination of stamps and no predefined pathway. Students select learning opportunities according to their interests, studies, professional objectives, and desired areas of AI competence.</p>
+    <p>As new competencies are developed and recognized, additional stamps are added to the Passport, progressively creating an individual AI competency profile.</p>
+  </div>
+  <div class="asterisk-row">{% for _ in range(9) %}{{ asterisk(20) }}{% endfor %}</div>
+  {{ passport_id("about-pid") }}
+  <div class="divider about-divider"></div>
+  <h2 class="stamps-title">Understanding AI Skills Stamps</h2>
+  <hr class="rule stamps-rule">
+  <div class="stamp-type skill">
+    <h3><span class="heavy">AI Skill</span><br><span class="thin">Focused learning</span></h3>
+    <img class="type-stamp" src="{{ assets_url }}/stamp-ai-skill.png" alt="AI Skill stamp">
+    <p class="just">Awarded through an eligible focused learning experience, such as a workshop, masterclass, seminar, guest speaker session, or similar short-format activity.</p>
+    <p><b>Represents:</b> Development of a defined AI competency.</p>
+  </div>
+  <div class="divider applied-divider"></div>
+  <div class="stamp-type applied">
+    <h3><span class="heavy">AI Applied Skill</span><br><span class="thin">Applied learning</span></h3>
+    <img class="type-stamp" src="{{ assets_url }}/stamp-ai-applied.png" alt="AI Applied Skill stamp">
+    <p class="just">Awarded through an eligible extended practical learning experience, typically lasting two to three days, such as an intensive workshop, bootcamp, hackathon, or challenge.</p>
+    <p class="just"><b>Represents:</b> Hands-on application of a defined AI competency.</p>
+  </div>
+  <hr class="rule types-rule">
+  <div class="stamp-type advanced">
+    <h3><span class="heavy">AI Advanced Skill</span><br><span class="thin">Extended academic learning</span></h3>
+    <img class="type-stamp" src="{{ assets_url }}/stamp-ai-advanced.png" alt="AI Advanced Skill stamp">
+    <p class="just">Awarded through the successful completion of an eligible semester-long academic course in which the respective AI competency constitutes a defined and assessed component of the course learning outcomes.</p>
+    <p><b>Represents:</b> Extended and formally assessed development of an AI competency.</p>
+  </div>
+  <div class="important">
+    <h4>Important</h4>
+    <p>The three stamp types represent different learning formats and depths of engagement. They do not constitute a mandatory sequence.</p>
+    <p>A student does not need to earn an AI Skill before earning an AI Applied Skill or AI Advanced Skill.</p>
+  </div>
+  <div class="divider grows-divider"></div>
+  <div class="grows">
+    <h3>How the<br>passport grows</h3>
+    <ol>
+      <li><svg viewBox="0 0 24 24" width="20" height="20" fill="#ff6a00" stroke="#ff6a00" stroke-width="2" stroke-linejoin="round"><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"/><path d="M12 5v16" stroke="#fff"/></svg>Learn</li>
+      <li><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#ff6a00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" fill="#ff6a00"/><path d="m7 21 5-5 5 5"/></svg>Demonstrate</li>
+      <li>{{ asterisk(18) }}Earn</li>
+      <li><svg viewBox="0 0 24 24" width="20" height="20" fill="#ff6a00" stroke="#ff6a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m16 9-5.5 5.5L8 12" fill="none" stroke="#fff"/></svg>Verify</li>
+      <li><svg viewBox="0 0 24 24" width="20" height="20" fill="#ff6a00" stroke="#ff6a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>Build your<br>AI profile</li>
+    </ol>
+  </div>
 </section>
 
-<section class="skills">
-  <h2>Skills</h2>
-  {% for s in c.skills %}
-  <article class="skill">
-    {% if s.stamp_sha256 in stamps %}<img class="stamp" src="{{ stamps[s.stamp_sha256] }}" alt="">{% endif %}
-    <div class="body">
-      <h3>{{ s.name }}</h3>
-      <p class="meta">{{ s.category }} · {{ s.badge_code }} · earned {{ s.date_earned | long_date }}{% if s.source.type == "event" %} · {{ s.source.event_name }}{% endif %}</p>
-      <p>{{ s.description }}</p>
+{#- 3. Verified AI skillset: 10 slots a page, empty slots stay as empty boxes -#}
+{%- for page in grid_pages %}
+<section class="page grid-page">
+  <h2 class="page-title">Verified AI skillset</h2>
+  <p class="page-subtitle">Collection of BTU-verified AI skill Stamps</p>
+  <div class="grid">
+    {%- for s in page %}
+    <div class="slot">
+      <p class="slot-date">{% if s %}{{ s.date_earned | dotted_date }}{% endif %}</p>
+      {%- if s %}
+      <div class="slot-stamp">{{ stamp(s, "slot-img") }}</div>
+      <p class="slot-name">{{ s.name }}</p>
+      <p class="slot-category">{{ s.category }}</p>
+      {%- endif %}
     </div>
-  </article>
-  {% endfor %}
+    {%- endfor %}
+  </div>
+  {{ brand("grid-brand") }}
+  {{ passport_id("grid-pid") }}
 </section>
+{%- endfor %}
 
-<section class="page last">
-  <h2>How to verify this passport</h2>
-  <ol>
-    <li>Open <span class="url">{{ c.verify_url }}</span>, or go to the verification page and enter the code <span class="code">{{ c.verification_code | code }}</span>.</li>
-    <li>For the strongest check, upload this PDF there. Your browser computes its SHA-256 fingerprint and checks it against the blockchain; any change to the file makes the check fail.</li>
-    <li>The page also says whether this is the latest version of the passport.</li>
-  </ol>
-  <p>Each issued version's fingerprint is part of a Merkle root recorded by {{ c.issuer.name }} in the registry contract below. No personal data is stored on the blockchain. Anyone can repeat the check without BTU's servers, using the proof file offered on the verification page.</p>
-  <dl>
-    <dt>Chain ID</dt><dd>{{ c.issuer.chain_id }}</dd>
-    <dt>Registry contract</dt><dd class="hex">{{ c.issuer.contract_address }}</dd>
-    <dt>Issuer address</dt><dd class="hex">{{ c.issuer.issuer_address }}</dd>
-  </dl>
+{#- 4. AI skills detailed information: rows continue on new pages, the header row repeats -#}
+<div class="detail-head">
+  <h2 class="page-title">AI skills detailed information</h2>
+  <p class="page-subtitle">Detailed record of verified AI skills and learning experiences</p>
+</div>
+<div class="detail-foot-left">{{ passport_id("detail-pid") }}</div>
+<div class="detail-foot-right">{{ brand("detail-brand") }}</div>
+<section class="detail">
+  <table>
+    <thead>
+      <tr><th class="c-stamp">Stamp type</th><th class="c-skill">Skill</th><th class="c-desc">Description</th><th class="c-through">Earned through</th><th class="c-date">Date earned</th></tr>
+    </thead>
+    <tbody>
+      {%- for s in c.skills %}
+      <tr>
+        <td class="c-stamp">{{ stamp(s, "row-img") }}</td>
+        <td class="c-skill">{{ s.name }}</td>
+        <td class="c-desc">{{ s.description }}</td>
+        <td class="c-through">{{ s | earned_through }}</td>
+        <td class="c-date">{{ s.date_earned | dotted_date }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
 </section>
 
 </body>
