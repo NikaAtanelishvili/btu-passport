@@ -59,8 +59,10 @@ def skill(db: Session, skill_id: str = "SKL-001") -> Skill:
     return s
 
 
-def award(db: Session, st: Student, sk: Skill) -> SkillAward:
-    submission = AwardSubmission(kind="SEED")
+def award(
+    db: Session, st: Student, sk: Skill, kind: str = "SEED", reason: str | None = None
+) -> SkillAward:
+    submission = AwardSubmission(kind=kind, reason=reason)
     db.add(submission)
     db.flush()
     a = SkillAward(

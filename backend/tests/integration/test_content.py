@@ -22,7 +22,7 @@ def _new_version(db: Session, student_id: str) -> PassportVersion:
 def test_snapshot_shape_for_a_seeded_legacy_student(seeded: Session) -> None:
     version = _new_version(seeded, "BTU-T-0002")
     c = content.build_content(seeded, version, verification_code="K7QM3XWP9D", issued_at=ISSUED)
-    assert c["schema"] == "btu-ai-passport/1"
+    assert c["schema"] == "btu-ai-passport/2"
     assert (c["passport_id"], c["version_no"]) == ("BTU-AI-000126", 2)
     assert c["holder"] == {"first_name": "Mariam", "last_name": "Beridze"}
     assert c["first_issued_on"] == "2026-09-15"
@@ -85,3 +85,16 @@ def test_later_name_change_does_not_touch_the_passport(db: Session) -> None:
     version = _new_version(db, st.student_id)
     c = content.build_content(db, version, verification_code="K7QM3XWP9D", issued_at=ISSUED)
     assert c["holder"]["first_name"] == "Nino"  # frozen at first issue (FR-11)
+
+
+def test_direct_awards_carry_their_reason(db: Session) -> None:
+    """The PDF's "Earned through" column: the event name, else the direct award's reason."""
+    st = f.student(db, 1)
+    f.award(db, st, f.skill(db, "SKL-001"), kind="DIRECT", reason="AI Automation Bootcamp")
+    f.award(db, st, f.skill(db, "SKL-002"), kind="DIRECT")
+    version = _new_version(db, st.student_id)
+    c = content.build_content(db, version, verification_code="K7QM3XWP9D", issued_at=ISSUED)
+    assert [s["source"] for s in c["skills"]] == [
+        {"type": "direct", "reason": "AI Automation Bootcamp"},
+        {"type": "direct"},
+    ]

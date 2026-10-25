@@ -22,7 +22,7 @@ from app.models import (
     VersionAward,
 )
 
-SCHEMA = "btu-ai-passport/1"
+SCHEMA = "btu-ai-passport/2"  # /2: direct awards carry their reason (the PDF shows it)
 ISSUER_NAME = "Business and Technology University"
 
 
@@ -30,9 +30,11 @@ def iso_utc(moment: datetime) -> str:
     return moment.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _source(kind: str, event_name: str | None) -> dict[str, str]:
+def _source(kind: str, event_name: str | None, reason: str | None) -> dict[str, str]:
     if kind == "EVENT":
         return {"type": "event", "event_name": event_name or ""}
+    if kind == "DIRECT" and reason:
+        return {"type": "direct", "reason": reason}
     return {"type": kind.lower()}  # "direct" | "seed"
 
 
@@ -40,7 +42,14 @@ def version_skills(db: Session, version_id: int) -> list[dict[str, Any]]:
     """The version's own awards as content skills, by date earned then award ID. Also used for
     LEGACY versions, which have no content snapshot (BE-47)."""
     rows = db.execute(
-        select(SkillAward, Skill, SkillCategory, AwardSubmission.kind, Event.name)
+        select(
+            SkillAward,
+            Skill,
+            SkillCategory,
+            AwardSubmission.kind,
+            Event.name,
+            AwardSubmission.reason,
+        )
         .join(VersionAward, VersionAward.award_id == SkillAward.award_id)
         .join(Skill, Skill.skill_id == SkillAward.skill_id)
         .join(SkillCategory, SkillCategory.category_id == Skill.category_id)
@@ -58,9 +67,9 @@ def version_skills(db: Session, version_id: int) -> list[dict[str, Any]]:
             "stamp_sha256": category.stamp_sha256,
             "description": skill.description,
             "date_earned": award.date_earned.isoformat(),
-            "source": _source(kind, event_name),
+            "source": _source(kind, event_name, reason),
         }
-        for award, skill, category, kind, event_name in rows
+        for award, skill, category, kind, event_name, reason in rows
     ]
 
 
