@@ -1,5 +1,6 @@
 "use client";
 
+// Site-wide header. On phones the name is shortened so it fits one line beside the nav (390 px).
 import Link from "next/link";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -11,11 +12,12 @@ export function SiteHeader() {
 
   return (
     <header className="border-b">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
-        <Link href="/" className="font-semibold">
-          BTU AI Skills Passport
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4 sm:gap-4">
+        <Link href="/" className="shrink-0 font-semibold whitespace-nowrap">
+          <span className="sm:hidden">BTU Passport</span>
+          <span className="hidden sm:inline">BTU AI Skills Passport</span>
         </Link>
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-1 sm:gap-2">
           <Link href="/verify" className={buttonVariants({ variant: "ghost" })}>
             Verify
           </Link>
