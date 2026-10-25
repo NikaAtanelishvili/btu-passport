@@ -25,7 +25,7 @@ const OPERATIONS: NavItem[] = [
 // Catalog, roles and audit (M9) are listed without links until they exist.
 const SUPER_ADMIN: (NavItem & { later?: boolean })[] = [
   { href: "/admin/events", label: "Events" },
-  { href: "/admin/skills", label: "Skills", later: true },
+  { href: "/admin/skills", label: "Skills" },
   { href: "/admin/categories", label: "Categories & stamps", later: true },
   { href: "/admin/roles", label: "Admins & roles", later: true },
   { href: "/admin/audit", label: "Audit log", later: true },

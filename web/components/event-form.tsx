@@ -49,10 +49,16 @@ export function EventForm({
   onSubmit: (values: EventFormValues) => void;
   onCancel: () => void;
 }) {
-  const skills = useQuery({
-    queryKey: queryKeys.admin.skills,
-    queryFn: async () => (await api.GET("/api/admin/skills")).data!,
+  // Active skills, plus the event's own skill if it was archived since (an edit keeps it).
+  const allSkills = useQuery({
+    queryKey: queryKeys.admin.skillsAll,
+    queryFn: async () =>
+      (await api.GET("/api/admin/skills", { params: { query: { include_archived: true } } })).data!,
   });
+  const savedSkillId = form.formState.defaultValues?.skill_id;
+  const skills = {
+    data: allSkills.data?.filter((s) => !s.archived || s.skill_id === savedSkillId),
+  };
 
   // Follow changes of the end time only (not the loaded value), and only while the window
   // fields haven't been touched by hand. Shifted values are marked dirty so an edit saves them.
@@ -94,7 +100,9 @@ export function EventForm({
                   <Select
                     value={field.value || null}
                     onValueChange={(v) => field.onChange(v ?? "")}
-                    items={Object.fromEntries((skills.data ?? []).map((s) => [s.skill_id, s.name]))}
+                    items={Object.fromEntries(
+                      (skills.data ?? []).map((s) => [s.skill_id, s.archived ? `${s.name} (archived)` : s.name]),
+                    )}
                     disabled={skillLocked}
                   >
                     <SelectTrigger id="skill_id" aria-invalid={fieldState.invalid} className="w-full">
@@ -103,7 +111,7 @@ export function EventForm({
                     <SelectContent>
                       {(skills.data ?? []).map((s) => (
                         <SelectItem key={s.skill_id} value={s.skill_id}>
-                          {s.name}
+                          {s.archived ? `${s.name} (archived)` : s.name}
                           <span className="text-muted-foreground">{s.category.name}</span>
                         </SelectItem>
                       ))}
