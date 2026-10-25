@@ -43,5 +43,10 @@ def stamp(sha256: str) -> Response:
     return Response(
         data,
         media_type=_STAMP_TYPES[ext],
-        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        headers={
+            "Cache-Control": "public, max-age=31536000, immutable",
+            # Opened on its own, an SVG stamp can't run anything or load anything (BE-51).
+            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+            "X-Content-Type-Options": "nosniff",
+        },
     )

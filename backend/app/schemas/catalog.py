@@ -33,3 +33,22 @@ class SkillPatch(BaseModel):
     name: str | None = None
     category_id: int | None = None
     description: str | None = None
+
+
+class CategoryRow(BaseModel):
+    category_id: int
+    name: str
+    badge_code: str
+    stamp_sha256: str | None
+    skill_count: int  # archived skills included: they still need the category
+    archived: bool
+
+
+class CategoryCreate(BaseModel):
+    name: str
+
+
+class CategoryPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str

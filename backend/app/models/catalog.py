@@ -7,9 +7,19 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, created_at, updated_at
 
+STAMP_BY_SHA256 = """
+    (stamp_sha256 IS NULL AND stamp_key IS NULL AND stamp_mime IS NULL)
+    OR (stamp_sha256 ~ '^[0-9a-f]{64}$' AND (
+        (stamp_mime = 'image/svg+xml' AND stamp_key = 'stamps/' || stamp_sha256 || '.svg')
+        OR (stamp_mime = 'image/png' AND stamp_key = 'stamps/' || stamp_sha256 || '.png')))
+"""
+
 
 class SkillCategory(Base):
     __tablename__ = "skill_categories"
+    # A stamp is stored under its own SHA-256 and never overwritten (BE-51), so a replaced
+    # stamp can't change what an issued version printed.
+    __table_args__ = (CheckConstraint(STAMP_BY_SHA256, name="stamp_by_sha256"),)
 
     category_id: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(Text, unique=True)

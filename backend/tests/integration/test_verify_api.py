@@ -30,7 +30,11 @@ def v1(db: Session, s3_bucket: str, fake_chain: FakeChain, run_jobs: RunJobs) ->
     stamp = b'<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>'
     sha = _sha256(stamp)
     storage.put(f"stamps/{sha}.svg", stamp, "image/svg+xml")
-    db.execute(update(SkillCategory).values(stamp_sha256=sha, stamp_key=f"stamps/{sha}.svg"))
+    db.execute(
+        update(SkillCategory).values(
+            stamp_sha256=sha, stamp_key=f"stamps/{sha}.svg", stamp_mime="image/svg+xml"
+        )
+    )
     f.award(db, st, sk)
     (made,) = issuance.create_versions(db, [st.student_id])
     db.commit()
