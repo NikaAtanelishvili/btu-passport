@@ -63,11 +63,18 @@ def test_next_passport_number_follows_the_seed(db: Session, s3_bucket: str) -> N
     assert db.scalar(text("SELECT nextval('passport_number_seq')")) == 143
 
 
-def test_stamps_are_uploaded_by_hash(db: Session, s3_bucket: str) -> None:
+def test_the_designed_stamps_are_uploaded_by_hash(db: Session, s3_bucket: str) -> None:
     seed.run(db)
-    for category in db.scalars(select(SkillCategory)):
-        data = (seed.STAMPS_DIR / f"{category.badge_code}.svg").read_bytes()
+    files = {
+        "AI Skill": "stamp-ai-skill.png",  # red triangle
+        "AI Applied Skill": "stamp-ai-applied.png",  # purple banner
+        "AI Advanced Skill": "stamp-ai-advanced.png",  # navy circle
+    }
+    categories = list(db.scalars(select(SkillCategory)))
+    assert {c.name for c in categories} == set(files)
+    for category in categories:
+        data = (seed.STAMPS_DIR / files[category.name]).read_bytes()
         assert category.stamp_sha256 == hashlib.sha256(data).hexdigest()
-        assert category.stamp_key == f"stamps/{category.stamp_sha256}.svg"
-        assert category.stamp_mime == "image/svg+xml"
+        assert category.stamp_key == f"stamps/{category.stamp_sha256}.png"
+        assert category.stamp_mime == "image/png"
         assert storage.get(category.stamp_key) == data

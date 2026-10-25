@@ -32,5 +32,6 @@ def test_rows_are_normalised() -> None:
 def test_every_category_has_a_stamp_file() -> None:
     codes = {r.badge_code for r in seed.parse_csv(seed.SEED_CSV)}
     assert codes == {"BDG-AI-001", "BDG-AI-002", "BDG-AI-003"}
-    for code in codes:
-        assert (seed.STAMPS_DIR / f"{code}.svg").is_file()
+    assert set(seed.STAMP_FILES) == codes
+    for file in seed.STAMP_FILES.values():
+        assert (seed.STAMPS_DIR / file).is_file()

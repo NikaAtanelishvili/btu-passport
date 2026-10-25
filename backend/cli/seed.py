@@ -27,10 +27,16 @@ from app.models import (
     Student,
     VersionAward,
 )
-from app.services import storage
+from app.services import stamps, storage
 
 SEED_CSV = REPO_ROOT / "seed" / "test-data.csv"
 STAMPS_DIR = REPO_ROOT / "seed" / "stamps"
+# BTU's designed stamps, as they are, one per seeded category (badge code).
+STAMP_FILES = {
+    "BDG-AI-001": "stamp-ai-skill.png",  # AI Skill: red triangle
+    "BDG-AI-002": "stamp-ai-applied.png",  # AI Applied Skill: purple banner
+    "BDG-AI-003": "stamp-ai-advanced.png",  # AI Advanced Skill: navy circle
+}
 HEADER_LINE = 4  # lines 1-3 are a title block
 EXPECTED_ROWS = 60
 # One SEED submission owns every imported award; a fixed id keeps re-runs idempotent.
@@ -136,14 +142,15 @@ def _categories(db: Session, rows: list[SeedRow]) -> int:
         db, SkillCategory, [{"name": n, "badge_code": b} for n, b in distinct], ["badge_code"]
     )
     for category in db.scalars(select(SkillCategory).where(SkillCategory.stamp_sha256.is_(None))):
-        stamp = STAMPS_DIR / f"{category.badge_code}.svg"
-        if not stamp.is_file():
+        file = STAMP_FILES.get(category.badge_code)
+        if file is None:
             continue
-        data = stamp.read_bytes()
+        data = (STAMPS_DIR / file).read_bytes()
+        stamps.check(data)  # the same rule as an upload (BE-51)
         sha = hashlib.sha256(data).hexdigest()
-        key = f"stamps/{sha}.svg"
-        storage.put(key, data, "image/svg+xml")
-        category.stamp_sha256, category.stamp_key, category.stamp_mime = sha, key, "image/svg+xml"
+        key = f"stamps/{sha}.png"
+        storage.put(key, data, "image/png")
+        category.stamp_sha256, category.stamp_key, category.stamp_mime = sha, key, "image/png"
     db.flush()
     return new
 

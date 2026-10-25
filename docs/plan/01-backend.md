@@ -220,7 +220,7 @@ Reads `seed/test-data.csv` (the hackathon file, unchanged). Idempotent: every in
 
 1. **Parse.** Skip the first 3 lines; line 4 is the header; read data rows until the first row whose `Record ID` is empty (the notes block follows). Expect 60 rows.
 2. **Normalise.** Education level: `Bachelor's` → `BACHELOR`, `Master's` → `MASTER`. Status: `Active` → `ACTIVE`, `Graduate` → `GRADUATE`. Emails lower-cased.
-3. **Categories (3).** From distinct (`Skill Category`, `Badge/Stamp Code`). Upload `seed/stamps/<badge_code>.svg` to MinIO and set the stamp columns.
+3. **Categories (3).** From distinct (`Skill Category`, `Badge/Stamp Code`). Upload BTU's designed stamp for each badge code (`seed/stamps/stamp-ai-skill.png`, `stamp-ai-applied.png`, `stamp-ai-advanced.png` for BDG-AI-001/002/003) to MinIO as `stamps/<sha256>.png` and set the stamp columns.
 4. **Skills (16).** From distinct `Skill ID` with name, category and description.
 5. **Students (18) and passports (18).** Passport ID from the CSV. `first_issued_on` from `First Issued (Existing)` and holder names from the student — the seed is the one place these are set without an issued version. Then `setval('passport_number_seq', <highest seed number>)`, so the next new passport is `BTU-AI-000143`.
 6. **Awards (60).** One `award_submissions` row of kind `SEED`; one `skill_awards` row per CSV row with `legacy_record_id` = Record ID.
