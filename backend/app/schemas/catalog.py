@@ -1,6 +1,6 @@
-"""Catalog schemas. M6 needs only the read side of skills (BE-35); writes come in BE-50."""
+"""Catalog schemas: skills (BE-35 read side, BE-50 writes) and categories (BE-51)."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class CategoryRef(BaseModel):
@@ -17,3 +17,19 @@ class SkillRow(BaseModel):
     description: str
     times_awarded: int
     archived: bool
+
+
+class SkillCreate(BaseModel):
+    """Field rules are checked in app/services/catalog.py, so all errors come back at once."""
+
+    name: str
+    category_id: int
+    description: str
+
+
+class SkillPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = None
+    category_id: int | None = None
+    description: str | None = None

@@ -166,7 +166,69 @@ export interface paths {
         /** List Skills */
         get: operations["list_skills_api_admin_skills_get"];
         put?: never;
+        /**
+         * Create Skill
+         * @description The next SKL-nnn. 422 with fields; 409 duplicate_name.
+         */
+        post: operations["create_skill_api_admin_skills_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/skills/{skill_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         post?: never;
+        /**
+         * Delete Skill
+         * @description 409 in_use when awarded or used by an event; archive instead.
+         */
+        delete: operations["delete_skill_api_admin_skills__skill_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Skill
+         * @description Applies to future passport versions only; issued ones are frozen.
+         */
+        patch: operations["update_skill_api_admin_skills__skill_id__patch"];
+        trace?: never;
+    };
+    "/api/admin/skills/{skill_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive Skill */
+        post: operations["archive_skill_api_admin_skills__skill_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/skills/{skill_id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unarchive Skill */
+        post: operations["unarchive_skill_api_admin_skills__skill_id__unarchive_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1368,6 +1430,18 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * SkillCreate
+         * @description Field rules are checked in app/services/catalog.py, so all errors come back at once.
+         */
+        SkillCreate: {
+            /** Name */
+            name: string;
+            /** Category Id */
+            category_id: number;
+            /** Description */
+            description: string;
+        };
         /** SkillOnPassport */
         SkillOnPassport: {
             /** Name */
@@ -1392,6 +1466,15 @@ export interface components {
             source: "EVENT" | "DIRECT" | "SEED";
             /** Event Name */
             event_name: string | null;
+        };
+        /** SkillPatch */
+        SkillPatch: {
+            /** Name */
+            name?: string | null;
+            /** Category Id */
+            category_id?: number | null;
+            /** Description */
+            description?: string | null;
         };
         /** SkillRow */
         SkillRow: {
@@ -1966,6 +2049,165 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SkillRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_skill_api_admin_skills_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkillCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_skill_api_admin_skills__skill_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_skill_api_admin_skills__skill_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkillPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_skill_api_admin_skills__skill_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unarchive_skill_api_admin_skills__skill_id__unarchive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillRow"];
                 };
             };
             /** @description Validation Error */
