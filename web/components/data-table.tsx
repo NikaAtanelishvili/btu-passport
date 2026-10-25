@@ -1,8 +1,10 @@
 "use client";
 
 // Server-paginated table: the page passes one page of rows plus the total; search and
-// filter controls sit above it in `toolbar`.
+// filter controls sit above it in `toolbar`. With `mobileCard`, phones get one card per row
+// instead of a table that would scroll sideways (student portal).
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -20,6 +22,7 @@ export function DataTable<T>({
   loading,
   empty,
   toolbar,
+  mobileCard,
 }: {
   columns: Column<T>[];
   rows: T[] | undefined;
@@ -32,12 +35,28 @@ export function DataTable<T>({
   loading?: boolean;
   empty: React.ReactNode;
   toolbar?: React.ReactNode;
+  mobileCard?: (row: T) => React.ReactNode;
 }) {
   const pages = total && pageSize ? Math.max(1, Math.ceil(total / pageSize)) : 1;
   return (
     <div className="space-y-3">
       {toolbar && <div className="flex flex-wrap items-end gap-2">{toolbar}</div>}
-      <div className="rounded-md border">
+      {mobileCard && (
+        <div className="space-y-3 sm:hidden">
+          {loading && !rows ? (
+            <Skeleton className="h-24 w-full" />
+          ) : rows && rows.length > 0 ? (
+            rows.map((row) => (
+              <Card key={rowKey(row)}>
+                <CardContent className="space-y-1 text-sm">{mobileCard(row)}</CardContent>
+              </Card>
+            ))
+          ) : (
+            <p className="py-6 text-center text-sm text-muted-foreground">{empty}</p>
+          )}
+        </div>
+      )}
+      <div className={mobileCard ? "hidden rounded-md border sm:block" : "rounded-md border"}>
         <Table>
           <TableHeader>
             <TableRow>
