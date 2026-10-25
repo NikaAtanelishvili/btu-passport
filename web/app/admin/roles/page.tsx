@@ -5,6 +5,7 @@
 // demoted (the server says 409 last_super_admin and the trigger keep_a_super_admin agrees).
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { InfoIcon } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -191,7 +192,8 @@ function RoleDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{row ? `Change role for ${row.email}` : "Add admin"}</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="flex gap-2.5 rounded-xl bg-navy-soft p-3.5 text-foreground">
+            <InfoIcon className="mt-0.5 size-4 shrink-0 text-stamp-navy" aria-hidden />
             {row?.last_super_admin
               ? LAST_SUPER_ADMIN
               : row?.email === me

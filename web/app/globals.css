@@ -244,13 +244,31 @@
 [data-slot="alert-dialog-title"] {
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 1.5rem;
+  font-size: 1.875rem;
   line-height: 1.1;
   text-transform: uppercase;
+}
+[data-slot="dialog-content"] > [data-slot="dialog-close"] {
+  top: 1.5rem;
+  right: 1.25rem;
+}
+[data-slot="dialog-content"] > [data-slot="dialog-close"] svg {
+  width: 1.375rem;
+  height: 1.375rem;
 }
 [data-slot="dialog-footer"] {
   margin: 0 -1.5rem -1.5rem;
   padding: 1rem 1.5rem 1.5rem;
+}
+/* Cancel and the action side by side and equally wide, phones included. */
+[data-slot="dialog-footer"],
+[data-slot="alert-dialog-footer"] {
+  flex-direction: row;
+}
+[data-slot="dialog-footer"] > *,
+[data-slot="alert-dialog-footer"] > * {
+  flex: 1 1 0;
+  height: 2.75rem;
 }
 [data-slot="dialog-footer"],
 [data-slot="alert-dialog-footer"] {
