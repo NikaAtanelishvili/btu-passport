@@ -14,6 +14,7 @@ import { z } from "zod";
 import { ErrorAlert } from "@/components/error-alert";
 import { StampImage } from "@/components/stamp-image";
 import { type PickedStudent, StudentPicker } from "@/components/student-picker";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -87,7 +88,18 @@ function DirectAward() {
   const preview = useMutation({
     mutationFn: async (body: components["schemas"]["AwardIn"]) =>
       (await api.POST("/api/admin/awards/preview", { body })).data!,
-    onSuccess: (data, body) => setReview({ body, rows: data.rows, key: crypto.randomUUID() }),
+    onSuccess: (data, body) => {
+      // Nothing to issue: say why under the field instead of a review with Confirm disabled.
+      if (data.rows.every((r) => r.result === "SKIP_ALREADY_HELD")) {
+        const message =
+          data.rows.length === 1
+            ? `${data.rows[0].name} already holds this skill.`
+            : "All selected students already hold this skill.";
+        form.setError("students", { message }, { shouldFocus: true });
+        return;
+      }
+      setReview({ body, rows: data.rows, key: crypto.randomUUID() });
+    },
     onError: (error) => applyServerErrors(form, serverFieldsToForm(error)),
   });
 
@@ -257,6 +269,7 @@ function ReviewStep({ review, onBack }: { review: Review; onBack: () => void }) 
     },
   });
   const newCount = review.rows.filter((r) => r.result === "NEW_VERSION").length;
+  const held = review.rows.filter((r) => r.result === "SKIP_ALREADY_HELD");
 
   function confirm() {
     if (sent.current) return; // a second click before the first re-render
@@ -272,7 +285,16 @@ function ReviewStep({ review, onBack }: { review: Review; onBack: () => void }) 
           Date earned {formatDate(review.body.date_earned)} · Reason: {review.body.reason}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {held.length > 0 && (
+          <Alert>
+            <AlertDescription>
+              {held.length === 1
+                ? `${held[0].name} already holds this skill and will be skipped.`
+                : `${held.length} students already hold this skill and will be skipped.`}
+            </AlertDescription>
+          </Alert>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
