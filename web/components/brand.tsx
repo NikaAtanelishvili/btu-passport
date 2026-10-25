@@ -44,6 +44,11 @@ const STICKERS = {
   "intl-recognised": { file: "sticker-intl-recognised.png", alt: "Skills in AI, internationally recognised", w: 860, h: 860 },
   "ai-skills-digital-passport": { file: "sticker-ai-skills-digital-passport.png", alt: "AI Skills Digital Passport", w: 1251, h: 641 },
   "latest-skillset": { file: "sticker-latest-skillset.png", alt: "Latest AI skillset", w: 1498, h: 321 },
+  // The three category stamps as artwork (copies of seed/stamps/*.png); skill cards show each
+  // category's own stamp from the API instead.
+  "stamp-ai-skill": { file: "stamp-ai-skill.png", alt: "AI Skill stamp", w: 328, h: 284 },
+  "stamp-ai-applied": { file: "stamp-ai-applied.png", alt: "AI Applied Skill stamp", w: 656, h: 211 },
+  "stamp-ai-advanced": { file: "stamp-ai-advanced.png", alt: "AI Advanced Skill stamp", w: 304, h: 304 },
 } as const;
 
 // The stickers are flat PNGs on white; round and triangular ones are clipped to their shape
@@ -51,6 +56,8 @@ const STICKERS = {
 const CLIP: Partial<Record<keyof typeof STICKERS, string>> = {
   "intl-recognised": "circle(49.5% at 50% 50%)",
   "ai-skills-digital-passport": "polygon(50% 0, 100% 100%, 0 100%)",
+  "stamp-ai-skill": "polygon(50% 0, 100% 100%, 0 100%)",
+  "stamp-ai-advanced": "circle(49.5% at 50% 50%)",
 };
 
 /** A cover sticker, `width` px wide, optionally rotated (the design tilts them −4° to −8°). */

@@ -9,15 +9,9 @@ import { Suspense, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { BtuLogo, Sticker } from "@/components/brand";
+import { DisplayHeading } from "@/components/display";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -35,7 +29,7 @@ type CodeForm = z.infer<typeof codeSchema>;
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<Skeleton className="mx-auto h-64 w-full max-w-sm" />}>
+    <Suspense fallback={<Skeleton className="h-96 w-full rounded-[28px]" />}>
       <Login />
     </Suspense>
   );
@@ -53,11 +47,13 @@ function Login() {
   }, [session.data, router]);
 
   if (session.isPending || session.data?.authenticated) {
-    return <Skeleton className="mx-auto h-64 w-full max-w-sm" />;
+    return <Skeleton className="h-96 w-full rounded-[28px]" />;
   }
 
   return (
-    <div className="mx-auto w-full max-w-sm">
+    <div className="grid items-center gap-8 md:grid-cols-[1fr_minmax(0,1fr)] md:gap-16">
+      <Cover />
+      <div className="w-full max-w-md md:max-w-none">
       {email === null ? (
         <EmailStep
           notice={notice}
@@ -76,9 +72,53 @@ function Login() {
           }}
         />
       )}
+      </div>
     </div>
   );
 }
+
+/** The passport cover: pink panel, white wordmark and the brand stickers (fewer on phones). */
+function Cover() {
+  return (
+    <div className="overflow-hidden rounded-[28px] bg-primary p-7 text-white sm:p-12">
+      <div className="hidden items-center gap-4 md:flex">
+        <BtuLogo height={56} white />
+        <span className="h-14 w-px bg-white" aria-hidden />
+        <span className="eyebrow text-sm leading-snug">
+          Business and
+          <br />
+          Technology University
+        </span>
+      </div>
+      <DisplayHeading
+        as="p"
+        strong="AI Skills"
+        light={
+          <>
+            Digital <br className="hidden md:inline" />
+            Passport
+          </>
+        }
+        className="text-[clamp(2.5rem,6vw,5.25rem)] md:mt-10"
+      />
+      <div className="mt-6 flex items-center md:hidden" aria-hidden>
+        <Sticker name="intl-recognised" width={100} rotate={-6} />
+        <Sticker name="stamp-ai-advanced" width={80} className="-ml-3" />
+        <Sticker name="blockchain-verified" width={124} rotate={-6} className="-ml-1" />
+      </div>
+      <div className="relative mt-8 hidden h-[26rem] md:block" aria-hidden>
+        <Sticker name="issued-by-btu" width={205} rotate={-4} className="absolute top-6 left-0" />
+        <Sticker name="latest-skillset" width={185} rotate={5} className="absolute top-0 right-0" />
+        <Sticker name="blockchain-verified" width={190} rotate={-8} className="absolute top-[8rem] right-0" />
+        <Sticker name="intl-recognised" width={140} className="absolute bottom-2 left-0" />
+        <Sticker name="ai-skills-digital-passport" width={180} className="absolute bottom-0 left-[34%]" />
+        <Sticker name="stamp-ai-advanced" width={96} className="absolute right-0 bottom-2" />
+      </div>
+    </div>
+  );
+}
+
+const BIG_BUTTON = "h-14! w-full font-display text-xl! font-black uppercase sm:h-16! sm:text-2xl!";
 
 async function requestCode(email: string): Promise<void> {
   await api.POST("/auth/request-code", { body: { email } });
@@ -105,45 +145,49 @@ function EmailStep({ notice, onSent }: { notice: string | null; onSent: (email: 
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Sign in</CardTitle>
-        <CardDescription>We&apos;ll email you a 6-digit code. No password needed.</CardDescription>
-      </CardHeader>
-      <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
-        <CardContent>
-          <FieldGroup>
-            <Controller
-              name="email"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="email">BTU email</FieldLabel>
-                  <Input
-                    {...field}
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    autoFocus
-                    aria-invalid={fieldState.invalid}
-                  />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-          </FieldGroup>
-        </CardContent>
-        <CardFooter className="mt-6 flex flex-col gap-3">
-          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            Send code
-          </Button>
-          {/* "/" is the alias of /verify (FE-10); guests never sign in. */}
-          <Link href="/verify" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
-            Continue as guest
-          </Link>
-        </CardFooter>
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <DisplayHeading strong="Sign in" light="to your passport" className="text-[clamp(2.5rem,4.2vw,4rem)]" />
+        <p className="text-lg text-muted-foreground">We&apos;ll email you a 6-digit code. No password needed.</p>
+      </div>
+      <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-5">
+        <FieldGroup>
+          <Controller
+            name="email"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="email" className="text-base">
+                  Email
+                </FieldLabel>
+                <Input
+                  {...field}
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@btu.edu.ge"
+                  autoFocus
+                  aria-invalid={fieldState.invalid}
+                  className="h-14! text-lg!"
+                />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        </FieldGroup>
+        <Button type="submit" className={BIG_BUTTON} disabled={form.formState.isSubmitting}>
+          Send code
+        </Button>
       </form>
-    </Card>
+      {/* "/" is the alias of /verify (FE-10); guests never sign in. */}
+      <p className="text-muted-foreground">
+        Checking someone&apos;s passport?{" "}
+        <Link href="/verify" className="font-medium text-link underline underline-offset-4">
+          Verify it
+        </Link>{" "}
+        — no sign-in needed.
+      </p>
+    </div>
   );
 }
 
@@ -200,66 +244,71 @@ function CodeStep({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Check your email</CardTitle>
-        <CardDescription>
-          We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span>.
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <DisplayHeading strong="Check" light="your email" className="text-[clamp(2.5rem,4.2vw,4rem)]" />
+        <p className="text-lg text-muted-foreground">
+          We sent a 6-digit code to <span className="font-semibold text-foreground">{email}</span>.
           {resent && " A new code is on its way; only the newest one works."}
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
-        <CardContent>
-          <FieldGroup>
-            <Controller
-              name="code"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="code">Code</FieldLabel>
-                  <InputOTP
-                    id="code"
-                    maxLength={6}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    pattern="^[0-9]*$"
-                    autoFocus
-                    value={field.value}
-                    onChange={field.onChange}
-                    aria-invalid={fieldState.invalid}
-                  >
-                    <InputOTPGroup>
-                      {[0, 1, 2, 3, 4, 5].map((i) => (
-                        <InputOTPSlot key={i} index={i} />
-                      ))}
-                    </InputOTPGroup>
-                  </InputOTP>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
-          </FieldGroup>
-        </CardContent>
-        <CardFooter className="mt-6 flex flex-col gap-3">
-          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            Sign in
-          </Button>
-          <div className="flex w-full justify-between">
-            <Button type="button" variant="link" className="px-0" onClick={() => onRestart(null)}>
-              Use a different email
-            </Button>
-            <Button
-              type="button"
-              variant="link"
-              className="px-0"
-              disabled={cooldown > 0}
-              onClick={() => void resend()}
-            >
-              {cooldown > 0 ? `Resend code (${cooldown}s)` : "Resend code"}
-            </Button>
-          </div>
-        </CardFooter>
+        </p>
+      </div>
+      <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-5">
+        <FieldGroup>
+          <Controller
+            name="code"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor="code" className="text-base">
+                  Code
+                </FieldLabel>
+                <InputOTP
+                  id="code"
+                  maxLength={6}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="^[0-9]*$"
+                  autoFocus
+                  value={field.value}
+                  onChange={field.onChange}
+                  aria-invalid={fieldState.invalid}
+                >
+                  <InputOTPGroup className="gap-2 sm:gap-3">
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <InputOTPSlot
+                        key={i}
+                        index={i}
+                        className="h-14 w-12 rounded-md! border-[1.5px]! border-foreground font-mono text-2xl sm:h-16 sm:w-14"
+                      />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        </FieldGroup>
+        <Button type="submit" className={BIG_BUTTON} disabled={form.formState.isSubmitting}>
+          Sign in
+        </Button>
       </form>
-    </Card>
+      <div className="flex flex-wrap justify-between gap-3">
+        <button
+          type="button"
+          className="font-medium underline underline-offset-4 hover:no-underline"
+          onClick={() => onRestart(null)}
+        >
+          Use a different email
+        </button>
+        <button
+          type="button"
+          className="text-muted-foreground enabled:font-medium enabled:text-link enabled:underline enabled:underline-offset-4"
+          disabled={cooldown > 0}
+          onClick={() => void resend()}
+        >
+          {cooldown > 0 ? `Resend code (${cooldown}s)` : "Resend code"}
+        </button>
+      </div>
+    </div>
   );
 }
