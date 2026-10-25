@@ -4,12 +4,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Web design (docs/design/web/tokens.md): flat, white, black ink, BTU pink, no shadows. */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-heading: var(--font-outfit);
+  --font-display: var(--font-outfit);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,82 +42,108 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --color-link: var(--link);
+
+  /* Status: fill (black text on it) / soft tint (badges) / ink (text on white). */
+  --color-status-valid: var(--status-valid);
+  --color-status-valid-soft: var(--status-valid-soft);
+  --color-status-valid-ink: var(--status-valid-ink);
+  --color-status-superseded: var(--status-superseded);
+  --color-status-superseded-soft: var(--status-superseded-soft);
+  --color-status-superseded-ink: var(--status-superseded-ink);
+  --color-status-invalid: var(--status-invalid);
+  --color-status-invalid-soft: var(--status-invalid-soft);
+  --color-status-invalid-ink: var(--status-invalid-ink);
+
+  /* Stamp palette: accents only (stamps, status, the header stripe), never body text. */
+  --color-stamp-coral: var(--stamp-coral);
+  --color-stamp-violet: var(--stamp-violet);
+  --color-stamp-navy: var(--stamp-navy);
+  --color-stamp-orange: var(--stamp-orange);
+  --color-stamp-mint: var(--stamp-mint);
+  --color-stamp-cyan: var(--stamp-cyan);
+  --color-stamp-magenta: var(--stamp-magenta);
+  --color-sticker-pink: var(--sticker-pink);
+  --color-navy-soft: var(--navy-soft);
+  --color-violet-soft: var(--violet-soft);
+
+  /* Radius steps 8 · 12 · 16 · 24 (base 1rem); cards and result panels 24–28. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-3xl: 28px;
+  --radius-4xl: 9999px;
+}
+
+/* No shadows anywhere. */
+@theme {
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  --radius: 1rem;
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #e6007e;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #000000;
+  --muted: #f4f4f5;
+  --muted-foreground: #5c5c66;
+  --accent: #ffe5f3;
+  --accent-foreground: #000000;
+  --destructive: #c8102e;
+  --border: #e4e4e7;
+  --input: #000000;
+  --ring: #000000;
+  --link: #c4006b;
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --status-valid: #31f48e;
+  --status-valid-soft: #d6fce8;
+  --status-valid-ink: #00703c;
+  --status-superseded: #ff6a00;
+  --status-superseded-soft: #ffe6d4;
+  --status-superseded-ink: #b34700;
+  --status-invalid: #ff3f3f;
+  --status-invalid-soft: #ffe0e0;
+  --status-invalid-ink: #c8102e;
+
+  --stamp-coral: #ff3f3f;
+  --stamp-violet: #5e00ff;
+  --stamp-navy: #07207e;
+  --stamp-orange: #ff6a00;
+  --stamp-mint: #31f48e;
+  --stamp-cyan: #00dbff;
+  --stamp-magenta: #ce2094;
+  --sticker-pink: #ff2490;
+  --navy-soft: #e6eaf7;
+  --violet-soft: #eee5ff;
+
+  --chart-1: #e6007e;
+  --chart-2: #5e00ff;
+  --chart-3: #07207e;
+  --chart-4: #ff6a00;
+  --chart-5: #00dbff;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #07207e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #000000;
 }
 
 @layer base {
@@ -127,4 +156,187 @@
   html {
     @apply font-sans;
   }
+}
+
+/*
+ * Stock shadcn components stay untouched (components/ui is generated); the design's borders
+ * and focus ring are applied here by their data-slot. Unlayered, so these win over the
+ * components' own utilities; a page that needs another size uses an `!` utility.
+ */
+
+/* Inputs, outline buttons, dialogs: 1.5px black. Outline buttons are the only stock
+   button variant that carries `border-border`. */
+[data-slot="input"],
+[data-slot="textarea"],
+[data-slot="select-trigger"],
+[data-slot="input-group"],
+[data-slot="checkbox"],
+[data-slot="button"].border-border {
+  border-width: 1.5px;
+  border-color: var(--foreground);
+}
+[data-slot="input"],
+[data-slot="select-trigger"],
+[data-slot="input-group"] {
+  border-radius: var(--radius-md);
+}
+[data-slot="input"]:not([type="file"]),
+[data-slot="input-group"] {
+  height: 2.75rem;
+  font-size: 1rem;
+}
+[data-slot="input"]:not([type="file"]) {
+  padding-inline: 0.875rem;
+}
+[data-slot="select-trigger"][data-size="default"] {
+  height: 2.75rem;
+  font-size: 1rem;
+  padding-inline: 0.875rem 0.625rem;
+}
+[data-slot="textarea"] {
+  font-size: 1rem;
+  border-radius: var(--radius-md);
+}
+[data-slot="input"][aria-invalid="true"],
+[data-slot="textarea"][aria-invalid="true"],
+[data-slot="select-trigger"][aria-invalid="true"] {
+  border-color: var(--status-invalid-ink);
+}
+
+/* Buttons: semibold; the default and large sizes grow to the design's 40/48 px. */
+[data-slot="button"] {
+  font-weight: 600;
+  border-radius: var(--radius-md);
+}
+[data-slot="button"].h-8 {
+  height: 2.5rem;
+  padding-inline: 1rem;
+  font-size: 1rem;
+}
+[data-slot="button"].h-9 {
+  height: 3rem;
+  padding-inline: 1.25rem;
+  font-size: 1rem;
+}
+[data-slot="button"].size-8 {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+[data-slot="button"].bg-primary:hover {
+  background-color: color-mix(in oklab, var(--primary), black 12%);
+}
+
+/* Dialogs and result panels: 1.5px black, 28px corners, a stripe on top. */
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-content"] {
+  border: 1.5px solid var(--foreground);
+  border-radius: var(--radius-2xl);
+  --tw-ring-shadow: 0 0 #0000;
+  overflow: hidden;
+  padding: 1.75rem 1.5rem 1.5rem;
+  background-image: var(--brand-stripe);
+  background-size: 100% 8px;
+  background-repeat: no-repeat;
+}
+[data-slot="dialog-title"],
+[data-slot="alert-dialog-title"] {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+[data-slot="dialog-footer"] {
+  margin: 0 -1.5rem -1.5rem;
+  padding: 1rem 1.5rem 1.5rem;
+}
+[data-slot="dialog-footer"],
+[data-slot="alert-dialog-footer"] {
+  background: transparent;
+}
+[data-slot="dialog-overlay"],
+[data-slot="alert-dialog-overlay"],
+[data-slot="sheet-overlay"] {
+  background-color: rgb(0 0 0 / 0.5);
+  backdrop-filter: none;
+}
+
+/* Cards and table rows: 1px #E4E4E7; cards 24px corners. */
+[data-slot="card"] {
+  --tw-ring-color: var(--border);
+  border-radius: var(--radius-xl);
+}
+[data-slot="table-container"] {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+}
+[data-slot="table-header"] [data-slot="table-row"] {
+  background-color: var(--navy-soft);
+}
+[data-slot="table-head"] {
+  color: var(--stamp-navy);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  height: 2.75rem;
+  padding-inline: 1rem;
+}
+[data-slot="table-cell"] {
+  padding: 0.75rem 1rem;
+}
+
+/* Popovers and menus: flat with a 1px border. */
+[data-slot="dropdown-menu-content"],
+[data-slot="select-content"],
+[data-slot="popover-content"],
+[data-slot="command"] {
+  --tw-ring-color: var(--foreground);
+  border-radius: var(--radius-md);
+}
+
+/* Alerts: rounded like cards. */
+[data-slot="alert"] {
+  border-radius: var(--radius-lg);
+}
+
+/* Focus: black, 2px with a 2px offset. */
+:focus-visible,
+[data-slot="input-otp-slot"][data-active="true"] {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  --tw-ring-shadow: 0 0 #0000;
+}
+
+:root {
+  /* Pink 60 %, then orange, mint, cyan, violet: the header's and dialogs' stripe. */
+  --brand-stripe: linear-gradient(
+    to right,
+    var(--primary) 0 60%,
+    var(--stamp-orange) 60% 70%,
+    var(--stamp-mint) 70% 80%,
+    var(--stamp-cyan) 80% 90%,
+    var(--stamp-violet) 90% 100%
+  );
+}
+
+@utility bg-brand-stripe {
+  background-image: var(--brand-stripe);
+}
+
+/* Display type: Outfit, 900 paired with 200, uppercase, tight. */
+@utility font-display {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+}
+
+@utility eyebrow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
