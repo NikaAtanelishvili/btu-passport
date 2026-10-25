@@ -8,6 +8,7 @@ from app.routers.admin import (
     categories,
     dashboard,
     events,
+    roles,
     skills,
     students,
     versions,
@@ -21,3 +22,4 @@ router.include_router(categories.router)
 router.include_router(awards.router)
 router.include_router(versions.router)
 router.include_router(events.router)
+router.include_router(roles.router)

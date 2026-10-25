@@ -623,6 +623,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Roles */
+        get: operations["list_roles_api_admin_roles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/roles/{email}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Grant Role
+         * @description Grant or change; BTU domains only. A change signs the person out everywhere.
+         *     409 last_super_admin when it would leave no super admin.
+         */
+        put: operations["grant_role_api_admin_roles__email__put"];
+        post?: never;
+        /**
+         * Revoke Role
+         * @description Signs the person out on their next request (A12). 409 last_super_admin.
+         */
+        delete: operations["revoke_role_api_admin_roles__email__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/checkin/{event_id}": {
         parameters: {
             query?: never;
@@ -1530,6 +1572,31 @@ export interface components {
         RetryCount: {
             /** Count */
             count: number;
+        };
+        /** RoleIn */
+        RoleIn: {
+            /** Role */
+            role: string;
+        };
+        /** RoleRow */
+        RoleRow: {
+            /** Email */
+            email: string;
+            /** Role */
+            role: string;
+            /** Name */
+            name: string | null;
+            /** Granted By Email */
+            granted_by_email: string | null;
+            /**
+             * Granted At
+             * Format: date-time
+             */
+            granted_at: string;
+            /** Last Login At */
+            last_login_at: string | null;
+            /** Last Super Admin */
+            last_super_admin: boolean;
         };
         /**
          * SessionInfo
@@ -3160,6 +3227,90 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["QrOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_roles_api_admin_roles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleRow"][];
+                };
+            };
+        };
+    };
+    grant_role_api_admin_roles__email__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                email: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_role_api_admin_roles__email__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                email: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
