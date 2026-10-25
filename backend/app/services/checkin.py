@@ -1,8 +1,9 @@
 """Check-in by QR (BE-42, FR-28 - FR-30). Any signed-in BTU user may check in; one row per
 email per event (FR-29), recorded as Unregistered when the email has no student record.
 
-A signed-out scan swaps the QR token for a check-in pass (`issue_pass`), checked here in place
-of the token after sign-in. A pass is single use: its nonce is stored on the row it creates."""
+A signed-out scan swaps the QR token for a check-in pass (`issue_pass`), which the router keeps
+in an HttpOnly cookie on the event's check-in path and hands back here (`pass_`) in place of the
+token after sign-in. A pass is single use: its nonce is stored on the row it creates."""
 
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -60,9 +61,9 @@ def _open_state(event: Event | None) -> CheckinState | None:
     return None
 
 
-def _unused_pass(db: Session, event: Event, p: str, now: datetime) -> str | None:
+def _unused_pass(db: Session, event: Event, pass_: str, now: datetime) -> str | None:
     """The nonce of a valid pass for this event that no check-in has used yet."""
-    nonce = qr_tokens.read_pass(event.qr_secret, event.event_id, p, now) if p else None
+    nonce = qr_tokens.read_pass(event.qr_secret, event.event_id, pass_, now) if pass_ else None
     if nonce is None:
         return None
     used = exists().where(
@@ -72,7 +73,7 @@ def _unused_pass(db: Session, event: Event, p: str, now: datetime) -> str | None
 
 
 def _state(
-    db: Session, principal: "Principal", event: Event | None, t: str, p: str, now: datetime
+    db: Session, principal: "Principal", event: Event | None, t: str, pass_: str, now: datetime
 ) -> tuple[CheckinState, str | None]:
     """The plan's order: missing/deleted, own row removed, own row, not open, closed, token
     (or pass). Returns the state and, when a pass is what lets the caller in, its nonce."""
@@ -91,7 +92,7 @@ def _state(
         return closed, None
     if qr_tokens.is_valid(event.qr_secret, event.event_id, t, now):
         return "CONFIRM", None
-    nonce = _unused_pass(db, event, p, now)
+    nonce = _unused_pass(db, event, pass_, now)
     return ("CONFIRM", nonce) if nonce is not None else ("TOKEN_EXPIRED", None)
 
 
@@ -101,7 +102,7 @@ def _fail(state: CheckinState) -> AppError:
     )
 
 
-def issue_pass(db: Session, event_id: str, t: str) -> CheckinPass:
+def issue_pass(db: Session, event_id: str, t: str) -> tuple[str, CheckinPass]:
     """A signed-out scan: check the event and the QR token now, and hand out a pass that
     survives sign-in. Public; an expired token gets no pass (409 TOKEN_EXPIRED)."""
     event = _event(db, event_id)
@@ -114,16 +115,15 @@ def issue_pass(db: Session, event_id: str, t: str) -> CheckinPass:
     if state is not None:
         raise _fail(state)
     assert event is not None
-    return CheckinPass(
-        pass_=qr_tokens.issue_pass(event.qr_secret, event.event_id, now),
-        expires_at=now.replace(microsecond=0) + timedelta(seconds=qr_tokens.PASS_SECONDS),
+    return qr_tokens.issue_pass(event.qr_secret, event.event_id, now), CheckinPass(
+        expires_at=now.replace(microsecond=0) + timedelta(seconds=qr_tokens.PASS_SECONDS)
     )
 
 
-def view(db: Session, principal: "Principal", event_id: str, t: str, p: str) -> CheckinView:
+def view(db: Session, principal: "Principal", event_id: str, t: str, pass_: str) -> CheckinView:
     """GET: what the check-in page shows. Never writes."""
     event = _event(db, event_id)
-    state, _ = _state(db, principal, event, t, p, datetime.now(UTC))
+    state, nonce = _state(db, principal, event, t, pass_, datetime.now(UTC))
     if event is None:
         return CheckinView(event=None, state=state)
     skill, category = db.execute(
@@ -144,13 +144,16 @@ def view(db: Session, principal: "Principal", event_id: str, t: str, p: str) -> 
         state=state,
         unregistered=principal.student is None,
         already_holds_skill=_holds_skill(db, principal, event),
+        from_pass=nonce is not None,
     )
 
 
-def check_in(db: Session, principal: "Principal", event_id: str, t: str, p: str) -> CheckinResult:
+def check_in(
+    db: Session, principal: "Principal", event_id: str, t: str, pass_: str
+) -> CheckinResult:
     """POST: records the check-in; a repeat returns the same body (no second row)."""
     event = _event(db, event_id)
-    state, nonce = _state(db, principal, event, t, p, datetime.now(UTC))
+    state, nonce = _state(db, principal, event, t, pass_, datetime.now(UTC))
     if state not in ("CONFIRM", "CHECKED_IN"):
         raise _fail(state)
     assert event is not None

@@ -4,7 +4,7 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict
 
 EventStatus = Literal["DRAFT", "CHECKIN_OPEN", "CHECKIN_CLOSED", "COMPLETED"]
 Blocker = Literal["DRAFT", "CHECKIN_OPEN", "UNREGISTERED_PRESENT", "NO_PARTICIPANTS"]
@@ -136,13 +136,13 @@ class CheckinView(BaseModel):
     state: CheckinState
     unregistered: bool = False
     already_holds_skill: bool = False
+    from_pass: bool = False  # CONFIRM thanks to this browser's check-in pass: check in now
 
 
 class CheckinIn(BaseModel):
-    """`t` is the QR token; `p` a check-in pass from a signed-out scan. Either is enough."""
+    """`t` is the QR token. A check-in pass from a signed-out scan travels as a cookie."""
 
     t: str = ""
-    p: str = ""
 
 
 class CheckinPassIn(BaseModel):
@@ -150,11 +150,8 @@ class CheckinPassIn(BaseModel):
 
 
 class CheckinPass(BaseModel):
-    """Carried through sign-in in `/login?next=/checkin/{id}?p=...`."""
+    """The pass itself is set as an HttpOnly cookie on the event's check-in API path."""
 
-    model_config = ConfigDict(populate_by_name=True)
-
-    pass_: str = Field(alias="pass")
     expires_at: datetime
 
 

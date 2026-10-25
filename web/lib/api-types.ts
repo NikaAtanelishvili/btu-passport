@@ -493,8 +493,8 @@ export interface paths {
         put?: never;
         /**
          * Checkin Pass
-         * @description Signed-out scan: the QR token is checked now; the pass lasts 10 minutes, one use.
-         *     409 (404 for NOT_FOUND) with `state` when there is nothing to check in to.
+         * @description Signed-out scan: the QR token is checked now; the pass (cookie) lasts 10 minutes, one
+         *     use. 409 (404 for NOT_FOUND) with `state` when there is nothing to check in to.
          */
         post: operations["checkin_pass_api_checkin__event_id__pass_post"];
         delete?: never;
@@ -841,7 +841,7 @@ export interface components {
         };
         /**
          * CheckinIn
-         * @description `t` is the QR token; `p` a check-in pass from a signed-out scan. Either is enough.
+         * @description `t` is the QR token. A check-in pass from a signed-out scan travels as a cookie.
          */
         CheckinIn: {
             /**
@@ -849,19 +849,12 @@ export interface components {
              * @default
              */
             t: string;
-            /**
-             * P
-             * @default
-             */
-            p: string;
         };
         /**
          * CheckinPass
-         * @description Carried through sign-in in `/login?next=/checkin/{id}?p=...`.
+         * @description The pass itself is set as an HttpOnly cookie on the event's check-in API path.
          */
         CheckinPass: {
-            /** Pass */
-            pass: string;
             /**
              * Expires At
              * Format: date-time
@@ -903,6 +896,11 @@ export interface components {
              * @default false
              */
             already_holds_skill: boolean;
+            /**
+             * From Pass
+             * @default false
+             */
+            from_pass: boolean;
         };
         /** CompleteOut */
         CompleteOut: {
@@ -2584,7 +2582,6 @@ export interface operations {
         parameters: {
             query?: {
                 t?: string;
-                p?: string;
             };
             header?: never;
             path: {

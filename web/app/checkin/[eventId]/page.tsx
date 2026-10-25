@@ -2,8 +2,9 @@
 
 // FE-33: check-in from the presenter QR (Web App Design P3), made for phones. One card per
 // state from the API. Signed out: the QR token (30-60 s) is checked right away and swapped for
-// a check-in pass (10 min, one use) that comes back here as ?p= after sign-in; the page then
-// checks in by itself, so nobody has to scan twice.
+// a check-in pass (10 min, one use) that the API keeps in an HttpOnly cookie for this event; the
+// sign-in link carries no token or pass. Back here in the same browser, the API reports
+// `from_pass` and the page checks in by itself, so nobody has to scan twice.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -36,7 +37,6 @@ function Checkin() {
   const { eventId } = useParams<{ eventId: string }>();
   const params = useSearchParams();
   const t = params.get("t") ?? "";
-  const p = params.get("p") ?? "";
   const pathname = usePathname();
   const router = useRouter();
   const session = useSession();
@@ -49,31 +49,29 @@ function Checkin() {
     queryKey: queryKeys.checkinPass(eventId, t),
     queryFn: async () =>
       (await api.POST("/api/checkin/{event_id}/pass", { params: { path: { event_id: eventId } }, body: { t } })).data!,
-    enabled: signedOut && !p,
+    enabled: signedOut && t !== "",
     retry: false,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
-  const passToken = p || pass.data?.pass;
+  // With a pass (or nothing to scan) sign in and come back to the bare URL: no token, no pass.
+  const toSignIn = signedOut && (pass.isSuccess || t === "");
   useEffect(() => {
-    if (signedOut && passToken) {
-      router.replace(`/login?next=${encodeURIComponent(`${pathname}?p=${encodeURIComponent(passToken)}`)}`);
-    }
-  }, [signedOut, passToken, router, pathname]);
+    if (toSignIn) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+  }, [toSignIn, router, pathname]);
 
   const view = useQuery({
-    queryKey: queryKeys.checkin(eventId, t, p),
+    queryKey: queryKeys.checkin(eventId, t),
     queryFn: async () =>
-      (await api.GET("/api/checkin/{event_id}", { params: { path: { event_id: eventId }, query: { t, p } } }))
-        .data!,
+      (await api.GET("/api/checkin/{event_id}", { params: { path: { event_id: eventId }, query: { t } } })).data!,
     enabled: session.data?.authenticated === true,
     refetchOnWindowFocus: false,
   });
   const checkIn = useMutation({
     mutationFn: async () =>
-      (await api.POST("/api/checkin/{event_id}", { params: { path: { event_id: eventId } }, body: { t, p } })).data!,
+      (await api.POST("/api/checkin/{event_id}", { params: { path: { event_id: eventId } }, body: { t } })).data!,
     onSuccess: (result) => {
-      queryClient.setQueryData<CheckinView>(queryKeys.checkin(eventId, t, p), (old) =>
+      queryClient.setQueryData<CheckinView>(queryKeys.checkin(eventId, t), (old) =>
         old ? { ...old, ...result, state: "CHECKED_IN" } : old,
       );
       void queryClient.invalidateQueries({ queryKey: queryKeys.me.events });
@@ -84,15 +82,16 @@ function Checkin() {
     },
   });
 
-  // Back from sign-in with a pass: the scan already said "check me in".
+  // Back from sign-in with this browser's pass: the scan already said "check me in".
   const { mutate } = checkIn;
   const autoSent = useRef(false);
+  const fromPass = view.data?.state === "CONFIRM" && view.data.from_pass;
   useEffect(() => {
-    if (p && view.data?.state === "CONFIRM" && !autoSent.current) {
+    if (fromPass && !autoSent.current) {
       autoSent.current = true;
       mutate();
     }
-  }, [p, view.data?.state, mutate]);
+  }, [fromPass, mutate]);
 
   if (signedOut && pass.isError) {
     // No pass (expired code, check-in not open, …): say so now, before any sign-in.
