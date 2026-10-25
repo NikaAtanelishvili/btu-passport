@@ -1,7 +1,9 @@
 "use client";
 
 // FE-03: guard for the me/ and admin/ layouts. Signed out → /login?next=…; wrong role →
-// a no-access alert. The API enforces the same rules (BE-12).
+// a no-access alert. The API enforces the same rules (BE-12). Layouts render it inside
+// <Suspense fallback={<GuardSkeleton />}>: usePathname() (here and in the shells) suspends on
+// routes with dynamic params, so the route streams instead of blocking (Cache Components).
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -31,14 +33,7 @@ export function RequireRole({ role, children }: { role: RequiredRole; children: 
       </Alert>
     );
   }
-  if (!session.isSuccess || signedOut) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-24 w-full" />
-      </div>
-    );
-  }
+  if (!session.isSuccess || signedOut) return <GuardSkeleton />;
   if (!hasRole(session.data, role)) {
     return (
       <Alert>
@@ -52,4 +47,13 @@ export function RequireRole({ role, children }: { role: RequiredRole; children: 
     );
   }
   return <>{children}</>;
+}
+
+export function GuardSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="h-24 w-full" />
+    </div>
+  );
 }
