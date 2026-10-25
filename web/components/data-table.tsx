@@ -1,11 +1,12 @@
 "use client";
 
 // Server-paginated table: the page passes one page of rows plus the total; search and
-// filter controls sit above it in `toolbar`. With `mobileCard`, phones get one card per row
-// instead of a table that would scroll sideways (student portal).
+// filter controls sit above it in `toolbar`. Phones get one card per row instead of a table
+// that would scroll sideways: `mobileCard` if given, else every column as label and value.
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export type Column<T> = { header: string; cell: (row: T) => React.ReactNode; className?: string };
@@ -41,22 +42,37 @@ export function DataTable<T>({
   return (
     <div className="space-y-3">
       {toolbar && <div className="flex flex-wrap items-end gap-3">{toolbar}</div>}
-      {mobileCard && (
-        <div className="space-y-3 sm:hidden">
-          {loading && !rows ? (
-            <Skeleton className="h-24 w-full rounded-[24px]" />
-          ) : rows && rows.length > 0 ? (
-            rows.map((row) => (
-              <Card key={rowKey(row)} className="py-5">
-                <CardContent className="space-y-1.5 px-5 text-base">{mobileCard(row)}</CardContent>
-              </Card>
-            ))
-          ) : (
-            <p className="rounded-[24px] border-[1.5px] border-dashed border-foreground px-4 py-8 text-center text-muted-foreground">{empty}</p>
-          )}
-        </div>
-      )}
-      <div className={mobileCard ? "hidden sm:block" : undefined}>
+      <div className="space-y-3 sm:hidden">
+        {loading && !rows ? (
+          <Skeleton className="h-24 w-full rounded-[24px]" />
+        ) : rows && rows.length > 0 ? (
+          rows.map((row) => (
+            <Card
+              key={rowKey(row)}
+              className={cn("py-5", onRowClick && "cursor-pointer")}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+            >
+              <CardContent className="space-y-1.5 px-5 text-base">
+                {mobileCard ? (
+                  mobileCard(row)
+                ) : (
+                  <dl className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-x-3 gap-y-2">
+                    {columns.map((c) => (
+                      <div key={c.header} className="contents">
+                        <dt className="eyebrow pt-1 text-muted-foreground">{c.header}</dt>
+                        <dd className="min-w-0 break-words">{c.cell(row)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <p className="rounded-[24px] border-[1.5px] border-dashed border-foreground px-4 py-8 text-center text-muted-foreground">{empty}</p>
+        )}
+      </div>
+      <div className="hidden sm:block">
         <Table>
           <TableHeader>
             <TableRow>

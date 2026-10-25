@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { DisplayHeading } from "@/components/display";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
 import { TextField } from "@/components/form-fields";
@@ -114,7 +115,7 @@ export default function CategoriesPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Categories & stamps</h1>
+        <DisplayHeading strong="Categories" light="& stamps" />
         {isSuper && <Button onClick={() => setDialog({ kind: "add" })}>Add category</Button>}
       </div>
       {categories.isError && <ErrorAlert error={categories.error} />}
@@ -271,7 +272,7 @@ function NameDialog({
           </FieldGroup>
         </form>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" form="category-form" disabled={save.isPending}>
@@ -360,7 +361,7 @@ function StampDialog({
           </Field>
         </form>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" form="stamp-form" disabled={upload.isPending || problem !== null}>

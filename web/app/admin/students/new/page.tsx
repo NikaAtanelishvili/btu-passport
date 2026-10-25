@@ -61,7 +61,7 @@ function RegisterStudent() {
   return (
     <Card className="max-w-xl">
       <CardHeader>
-        <CardTitle>Register student</CardTitle>
+        <CardTitle className="font-display text-3xl font-black uppercase">Register student</CardTitle>
         <CardDescription>
           A Passport ID is generated on save. The first version is issued when the student gets their first skill.
         </CardDescription>

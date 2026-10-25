@@ -1,15 +1,13 @@
 "use client";
 
 // FE-20: admin sidebar (Operations, and Super admin for SUPER_ADMIN only), with the user's
-// email, role and Sign out in its footer. On small screens the sidebar opens in a Sheet.
-import { MenuIcon } from "lucide-react";
+// email, role and Sign out in its footer. On phones the pages are one row of pills (design).
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { hasRole, signOut, useSession } from "@/lib/session";
 
@@ -30,19 +28,26 @@ const SUPER_ADMIN: NavItem[] = [
   { href: "/admin/audit", label: "Audit log" },
 ];
 
-function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
+function useActive() {
   const pathname = usePathname();
+  return (item: NavItem) => (item.exact ? pathname === item.href : pathname.startsWith(item.href));
+}
+
+function NavLinks({ items }: { items: NavItem[] }) {
+  const isActive = useActive();
   return (
     <ul className="space-y-1">
       {items.map((item) => {
-        const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+        const active = isActive(item);
         return (
           <li key={item.href}>
             <Link
               href={item.href}
-              onClick={onNavigate}
               aria-current={active ? "page" : undefined}
-              className={cn(buttonVariants({ variant: active ? "secondary" : "ghost" }), "w-full justify-start")}
+              className={cn(
+                "flex h-11 items-center rounded-md px-4 text-base font-medium",
+                active ? "bg-stamp-navy text-white" : "hover:bg-muted",
+              )}
             >
               {item.label}
             </Link>
@@ -53,28 +58,52 @@ function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => 
   );
 }
 
-function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+function Group({ label, marker, children }: { label: string; marker: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="eyebrow mb-3 flex items-center gap-2 px-4 text-muted-foreground">
+        <span className={cn("size-2.5 rounded-[3px]", marker)} aria-hidden />
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function RoleBadge({ superAdmin }: { superAdmin: boolean }) {
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "h-6 border-transparent px-2.5 text-sm",
+        superAdmin ? "bg-stamp-violet text-white" : "bg-navy-soft text-stamp-navy",
+      )}
+    >
+      {superAdmin ? "Super admin" : "Admin"}
+    </Badge>
+  );
+}
+
+function Sidebar() {
   const { data } = useSession();
   const superAdmin = data ? hasRole(data, "super_admin") : false;
   return (
-    <div className="flex h-full flex-col gap-4">
-      <nav className="space-y-4">
-        <div>
-          <p className="mb-2 px-2 text-xs font-medium text-muted-foreground">Operations</p>
-          <NavLinks items={OPERATIONS} onNavigate={onNavigate} />
-        </div>
+    <div className="flex flex-col gap-6">
+      <nav aria-label="Admin" className="space-y-6">
+        <Group label="Operations" marker="bg-stamp-orange">
+          <NavLinks items={OPERATIONS} />
+        </Group>
         {superAdmin && (
-          <div>
-            <p className="mb-2 px-2 text-xs font-medium text-muted-foreground">Super admin</p>
-            <NavLinks items={SUPER_ADMIN} onNavigate={onNavigate} />
-          </div>
+          <Group label="Super admin" marker="bg-stamp-violet">
+            <NavLinks items={SUPER_ADMIN} />
+          </Group>
         )}
       </nav>
-      <div className="mt-auto space-y-2">
-        <Separator />
-        <div className="px-2 text-sm">
-          <p className="truncate">{data?.user?.email}</p>
-          <p className="text-muted-foreground">{data?.role === "SUPER_ADMIN" ? "Super admin" : "Admin"}</p>
+      <Separator />
+      <div className="space-y-3 px-4">
+        <div className="space-y-1.5">
+          <p className="truncate font-medium">{data?.user?.email}</p>
+          <RoleBadge superAdmin={data?.role === "SUPER_ADMIN"} />
         </div>
         <Button variant="outline" className="w-full" onClick={() => void signOut()}>
           Sign out
@@ -84,26 +113,44 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+/** Phones: every admin page as a pill in one row that scrolls sideways on its own. */
+function MobileNav() {
+  const { data } = useSession();
+  const superAdmin = data ? hasRole(data, "super_admin") : false;
+  const isActive = useActive();
+  const items = superAdmin ? [...OPERATIONS, ...SUPER_ADMIN] : OPERATIONS;
   return (
-    <div className="flex flex-col gap-6 md:flex-row">
-      <aside className="hidden w-56 shrink-0 md:block">
+    <nav aria-label="Admin" className="-mx-4 overflow-x-auto px-4 pb-2 md:hidden">
+      <ul className="flex w-max gap-2">
+        {items.map((item) => {
+          const active = isActive(item);
+          return (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex h-10 items-center rounded-full border-[1.5px] px-4 text-base font-medium whitespace-nowrap",
+                  active ? "border-stamp-navy bg-stamp-navy text-white" : "border-foreground",
+                )}
+              >
+                {item.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+export function AdminShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div data-admin-shell className="flex flex-col gap-6 md:flex-row md:gap-10">
+      <aside className="hidden w-60 shrink-0 md:block">
         <Sidebar />
       </aside>
-      <div className="md:hidden">
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger render={<Button variant="outline" size="sm" />}>
-            <MenuIcon /> Menu
-          </SheetTrigger>
-          <SheetContent side="left" className="p-4">
-            <SheetHeader className="p-0">
-              <SheetTitle>Admin</SheetTitle>
-            </SheetHeader>
-            <Sidebar onNavigate={() => setOpen(false)} />
-          </SheetContent>
-        </Sheet>
-      </div>
+      <MobileNav />
       <div className="min-w-0 flex-1">{children}</div>
     </div>
   );

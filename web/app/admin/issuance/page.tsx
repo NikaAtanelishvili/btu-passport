@@ -8,10 +8,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
 
+import { DisplayHeading } from "@/components/display";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
-import { StatusBadge } from "@/components/status-badge";
+import { StatusBadge, VersionPill } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,7 +83,7 @@ function Issuance() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Issuance</h1>
+        <DisplayHeading strong="Issuance" />
         {tab === "failed" && (
           <ConfirmDialog
             trigger={<Button variant="outline" />}
@@ -124,8 +125,8 @@ function Issuance() {
               </Link>
             ),
           },
-          { header: "Passport ID", cell: (v) => v.passport_id },
-          { header: "Version", cell: (v) => `v${v.version_no}` },
+          { header: "Passport ID", cell: (v) => <span className="font-mono">{v.passport_id}</span> },
+          { header: "Version", cell: (v) => <VersionPill versionNo={v.version_no} /> },
           { header: "Status", cell: (v) => <StatusBadge status={v.status} /> },
           { header: "Error", cell: (v) => v.error ?? "", className: "max-w-sm whitespace-normal" },
           { header: "Time", cell: (v) => formatDateTime(v.issued_at ?? v.created_at) },

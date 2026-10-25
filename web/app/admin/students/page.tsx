@@ -6,9 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { DisplayHeading } from "@/components/display";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
-import { StatusBadge } from "@/components/status-badge";
+import { StatusBadge, VersionPill } from "@/components/status-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,7 +37,7 @@ function FilterSelect({
   const all = { [ALL]: label, ...items };
   return (
     <Select value={value} onValueChange={(v) => onChange((v as string | null) ?? ALL)} items={all}>
-      <SelectTrigger aria-label={label} className="w-44">
+      <SelectTrigger aria-label={label} className="w-[calc(50%-0.375rem)] sm:w-48">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -95,9 +96,9 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Students</h1>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <DisplayHeading strong="Students" />
         <div className="flex gap-2">
           <Tooltip>
             <TooltipTrigger render={<span />}>
@@ -121,7 +122,7 @@ export default function StudentsPage() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search name, Student ID or email"
               aria-label="Search students"
-              className="w-72"
+              className="w-full sm:w-80"
             />
             <FilterSelect
               label="All programs"
@@ -148,12 +149,31 @@ export default function StudentsPage() {
         onPageChange={setPage}
         onRowClick={(s) => router.push(`/admin/students/${s.student_id}`)}
         empty="No students match."
+        mobileCard={(s) => (
+          <>
+            <div className="flex items-start justify-between gap-2">
+              <Link href={`/admin/students/${s.student_id}`} className="font-semibold underline-offset-4 hover:underline">
+                {s.first_name} {s.last_name}
+              </Link>
+              {s.latest_version_no ? (
+                <VersionPill versionNo={s.latest_version_no} />
+              ) : (
+                <span className="text-sm text-muted-foreground">No version</span>
+              )}
+            </div>
+            <p className="font-mono text-sm text-muted-foreground">
+              {s.student_id} · {s.passport_id ?? "–"}
+            </p>
+            <p>{s.program}</p>
+            {s.latest_status && <StatusBadge status={s.latest_status} />}
+          </>
+        )}
         columns={[
-          { header: "Student ID", cell: (s) => s.student_id },
-          { header: "Name", cell: (s) => `${s.first_name} ${s.last_name}` },
-          { header: "Program", cell: (s) => s.program },
-          { header: "Passport ID", cell: (s) => s.passport_id ?? "–" },
-          { header: "Version", cell: (s) => (s.latest_version_no ? `v${s.latest_version_no}` : "–") },
+          { header: "Student ID", cell: (s) => <span className="font-mono">{s.student_id}</span> },
+          { header: "Name", cell: (s) => <span className="font-semibold">{`${s.first_name} ${s.last_name}`}</span> },
+          { header: "Program", cell: (s) => s.program, className: "whitespace-normal" },
+          { header: "Passport ID", cell: (s) => <span className="font-mono">{s.passport_id ?? "–"}</span> },
+          { header: "Version", cell: (s) => <VersionPill versionNo={s.latest_version_no} /> },
           { header: "Status", cell: (s) => (s.latest_status ? <StatusBadge status={s.latest_status} /> : "–") },
         ]}
       />

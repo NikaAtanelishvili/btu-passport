@@ -8,6 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { DisplayHeading } from "@/components/display";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
@@ -33,7 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import type { components } from "@/lib/api-types";
 import { BLOCKER_TEXT } from "@/lib/events";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, splitTitle } from "@/lib/format";
 import { queryKeys } from "@/lib/query-keys";
 import { hasRole, useSession } from "@/lib/session";
 
@@ -90,8 +91,8 @@ function Header({ event: e, canEdit }: { event: EventDetail; canEdit: boolean })
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold">{e.name}</h1>
+        <div className="flex flex-wrap items-end gap-3">
+          <DisplayHeading strong={splitTitle(e.name)[0]} light={splitTitle(e.name)[1]} />
           <EventStatusBadge status={e.status} />
         </div>
         <div className="flex items-center gap-3 text-sm">

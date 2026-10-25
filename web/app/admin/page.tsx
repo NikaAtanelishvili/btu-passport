@@ -5,9 +5,10 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { DisplayHeading } from "@/components/display";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
-import { StatusBadge } from "@/components/status-badge";
+import { StatusBadge, VersionPill } from "@/components/status-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -23,7 +24,7 @@ function Counter({ label, value, href }: { label: string; value: number | undefi
     <Card className={href ? "transition-colors hover:bg-muted/50" : undefined}>
       <CardHeader>
         <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-3xl">{value ?? "–"}</CardTitle>
+        <CardTitle className="font-display text-5xl font-black">{value ?? "–"}</CardTitle>
       </CardHeader>
     </Card>
   );
@@ -43,7 +44,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <DisplayHeading strong="Dashboard" />
         <div className="flex flex-wrap gap-2">
           <Link href="/admin/students/new" className={buttonVariants({ variant: "outline" })}>
             Register student
@@ -62,7 +63,7 @@ export default function AdminDashboardPage() {
       {dashboard.isError && <ErrorAlert error={dashboard.error} />}
 
       <section className="space-y-2">
-        <h2 className="text-lg font-medium">Needs action</h2>
+        <h2 className="font-display text-2xl font-black uppercase">Needs action</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Counter label="Check-in open now" value={d?.checkin_open} href="/admin/events?status=CHECKIN_OPEN" />
           <Counter
@@ -76,7 +77,7 @@ export default function AdminDashboardPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-lg font-medium">Recent activity</h2>
+        <h2 className="font-display text-2xl font-black uppercase">Recent activity</h2>
         <DataTable<VersionRow>
           rows={d?.recent}
           loading={dashboard.isPending}
@@ -91,8 +92,8 @@ export default function AdminDashboardPage() {
                 </Link>
               ),
             },
-            { header: "Passport ID", cell: (v) => v.passport_id },
-            { header: "Version", cell: (v) => `v${v.version_no}` },
+            { header: "Passport ID", cell: (v) => <span className="font-mono">{v.passport_id}</span> },
+            { header: "Version", cell: (v) => <VersionPill versionNo={v.version_no} /> },
             { header: "Status", cell: (v) => <StatusBadge status={v.status} /> },
             { header: "Issued", cell: (v) => (v.issued_at ? formatDateTime(v.issued_at) : "–") },
           ]}

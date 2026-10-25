@@ -6,6 +6,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { DisplayHeading } from "@/components/display";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
 import { RequireRole } from "@/components/require-role";
@@ -95,7 +96,7 @@ function Audit() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Audit log</h1>
+      <DisplayHeading strong="Audit" light="log" />
       {audit.isError && !fieldErrors.to && <ErrorAlert error={audit.error} />}
       <DataTable<AuditRow>
         toolbar={

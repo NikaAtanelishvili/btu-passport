@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { DisplayHeading } from "@/components/display";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
@@ -101,7 +102,7 @@ function Roles() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Admins & roles</h1>
+        <DisplayHeading strong="Admins" light="& roles" />
         <Button onClick={() => setEditing("new")}>Add admin</Button>
       </div>
       {roles.isError && <ErrorAlert error={roles.error} />}
@@ -212,7 +213,7 @@ function RoleDialog({
           </FieldGroup>
         </form>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" form="role-form" disabled={save.isPending || row?.last_super_admin}>

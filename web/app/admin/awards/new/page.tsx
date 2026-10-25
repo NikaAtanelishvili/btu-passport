@@ -142,7 +142,7 @@ function AwardFormCard({
   return (
     <Card className="max-w-2xl">
       <CardHeader>
-        <CardTitle>Direct award</CardTitle>
+        <CardTitle className="font-display text-3xl font-black uppercase">Direct award</CardTitle>
         <CardDescription>For skills earned outside an event. You review the result before anything is issued.</CardDescription>
       </CardHeader>
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
@@ -280,7 +280,7 @@ function ReviewStep({ review, onBack }: { review: Review; onBack: () => void }) 
   return (
     <Card className="max-w-2xl">
       <CardHeader>
-        <CardTitle>Review</CardTitle>
+        <CardTitle className="font-display text-3xl font-black uppercase">Review</CardTitle>
         <CardDescription>
           Date earned {formatDate(review.body.date_earned)} · Reason: {review.body.reason}
         </CardDescription>

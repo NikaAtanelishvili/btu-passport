@@ -12,11 +12,12 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import { DisplayHeading } from "@/components/display";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
 import { SelectField, TextField } from "@/components/form-fields";
 import { StampImage } from "@/components/stamp-image";
-import { StatusBadge } from "@/components/status-badge";
+import { StatusBadge, VersionPill } from "@/components/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,10 +59,8 @@ export default function StudentDetailPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold">
-            {p.first_name} {p.last_name}
-          </h1>
-          <p className="text-sm text-muted-foreground">
+          <DisplayHeading strong={p.first_name} light={p.last_name} />
+          <p className="mt-3 font-mono text-muted-foreground">
             {p.student_id} · {d.passport.passport_id}
           </p>
         </div>
@@ -211,7 +210,7 @@ function PassportCard({ detail }: { detail: StudentDetail }) {
           rowKey={(v) => v.version_id}
           empty="No versions yet. The first is issued with the student's first skill."
           columns={[
-            { header: "Version", cell: (v) => `v${v.version_no}` },
+            { header: "Version", cell: (v) => <VersionPill versionNo={v.version_no} /> },
             { header: "Status", cell: (v) => <StatusBadge status={v.status} /> },
             { header: "Issued", cell: (v) => (v.issued_at ? formatDateTime(v.issued_at) : "–") },
             { header: "Error", cell: (v) => v.error ?? "", className: "max-w-xs whitespace-normal" },

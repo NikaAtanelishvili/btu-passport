@@ -19,7 +19,7 @@ const OUTLINED = "border-[1.5px] border-white text-white hover:bg-white/10";
 export function SiteHeader() {
   return (
     <header className="bg-black text-white">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-6 [body:has([data-admin-shell])_&]:max-w-7xl">
         <Link href="/" className="flex shrink-0 items-center gap-3" aria-label="BTU AI Skills Digital Passport, home">
           <BtuLogo height={48} />
           <span className="h-12 w-px bg-white/60" aria-hidden />
@@ -75,7 +75,7 @@ function HeaderNav() {
 
 export function SiteFooter() {
   return (
-    <footer className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 pb-10 sm:px-6">
+    <footer className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 pb-10 sm:px-6 [body:has([data-admin-shell])_&]:max-w-7xl">
       <span className="eyebrow shrink-0 text-[0.7rem] sm:text-xs">Business and Technology University</span>
       <span className="h-px flex-1 bg-foreground" aria-hidden />
     </footer>

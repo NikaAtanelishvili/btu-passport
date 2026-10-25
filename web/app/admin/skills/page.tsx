@@ -10,6 +10,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { DisplayHeading } from "@/components/display";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
 import { TextField } from "@/components/form-fields";
@@ -97,7 +98,7 @@ export default function SkillsPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Skills</h1>
+        <DisplayHeading strong="Skills" />
         {isSuper && <Button onClick={() => setEditing("new")}>Add skill</Button>}
       </div>
       {skills.isError && <ErrorAlert error={skills.error} />}
@@ -132,7 +133,7 @@ export default function SkillsPage() {
           </>
         )}
         columns={[
-          { header: "Skill ID", cell: (s) => s.skill_id },
+          { header: "Skill ID", cell: (s) => <span className="font-mono">{s.skill_id}</span> },
           { header: "Name", cell: (s) => s.name, className: "whitespace-normal" },
           {
             header: "Category",
@@ -319,7 +320,7 @@ function SkillDialog({ skill, onClose, onSaved }: { skill: SkillRow | null; onCl
           </FieldGroup>
         </form>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" form="skill-form" disabled={save.isPending}>

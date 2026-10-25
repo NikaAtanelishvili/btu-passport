@@ -84,7 +84,7 @@ export function EventForm({
   return (
     <Card className="max-w-2xl">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="font-display text-3xl font-black uppercase">{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
@@ -165,7 +165,7 @@ export function EventForm({
           <Button type="submit" disabled={pending}>
             {submitLabel}
           </Button>
-          <Button type="button" variant="ghost" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
         </CardFooter>

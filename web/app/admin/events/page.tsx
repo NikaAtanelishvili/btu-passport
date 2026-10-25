@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
+import { DisplayHeading } from "@/components/display";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
 import { EventStatusBadge } from "@/components/status-badge";
@@ -52,7 +53,7 @@ function Events() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Events</h1>
+        <DisplayHeading strong="Events" />
         {superAdmin && (
           <Link href="/admin/events/new" className={buttonVariants()}>
             Create event
@@ -66,7 +67,7 @@ function Events() {
           router.replace(`${pathname}?status=${String(v)}`);
         }}
       >
-        <TabsList>
+        <TabsList className="max-w-full justify-start overflow-x-auto">
           {STATUSES.map((s) => (
             <TabsTrigger key={s} value={s}>
               {EVENT_STATUS_LABELS[s]}
