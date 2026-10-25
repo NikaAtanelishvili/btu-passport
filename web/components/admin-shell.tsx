@@ -22,16 +22,15 @@ const OPERATIONS: NavItem[] = [
   { href: "/admin/issuance", label: "Issuance" },
 ];
 
-// Catalog, roles and audit (M9) are listed without links until they exist.
-const SUPER_ADMIN: (NavItem & { later?: boolean })[] = [
+const SUPER_ADMIN: NavItem[] = [
   { href: "/admin/events", label: "Events" },
   { href: "/admin/skills", label: "Skills" },
   { href: "/admin/categories", label: "Categories & stamps" },
   { href: "/admin/roles", label: "Admins & roles" },
-  { href: "/admin/audit", label: "Audit log", later: true },
+  { href: "/admin/audit", label: "Audit log" },
 ];
 
-function NavLinks({ items, onNavigate }: { items: (NavItem & { later?: boolean })[]; onNavigate?: () => void }) {
+function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <ul className="space-y-1">
@@ -39,20 +38,14 @@ function NavLinks({ items, onNavigate }: { items: (NavItem & { later?: boolean }
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         return (
           <li key={item.href}>
-            {item.later ? (
-              <span className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-start text-muted-foreground")}>
-                {item.label} <span className="ml-auto text-xs">later</span>
-              </span>
-            ) : (
-              <Link
-                href={item.href}
-                onClick={onNavigate}
-                aria-current={active ? "page" : undefined}
-                className={cn(buttonVariants({ variant: active ? "secondary" : "ghost" }), "w-full justify-start")}
-              >
-                {item.label}
-              </Link>
-            )}
+            <Link
+              href={item.href}
+              onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
+              className={cn(buttonVariants({ variant: active ? "secondary" : "ghost" }), "w-full justify-start")}
+            >
+              {item.label}
+            </Link>
           </li>
         );
       })}
