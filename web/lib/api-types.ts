@@ -1120,6 +1120,16 @@ export interface components {
              * Format: date-time
              */
             starts_at: string;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /**
+             * Checkin Closes At
+             * Format: date-time
+             */
+            checkin_closes_at: string;
             /** Location */
             location: string | null;
             skill: components["schemas"]["CheckinEventSkill"];
@@ -1439,6 +1449,10 @@ export interface components {
             passport_id: string;
             /** Holder Name */
             holder_name: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
             /** First Issued On */
             first_issued_on: string | null;
             current: components["schemas"]["VersionSummary"] | null;
@@ -1930,6 +1944,8 @@ export interface components {
             version?: components["schemas"]["VerifyVersion"] | null;
             /** Latest Version No */
             latest_version_no?: number | null;
+            /** Latest Issued At */
+            latest_issued_at?: string | null;
             chain?: components["schemas"]["VerifyChain"] | null;
             proof?: components["schemas"]["VerifyProof"] | null;
         };

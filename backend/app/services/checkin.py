@@ -136,6 +136,8 @@ def view(db: Session, principal: "Principal", event_id: str, t: str, pass_: str)
             name=event.name,
             description=event.description,
             starts_at=event.starts_at,
+            ends_at=event.ends_at,
+            checkin_closes_at=event.checkin_closes_at,
             location=event.location,
             skill=CheckinEventSkill(
                 name=skill.name, category=category.name, stamp_sha256=category.stamp_sha256

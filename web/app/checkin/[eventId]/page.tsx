@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
-import { CalendarIcon, InfoIcon, MapPinIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon, InfoIcon, MapPinIcon } from "lucide-react";
 
 import { DisplayHeading } from "@/components/display";
 import { ErrorAlert } from "@/components/error-alert";
@@ -21,7 +21,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, ApiError } from "@/lib/api";
 import type { components } from "@/lib/api-types";
-import { formatDateTime, splitTitle } from "@/lib/format";
+import { formatEventWhen, formatTime, splitTitle } from "@/lib/format";
 import { queryKeys } from "@/lib/query-keys";
 import { hasRole, signOut, useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -138,7 +138,7 @@ function EventHeading({ view }: { view: CheckinView }) {
       <DisplayHeading strong={strong} light={light} className="text-[clamp(2.5rem,7vw,4.5rem)]" />
       <ul className="space-y-1.5 text-lg sm:text-xl">
         <li className="flex items-center gap-3">
-          <CalendarIcon className="size-5 shrink-0" aria-hidden /> {formatDateTime(e.starts_at)}
+          <CalendarIcon className="size-5 shrink-0" aria-hidden /> {formatEventWhen(e.starts_at, e.ends_at)}
         </li>
         {e.location && (
           <li className="flex items-center gap-3">
@@ -162,7 +162,7 @@ function SkillCard({ view, lead, eventLine = false }: { view: CheckinView; lead?
         <p className="font-display text-xl leading-tight font-extrabold sm:text-[1.75rem]">
           {eventLine ? e.name : e.skill.name}
         </p>
-        <p className="text-muted-foreground sm:text-lg">{eventLine ? formatDateTime(e.starts_at) : e.skill.category}</p>
+        <p className="text-muted-foreground sm:text-lg">{eventLine ? formatEventWhen(e.starts_at, e.ends_at) : e.skill.category}</p>
       </div>
     </div>
   );
@@ -252,6 +252,9 @@ function StateCard({
             </p>
           </div>
         )}
+        <p className="flex items-center justify-center gap-2 text-muted-foreground">
+          <ClockIcon className="size-4" aria-hidden /> Check-in closes at {formatTime(view.event!.checkin_closes_at)}
+        </p>
       </>
     );
   }

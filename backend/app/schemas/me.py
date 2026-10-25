@@ -36,6 +36,8 @@ class IssuingVersion(BaseModel):
 class MyPassport(BaseModel):
     passport_id: str
     holder_name: str
+    first_name: str
+    last_name: str
     first_issued_on: date | None
     current: VersionSummary | None  # the latest ANCHORED version
     issuing: IssuingVersion | None  # a newer version still on its way

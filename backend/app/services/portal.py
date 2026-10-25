@@ -95,12 +95,14 @@ def passport(db: Session, student: Student) -> MyPassport:
     shown = current or next((v for v in rows if v.status == "LEGACY"), None)
 
     if p.holder_first_name is not None:
-        holder = f"{p.holder_first_name} {p.holder_last_name}"
+        first, last = p.holder_first_name, p.holder_last_name or ""
     else:
-        holder = f"{student.first_name} {student.last_name}"
+        first, last = student.first_name, student.last_name
     return MyPassport(
         passport_id=p.passport_id,
-        holder_name=holder,
+        holder_name=f"{first} {last}",
+        first_name=first,
+        last_name=last,
         first_issued_on=p.first_issued_on,
         current=summaries[current.version_id] if current else None,
         issuing=IssuingVersion(version_no=issuing.version_no) if issuing else None,

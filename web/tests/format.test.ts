@@ -2,7 +2,14 @@
 // verdict headlines of FE-11.
 import { describe, expect, it } from "vitest";
 
-import { formatCode, normalizeCode, splitTitle, todayInTbilisi, verdictHeadline } from "@/lib/format";
+import {
+  formatCode,
+  formatEventWhen,
+  normalizeCode,
+  splitTitle,
+  todayInTbilisi,
+  verdictHeadline,
+} from "@/lib/format";
 import { fromLocalInput, shiftLocal, toLocalInput } from "@/lib/events";
 
 describe("codes", () => {
@@ -69,5 +76,17 @@ describe("splitTitle", () => {
   it("makes the last word the light part", () => {
     expect(splitTitle("Prompt Engineering Workshop")).toEqual(["Prompt Engineering", "Workshop"]);
     expect(splitTitle("  Hackathon ")).toEqual(["  Hackathon ", undefined]);
+  });
+});
+
+describe("formatEventWhen", () => {
+  it("shows one date and a time range for a same-day event", () => {
+    expect(formatEventWhen("2026-10-25T15:00:00Z", "2026-10-25T17:00:00Z", "UTC")).toBe("25 October 2026 · 15:00–17:00");
+  });
+
+  it("shows both dates for an event over midnight", () => {
+    expect(formatEventWhen("2026-10-25T22:00:00Z", "2026-10-26T01:30:00Z", "UTC")).toBe(
+      "25 October 2026, 22:00 – 26 October 2026, 01:30",
+    );
   });
 });

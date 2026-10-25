@@ -73,8 +73,10 @@ def test_A6_an_older_version_is_superseded(
     v2 = issue(st, f.skill(db, "SKL-002"))
     old = verification.verify_code(db, v1.verification_code or "")
     assert (old.verdict, old.latest_version_no) == ("SUPERSEDED", 2)
+    assert old.latest_issued_at == v2.issued_at  # when the newer version was issued
     assert old.version is not None and old.version.version_no == 1
-    assert verification.verify_code(db, v2.verification_code or "").verdict == "VALID"
+    latest = verification.verify_code(db, v2.verification_code or "")
+    assert (latest.verdict, latest.latest_issued_at) == ("VALID", v2.issued_at)
 
 
 def test_A7_a_registry_btu_does_not_own_is_not_issued_by_btu(

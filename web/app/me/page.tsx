@@ -55,8 +55,9 @@ export default function MyPassportPage() {
           <Asterisks className="text-[2.5rem] sm:text-[3.5rem]" />
         </div>
         <Separator className="my-6 sm:my-8" />
-        <dl className="grid gap-5 sm:grid-cols-3">
-          <PassportField label="Holder">{p.holder_name}</PassportField>
+        <dl className="grid gap-5 sm:grid-cols-4">
+          <PassportField label="Name">{p.first_name}</PassportField>
+          <PassportField label="Surname">{p.last_name}</PassportField>
           <PassportField label="Passport ID" mono>
             {p.passport_id}
           </PassportField>

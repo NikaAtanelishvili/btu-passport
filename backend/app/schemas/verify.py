@@ -57,6 +57,7 @@ class VerifyResult(BaseModel):
     checks: VerifyChecks
     version: VerifyVersion | None = None  # only when BTU's registry vouches for the document
     latest_version_no: int | None = None
+    latest_issued_at: datetime | None = None  # when latest_version_no was issued
     chain: VerifyChain | None = None
     proof: VerifyProof | None = None
 

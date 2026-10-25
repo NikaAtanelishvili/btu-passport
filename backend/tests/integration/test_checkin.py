@@ -44,6 +44,10 @@ def test_confirm_then_check_in(db: Session, client_as: ClientAs, event: Event) -
     with time_machine.travel(NOW, tick=False):
         view = client.get(_url(event), params={"t": _t(event)}).json()
         assert view["state"] == "CONFIRM" and view["event"]["skill"]["name"] == "Skill SKL-001"
+        times = {
+            k: datetime.fromisoformat(view["event"][k]) for k in ("ends_at", "checkin_closes_at")
+        }
+        assert times == {"ends_at": event.ends_at, "checkin_closes_at": event.checkin_closes_at}
         assert _rows(db) == 0  # GET never writes
         r = client.post(_url(event), json={"t": _t(event)})
     assert r.status_code == 200, r.text

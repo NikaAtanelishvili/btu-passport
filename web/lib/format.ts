@@ -70,6 +70,17 @@ export function formatTime(value: string): string {
   return new Date(value).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
+/** An event's time in the viewer's local time: '25 October 2026 · 19:00–21:00', or both dates
+ * when it runs past midnight. `timeZone` is for tests. */
+export function formatEventWhen(starts: string, ends: string, timeZone?: string): string {
+  const day = (v: string) =>
+    new Date(v).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone });
+  const time = (v: string) => new Date(v).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone });
+  return day(starts) === day(ends)
+    ? `${day(starts)} · ${time(starts)}–${time(ends)}`
+    : `${day(starts)}, ${time(starts)} – ${day(ends)}, ${time(ends)}`;
+}
+
 /** A title for display type: every word but the last heavy, the last one light. */
 export function splitTitle(title: string): [string, string | undefined] {
   const words = title.trim().split(/\s+/);

@@ -8,7 +8,7 @@ enough: the proof must lead to a root anchored on BTU's registry (dataset rule).
 import hashlib
 import re
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -99,15 +99,19 @@ def verify_version(db: Session, version: PassportVersion) -> VerifyResult:
     )
     document_ok = root == batch.merkle_root.lower() and chain.anchored_at(root) > 0
     revoked = chain.is_revoked(leaf)
-    latest = (
-        db.scalar(
-            select(func.max(PassportVersion.version_no)).where(
+    newest = (
+        db.scalars(
+            select(PassportVersion)
+            .where(
                 PassportVersion.passport_id == version.passport_id,
                 PassportVersion.status == "ANCHORED",
             )
-        )
-        or version.version_no
+            .order_by(PassportVersion.version_no.desc())
+            .limit(1)
+        ).one_or_none()
+        or version
     )
+    latest = newest.version_no
     verdict = decide(
         issuer_ok=issuer_ok,
         document_ok=document_ok,
@@ -121,6 +125,7 @@ def verify_version(db: Session, version: PassportVersion) -> VerifyResult:
         checks=VerifyChecks(document=document_ok, issuer=issuer_ok),
         version=_version_data(version) if authentic else None,
         latest_version_no=latest if authentic else None,
+        latest_issued_at=newest.issued_at if authentic else None,
         chain=VerifyChain(
             chain_id=batch.chain_id,
             contract_address=batch.contract_address,

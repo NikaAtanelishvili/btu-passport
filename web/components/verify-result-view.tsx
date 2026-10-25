@@ -120,7 +120,9 @@ function subtitle(result: VerifyResult): string {
     case "VALID":
       return "Issued by Business and Technology University. This is the latest version and it matches the blockchain record.";
     case "SUPERSEDED":
-      return `A real BTU passport, but not the latest. A newer version (v${result.latest_version_no ?? "?"}) replaced it.`;
+      return result.latest_issued_at
+        ? `A real BTU passport, but not the latest. A newer version replaced it on ${formatDate(result.latest_issued_at)}.`
+        : `A real BTU passport, but not the latest. A newer version (v${result.latest_version_no ?? "?"}) replaced it.`;
     case "NOT_FOUND":
       return "This file doesn't match any passport BTU issued.";
     case "UNKNOWN_CODE":
@@ -240,7 +242,10 @@ export function VerifyResultView({
                 </span>
               </Fact>
               {superseded ? (
-                <Fact label="Latest version">
+                <Fact
+                  label="Latest version"
+                  sub={result.latest_issued_at ? `Issued ${formatDate(result.latest_issued_at)}` : undefined}
+                >
                   <span className={BIG}>v{result.latest_version_no}</span>
                 </Fact>
               ) : (

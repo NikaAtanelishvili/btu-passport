@@ -127,6 +127,8 @@ class CheckinEvent(BaseModel):
     name: str
     description: str | None
     starts_at: datetime
+    ends_at: datetime
+    checkin_closes_at: datetime
     location: str | None
     skill: CheckinEventSkill
 

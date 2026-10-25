@@ -75,6 +75,7 @@ def test_A8_scoping(issued: Session) -> None:
     assert passport.status_code == 200, passport.text
     body = passport.json()
     assert (body["passport_id"], body["holder_name"]) == ("BTU-AI-000126", "Mariam Beridze")
+    assert (body["first_name"], body["last_name"]) == ("Mariam", "Beridze")
     v2 = _version(db, "BTU-AI-000126", 2)
     assert body["current"]["version_no"] == 2
     assert body["current"]["verification_code"] == v2.verification_code
@@ -193,6 +194,8 @@ def test_no_versions_yet(client_as: ClientAs) -> None:
     assert body == {
         "passport_id": "BTU-AI-000001",
         "holder_name": "Nino Test",
+        "first_name": "Nino",
+        "last_name": "Test",
         "first_issued_on": None,
         "current": None,
         "issuing": None,
