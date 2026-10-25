@@ -305,7 +305,7 @@ The complete contract, grouped by router. Shapes are written as Pydantic field l
 
 `VerifyResult` = `{verdict, checks: {document: bool, issuer: bool}, version?: {passport_id, version_no, issued_at, holder_name, skills: [{name, category, badge_code, stamp_sha256, date_earned}]}, latest_version_no?, chain?: {chain_id, contract_address, issuer_address, merkle_root, tx_hash, block_number, anchored_at}, proof?: {pdf_sha256, leaf, proof}}`. `verdict` ∈ `VALID`, `SUPERSEDED`, `NOT_FOUND`, `UNKNOWN_CODE`, `NOT_ISSUED_BY_BTU`, `REVOKED`. The server computes the verdict by reading the chain (`app/services/chain.py`); the browser re-checks independently (Frontend tab, FE-12).
 
-### Session and student portal (BE-14, BE-46, BE-47)
+### Session and student portal (BE-14, BE-46, BE-47) ✅
 
 | Method, path                                           | Guard   | Response                                                                                                                                                                                                                           |
 | ------------------------------------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
