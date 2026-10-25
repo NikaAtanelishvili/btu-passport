@@ -1,11 +1,13 @@
 "use client";
 
-// FE-33: check-in from the presenter QR (Web App Design P3), made for phones. Signed out →
-// sign in and come back here (with the token). One card per state from the API.
+// FE-33: check-in from the presenter QR (Web App Design P3), made for phones. One card per
+// state from the API. Signed out: the QR token (30-60 s) is checked right away and swapped for
+// a check-in pass (10 min, one use) that comes back here as ?p= after sign-in; the page then
+// checks in by itself, so nobody has to scan twice.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { ErrorAlert } from "@/components/error-alert";
 import { StampImage } from "@/components/stamp-image";
@@ -32,7 +34,9 @@ export default function CheckinPage() {
 
 function Checkin() {
   const { eventId } = useParams<{ eventId: string }>();
-  const t = useSearchParams().get("t") ?? "";
+  const params = useSearchParams();
+  const t = params.get("t") ?? "";
+  const p = params.get("p") ?? "";
   const pathname = usePathname();
   const router = useRouter();
   const session = useSession();
@@ -41,22 +45,35 @@ function Checkin() {
   // A failed POST (e.g. the token ran out while the page was open) shows its state's card.
   const [postState, setPostState] = useState<State | null>(null);
 
+  const pass = useQuery({
+    queryKey: queryKeys.checkinPass(eventId, t),
+    queryFn: async () =>
+      (await api.POST("/api/checkin/{event_id}/pass", { params: { path: { event_id: eventId } }, body: { t } })).data!,
+    enabled: signedOut && !p,
+    retry: false,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+  const passToken = p || pass.data?.pass;
   useEffect(() => {
-    if (signedOut) router.replace(`/login?next=${encodeURIComponent(`${pathname}?t=${t}`)}`);
-  }, [signedOut, router, pathname, t]);
+    if (signedOut && passToken) {
+      router.replace(`/login?next=${encodeURIComponent(`${pathname}?p=${encodeURIComponent(passToken)}`)}`);
+    }
+  }, [signedOut, passToken, router, pathname]);
 
   const view = useQuery({
-    queryKey: queryKeys.checkin(eventId, t),
+    queryKey: queryKeys.checkin(eventId, t, p),
     queryFn: async () =>
-      (await api.GET("/api/checkin/{event_id}", { params: { path: { event_id: eventId }, query: { t } } })).data!,
+      (await api.GET("/api/checkin/{event_id}", { params: { path: { event_id: eventId }, query: { t, p } } }))
+        .data!,
     enabled: session.data?.authenticated === true,
     refetchOnWindowFocus: false,
   });
   const checkIn = useMutation({
     mutationFn: async () =>
-      (await api.POST("/api/checkin/{event_id}", { params: { path: { event_id: eventId } }, body: { t } })).data!,
+      (await api.POST("/api/checkin/{event_id}", { params: { path: { event_id: eventId } }, body: { t, p } })).data!,
     onSuccess: (result) => {
-      queryClient.setQueryData<CheckinView>(queryKeys.checkin(eventId, t), (old) =>
+      queryClient.setQueryData<CheckinView>(queryKeys.checkin(eventId, t, p), (old) =>
         old ? { ...old, ...result, state: "CHECKED_IN" } : old,
       );
       void queryClient.invalidateQueries({ queryKey: queryKeys.me.events });
@@ -67,6 +84,25 @@ function Checkin() {
     },
   });
 
+  // Back from sign-in with a pass: the scan already said "check me in".
+  const { mutate } = checkIn;
+  const autoSent = useRef(false);
+  useEffect(() => {
+    if (p && view.data?.state === "CONFIRM" && !autoSent.current) {
+      autoSent.current = true;
+      mutate();
+    }
+  }, [p, view.data?.state, mutate]);
+
+  if (signedOut && pass.isError) {
+    // No pass (expired code, check-in not open, …): say so now, before any sign-in.
+    const state = pass.error instanceof ApiError ? (pass.error.body.state as State | undefined) : undefined;
+    return (
+      <div className="mx-auto w-full max-w-md">
+        {state && MESSAGES[state] ? <MessageCard state={state} /> : <ErrorAlert error={pass.error} />}
+      </div>
+    );
+  }
   if (session.isPending || signedOut || (view.isPending && !view.isError)) {
     return <Skeleton className="mx-auto h-64 w-full max-w-md" />;
   }
@@ -180,6 +216,10 @@ function StateCard({
       </Card>
     );
   }
+  return <MessageCard state={state} />;
+}
+
+function MessageCard({ state }: { state: State }) {
   const m = MESSAGES[state]!;
   return (
     <Card>

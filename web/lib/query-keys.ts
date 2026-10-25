@@ -5,7 +5,8 @@ export const queryKeys = {
     code: (code: string) => ["verify", "code", code] as const,
     independent: (input: unknown) => ["verify", "independent", input] as const,
   },
-  checkin: (eventId: string, t: string) => ["checkin", eventId, t] as const,
+  checkin: (eventId: string, t: string, p: string) => ["checkin", eventId, t, p] as const,
+  checkinPass: (eventId: string, t: string) => ["checkin-pass", eventId, t] as const,
   me: { events: ["me", "events"] as const },
   admin: {
     all: ["admin"] as const,
