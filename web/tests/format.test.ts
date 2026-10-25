@@ -2,7 +2,7 @@
 // verdict headlines of FE-11.
 import { describe, expect, it } from "vitest";
 
-import { formatCode, normalizeCode, todayInTbilisi, verdictHeadline } from "@/lib/format";
+import { formatCode, normalizeCode, splitTitle, todayInTbilisi, verdictHeadline } from "@/lib/format";
 import { fromLocalInput, shiftLocal, toLocalInput } from "@/lib/events";
 
 describe("codes", () => {
@@ -62,5 +62,12 @@ describe("event datetime-local helpers", () => {
   it("shifts by minutes", () => {
     expect(shiftLocal("2026-10-21T14:30", -15)).toBe("2026-10-21T14:15");
     expect(shiftLocal("2026-10-21T23:45", 30)).toBe("2026-10-22T00:15");
+  });
+});
+
+describe("splitTitle", () => {
+  it("makes the last word the light part", () => {
+    expect(splitTitle("Prompt Engineering Workshop")).toEqual(["Prompt Engineering", "Workshop"]);
+    expect(splitTitle("  Hackathon ")).toEqual(["  Hackathon ", undefined]);
   });
 });

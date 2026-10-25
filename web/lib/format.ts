@@ -64,3 +64,14 @@ export function formatDateTime(value: string): string {
 export function todayInTbilisi(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tbilisi" }).format(now);
 }
+
+/** '2026-10-25T17:30:00Z' -> '21:30' in the viewer's local time (event times on screens). */
+export function formatTime(value: string): string {
+  return new Date(value).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
+/** A title for display type: every word but the last heavy, the last one light. */
+export function splitTitle(title: string): [string, string | undefined] {
+  const words = title.trim().split(/\s+/);
+  return words.length < 2 ? [title, undefined] : [words.slice(0, -1).join(" "), words.at(-1)];
+}
