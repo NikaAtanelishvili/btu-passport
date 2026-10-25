@@ -1,6 +1,6 @@
 "use client";
 
-// Student portal top nav (Frontend tab §4). History arrives with FE-41 (M8).
+// Student portal top nav (Frontend tab §4).
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/me", label: "My passport" },
+  { href: "/me/history", label: "History" },
   { href: "/me/events", label: "My events" },
 ];
 
@@ -26,7 +27,6 @@ export function StudentNav() {
           {item.label}
         </Link>
       ))}
-      <span className={cn(buttonVariants({ variant: "ghost" }), "text-muted-foreground")}>History (later)</span>
     </nav>
   );
 }
