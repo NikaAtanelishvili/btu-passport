@@ -158,11 +158,20 @@ def test_svg_stamp(db: Session, sa: TestClient, s3_bucket: str) -> None:
     assert sa.get(f"/api/stamps/{sha}").headers["content-type"] == "image/svg+xml"
 
 
+@pytest.mark.parametrize(("width", "height"), [(656, 211), (328, 284), (300, 300), (211, 656)])
+def test_png_stamps_of_any_shape(sa: TestClient, s3_bucket: str, width: int, height: int) -> None:
+    """The designed stamps are a banner, a triangle and a circle: any aspect ratio, longest side
+    at least 300 px."""
+    category_id = _new(sa, "AI Skill")
+    r = _upload(sa, category_id, _png(width, height), "stamp.png", "image/png")
+    assert r.status_code == 200, r.text
+
+
 @pytest.mark.parametrize(
     ("data", "name", "mime", "why"),
     [
-        (_png(600, 500), "wide.png", "image/png", "square"),
-        (_png(300, 300), "small.png", "image/png", "600"),
+        (_png(299, 200), "small.png", "image/png", "300"),
+        (_png(120, 299), "tall.png", "image/png", "300"),
         (b"\x89PNG\r\n\x1a\n" + b"junk" * 10, "broken.png", "image/png", "PNG or SVG"),
         (b"GIF89a....", "stamp.gif", "image/gif", "PNG or SVG"),
         (b"x" * (1024 * 1024 + 1), "big.png", "image/png", "1 MB"),
@@ -194,8 +203,8 @@ def test_svg_stamp(db: Session, sa: TestClient, s3_bucket: str) -> None:
         (b"<html><body/></html>", "s.svg", "image/svg+xml", "PNG or SVG"),
     ],
     ids=[
-        "wide",
         "small",
+        "tall-but-short",
         "broken-png",
         "gif",
         "too-big",

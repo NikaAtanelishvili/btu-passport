@@ -5,8 +5,10 @@ import { stampProblem } from "@/lib/stamp-file";
 const MB = 1024 * 1024;
 
 describe("stampProblem (mirrors backend/app/services/stamps.py)", () => {
-  it("accepts a square PNG of at least 600 px and any SVG up to 1 MB", () => {
-    expect(stampProblem({ kind: "png", size: 200_000, width: 600, height: 600 })).toBeNull();
+  it("accepts a PNG of any shape whose longest side is at least 300 px, and any SVG up to 1 MB", () => {
+    expect(stampProblem({ kind: "png", size: 200_000, width: 300, height: 300 })).toBeNull();
+    expect(stampProblem({ kind: "png", size: 7_000, width: 656, height: 211 })).toBeNull();
+    expect(stampProblem({ kind: "png", size: 9_000, width: 211, height: 656 })).toBeNull();
     expect(stampProblem({ kind: "png", size: MB, width: 1200, height: 1200 })).toBeNull();
     expect(stampProblem({ kind: "svg", size: 4_000 })).toBeNull();
   });
@@ -20,12 +22,9 @@ describe("stampProblem (mirrors backend/app/services/stamps.py)", () => {
     expect(stampProblem({ kind: "other", size: 10 })).toBe("Upload a PNG or SVG image.");
   });
 
-  it("rejects a PNG that isn't square or is smaller than 600 px", () => {
-    expect(stampProblem({ kind: "png", size: 10, width: 800, height: 600 })).toBe(
-      "The PNG must be square; this one is 800x600.",
-    );
-    expect(stampProblem({ kind: "png", size: 10, width: 599, height: 599 })).toBe(
-      "The PNG must be at least 600x600 px; this one is 599.",
+  it("rejects a PNG whose longest side is under 300 px", () => {
+    expect(stampProblem({ kind: "png", size: 10, width: 299, height: 120 })).toBe(
+      "The PNG's longest side must be at least 300 px; this one is 299x120.",
     );
   });
 

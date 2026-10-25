@@ -356,7 +356,7 @@ function StampDialog({
               aria-invalid={problem !== null}
               onChange={(e) => void choose(e.target.files?.[0] ?? null)}
             />
-            <FieldDescription>PNG (square, at least 600×600 px) or SVG, at most 1 MB.</FieldDescription>
+            <FieldDescription>PNG (any shape, longest side at least 300 px) or SVG, at most 1 MB.</FieldDescription>
             {problem && <FieldError>{problem}</FieldError>}
           </Field>
         </form>

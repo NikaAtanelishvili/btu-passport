@@ -60,7 +60,7 @@ def delete_category(category_id: int, principal: SuperAdminUser, db: DB) -> Resp
 def upload_stamp(
     category_id: int, file: UploadFile, principal: SuperAdminUser, db: DB
 ) -> CategoryRow:
-    """PNG (square, at least 600 px) or SVG, at most 1 MB; stored by SHA-256. A new stamp
-    appears on future versions only. 422 with `fields.file` otherwise."""
+    """PNG (any shape, longest side at least 300 px) or SVG, at most 1 MB; stored by
+    SHA-256. A new stamp appears on future versions only. 422 with `fields.file` otherwise."""
     data = file.file.read(stamps.MAX_BYTES + 1)  # one byte more is enough to say "too big"
     return catalog.category_row(db, catalog.set_stamp(db, principal, category_id, data))

@@ -1,18 +1,19 @@
 // FE-51: a quick look at a stamp file before upload, with the server's messages
 // (backend/app/services/stamps.py). The server reads the bytes and checks again.
 const MAX_BYTES = 1024 * 1024;
-const PNG_MIN = 600;
+const PNG_MIN = 300; // longest side
 
 export type StampFacts = { kind: "png" | "svg" | "other"; size: number; width?: number; height?: number };
 
-// DEFAULT(FE-51): "square" is checked for PNGs only, like the server; an SVG scales to any size.
+// DEFAULT(FE-51): the size is checked for PNGs only, like the server; an SVG scales to any size.
 export function stampProblem({ kind, size, width, height }: StampFacts): string | null {
   if (size > MAX_BYTES) return "The file is larger than 1 MB.";
   if (kind === "other") return "Upload a PNG or SVG image.";
   if (kind === "svg") return null;
   if (width === undefined || height === undefined) return "Upload a PNG or SVG image; this PNG can't be read.";
-  if (width !== height) return `The PNG must be square; this one is ${width}x${height}.`;
-  if (width < PNG_MIN) return `The PNG must be at least ${PNG_MIN}x${PNG_MIN} px; this one is ${width}.`;
+  if (Math.max(width, height) < PNG_MIN) {
+    return `The PNG's longest side must be at least ${PNG_MIN} px; this one is ${width}x${height}.`;
+  }
   return null;
 }
 

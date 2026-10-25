@@ -224,7 +224,7 @@ Full-screen page with no shell: event name (large), the QR from `GET .../qr` (`s
 
 ### FE-51 Categories & stamps (M9) — `/admin/categories` ✅
 
-`Table`: stamp · name · badge code · skills. "Add category" `Dialog` (name). Per row: Upload stamp (file `Input`, PNG/SVG, client checks ≤ 1 MB and square before `POST .../stamp`; the server re-checks), Rename, Archive, Delete (only with 0 skills). The note "A new stamp appears on future versions only" sits by the upload.
+`Table`: stamp · name · badge code · skills. "Add category" `Dialog` (name). Per row: Upload stamp (file `Input`, PNG/SVG, client checks ≤ 1 MB and longest side ≥ 300 px before `POST .../stamp`; the server re-checks), Rename, Archive, Delete (only with 0 skills). The note "A new stamp appears on future versions only" sits by the upload.
 
 ### FE-52 Admins & roles (M9) — `/admin/roles` ✅
 

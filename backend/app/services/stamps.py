@@ -1,4 +1,5 @@
-"""Stamp image checks (BE-51): PNG or SVG, at most 1 MB; a PNG is square and at least 600 px.
+"""Stamp image checks (BE-51): PNG or SVG, at most 1 MB; a PNG of any shape whose longest side
+is at least 300 px (the designed stamps are a triangle, a banner and a circle).
 The type is read from the bytes, never from the file name or the browser's content type.
 
 Stamps are served from our own origin (/api/stamps/...), so an SVG must not be able to run
@@ -13,7 +14,7 @@ from dataclasses import dataclass
 from PIL import Image, UnidentifiedImageError
 
 MAX_BYTES = 1024 * 1024
-PNG_MIN = 600
+PNG_MIN = 300  # longest side
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 _EXTERNAL_URL = re.compile(r"url\(\s*['\"]?(?!#)", re.IGNORECASE)
 _BANNED_TAGS = {"script", "foreignobject", "iframe", "embed", "object"}
@@ -46,10 +47,10 @@ def _check_png(data: bytes) -> None:
             width, height = image.size
     except (UnidentifiedImageError, OSError, SyntaxError):
         raise StampError("Upload a PNG or SVG image; this PNG can't be read.") from None
-    if width != height:
-        raise StampError(f"The PNG must be square; this one is {width}x{height}.")
-    if width < PNG_MIN:
-        raise StampError(f"The PNG must be at least {PNG_MIN}x{PNG_MIN} px; this one is {width}.")
+    if max(width, height) < PNG_MIN:
+        raise StampError(
+            f"The PNG's longest side must be at least {PNG_MIN} px; this one is {width}x{height}."
+        )
 
 
 def _local(name: str) -> str:

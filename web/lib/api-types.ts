@@ -322,8 +322,8 @@ export interface paths {
         put?: never;
         /**
          * Upload Stamp
-         * @description PNG (square, at least 600 px) or SVG, at most 1 MB; stored by SHA-256. A new stamp
-         *     appears on future versions only. 422 with `fields.file` otherwise.
+         * @description PNG (any shape, longest side at least 300 px) or SVG, at most 1 MB; stored by
+         *     SHA-256. A new stamp appears on future versions only. 422 with `fields.file` otherwise.
          */
         post: operations["upload_stamp_api_admin_categories__category_id__stamp_post"];
         delete?: never;
