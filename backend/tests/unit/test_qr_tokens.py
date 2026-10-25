@@ -60,3 +60,34 @@ def test_checkin_url_and_refresh(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     assert qr_tokens.refresh_in_seconds(T0 + timedelta(seconds=5)) == 25
     assert qr_tokens.refresh_in_seconds(T0) == 30
+
+
+# Check-in passes: a signed-out scan gets a pass that survives sign-in (~10 min, one event).
+
+
+def test_pass_round_trip() -> None:
+    p = qr_tokens.issue_pass(SECRET, EVENT, T0)
+    nonce = qr_tokens.read_pass(SECRET, EVENT, p, T0 + timedelta(minutes=3))
+    assert nonce is not None and nonce in p
+    assert p != qr_tokens.issue_pass(SECRET, EVENT, T0)  # a fresh nonce each time
+    assert all(c.isalnum() or c in "-_." for c in p)  # safe in a URL as is
+
+
+@pytest.mark.parametrize(
+    ("later", "valid"),
+    [(timedelta(minutes=9, seconds=59), True), (timedelta(minutes=10), False)],
+)
+def test_pass_lives_ten_minutes(later: timedelta, valid: bool) -> None:
+    p = qr_tokens.issue_pass(SECRET, EVENT, T0)
+    assert (qr_tokens.read_pass(SECRET, EVENT, p, T0 + later) is not None) is valid
+
+
+def test_pass_is_bound_to_its_event_and_signature() -> None:
+    p = qr_tokens.issue_pass(SECRET, EVENT, T0)
+    assert qr_tokens.read_pass(SECRET, uuid.uuid4(), p, T0) is None
+    assert qr_tokens.read_pass(bytes(32), EVENT, p, T0) is None
+    exp, nonce, mac = p.split(".")
+    longer = f"{int(exp) + 3600}.{nonce}.{mac}"  # a stretched expiry breaks the signature
+    assert qr_tokens.read_pass(SECRET, EVENT, longer, T0 + timedelta(minutes=30)) is None
+    for junk in ("", "x", "1.2", "a.b.c", f"{exp}.{nonce}.", p + "x"):
+        assert qr_tokens.read_pass(SECRET, EVENT, junk, T0) is None

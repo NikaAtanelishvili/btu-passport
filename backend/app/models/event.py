@@ -61,6 +61,7 @@ class EventParticipant(Base):
     __tablename__ = "event_participants"
     __table_args__ = (
         UniqueConstraint("event_id", "email"),  # FR-29
+        UniqueConstraint("event_id", "pass_nonce"),  # a check-in pass is used once
         lower_email(),
         one_of("method", CHECKIN_METHODS),
     )
@@ -79,3 +80,4 @@ class EventParticipant(Base):
     added_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.user_id"))
     removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     removed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.user_id"))
+    pass_nonce: Mapped[str | None] = mapped_column(Text)  # set when checked in with a pass

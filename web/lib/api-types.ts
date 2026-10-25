@@ -482,6 +482,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/checkin/{event_id}/pass": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Checkin Pass
+         * @description Signed-out scan: the QR token is checked now; the pass lasts 10 minutes, one use.
+         *     409 (404 for NOT_FOUND) with `state` when there is nothing to check in to.
+         */
+        post: operations["checkin_pass_api_checkin__event_id__pass_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/events": {
         parameters: {
             query?: never;
@@ -741,8 +762,37 @@ export interface components {
             /** Stamp Sha256 */
             stamp_sha256: string | null;
         };
-        /** CheckinIn */
+        /**
+         * CheckinIn
+         * @description `t` is the QR token; `p` a check-in pass from a signed-out scan. Either is enough.
+         */
         CheckinIn: {
+            /**
+             * T
+             * @default
+             */
+            t: string;
+            /**
+             * P
+             * @default
+             */
+            p: string;
+        };
+        /**
+         * CheckinPass
+         * @description Carried through sign-in in `/login?next=/checkin/{id}?p=...`.
+         */
+        CheckinPass: {
+            /** Pass */
+            pass: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
+        /** CheckinPassIn */
+        CheckinPassIn: {
             /** T */
             t: string;
         };
@@ -2394,6 +2444,7 @@ export interface operations {
         parameters: {
             query?: {
                 t?: string;
+                p?: string;
             };
             header?: never;
             path: {
@@ -2445,6 +2496,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckinResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    checkin_pass_api_checkin__event_id__pass_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckinPassIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckinPass"];
                 };
             };
             /** @description Validation Error */

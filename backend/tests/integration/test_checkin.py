@@ -3,6 +3,7 @@
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
 import time_machine
@@ -159,3 +160,122 @@ def test_not_found(db: Session, client_as: ClientAs, event: Event) -> None:
 def test_sign_in_required(client_as: ClientAs, event: Event) -> None:
     r = client_as(None).get(_url(event), params={"t": "x"})
     assert (r.status_code, r.json()["error"]) == (401, "unauthenticated")
+
+
+# Check-in pass: a signed-out scan validates the QR token there and then and gets a pass that
+# carries the check-in through sign-in (a token lives only 30-60 s; sign-in takes minutes).
+
+
+def _pass(client: TestClient, event: Event, t: str) -> Any:
+    return client.post(f"{_url(event)}/pass", json={"t": t})
+
+
+def test_signed_out_scan_then_sign_in_3_minutes_later(
+    db: Session, client_as: ClientAs, event: Event
+) -> None:
+    with time_machine.travel(NOW, tick=False):
+        r = _pass(client_as(None), event, _t(event))
+    assert r.status_code == 200, r.text
+    p = r.json()["pass"]
+    assert r.json()["expires_at"] == (NOW + timedelta(minutes=10)).isoformat().replace(
+        "+00:00", "Z"
+    )
+    student = client_as("student")
+    with time_machine.travel(NOW + timedelta(minutes=3), tick=False):
+        assert student.get(_url(event), params={"p": p}).json()["state"] == "CONFIRM"
+        done = student.post(_url(event), json={"p": p})
+    assert done.status_code == 200, done.text
+    assert done.json()["state"] == "CHECKED_IN"
+    row = db.scalars(select(EventParticipant)).one()
+    assert (row.email, row.method) == ("btu-t-0001@example.org", "QR")
+
+
+def test_expired_token_at_scan_gets_no_pass(db: Session, client_as: ClientAs, event: Event) -> None:
+    with time_machine.travel(NOW + timedelta(seconds=60), tick=False):
+        r = _pass(client_as(None), event, _t(event))
+    assert (r.status_code, r.json()["error"], r.json()["state"]) == (
+        409,
+        "token_expired",
+        "TOKEN_EXPIRED",
+    )
+    assert "pass" not in r.json()
+
+
+@pytest.mark.parametrize(
+    ("status", "state", "code"),
+    [("DRAFT", "NOT_OPEN", 409), ("CHECKIN_CLOSED", "CLOSED", 409), ("COMPLETED", "CLOSED", 409)],
+)
+def test_no_pass_unless_check_in_is_open(
+    db: Session, client_as: ClientAs, event: Event, status: str, state: str, code: int
+) -> None:
+    event.status = status
+    db.commit()
+    with time_machine.travel(NOW, tick=False):
+        r = _pass(client_as(None), event, _t(event))
+    assert (r.status_code, r.json()["state"]) == (code, state)
+
+
+def test_pass_for_a_missing_event(client_as: ClientAs) -> None:
+    for eid in (str(uuid.uuid4()), "not-a-uuid"):
+        r = client_as(None).post(f"/api/checkin/{eid}/pass", json={"t": "x"})
+        assert (r.status_code, r.json()["state"]) == (404, "NOT_FOUND")
+
+
+def test_pass_is_single_use(db: Session, client_as: ClientAs, event: Event) -> None:
+    with time_machine.travel(NOW, tick=False):
+        p = _pass(client_as(None), event, _t(event)).json()["pass"]
+    first, second = client_as("student"), client_as("unregistered")
+    with time_machine.travel(NOW + timedelta(minutes=2), tick=False):
+        assert first.post(_url(event), json={"p": p}).status_code == 200
+        # The holder repeating it is the usual "already checked in": no new row.
+        assert first.post(_url(event), json={"p": p}).json()["state"] == "CHECKED_IN"
+        assert second.get(_url(event), params={"p": p}).json()["state"] == "TOKEN_EXPIRED"
+        r = second.post(_url(event), json={"p": p})
+    assert (r.status_code, r.json()["state"]) == (409, "TOKEN_EXPIRED")
+    assert _rows(db) == 1
+
+
+def test_pass_expires_after_10_minutes(db: Session, client_as: ClientAs, event: Event) -> None:
+    with time_machine.travel(NOW, tick=False):
+        p = _pass(client_as(None), event, _t(event)).json()["pass"]
+    student = client_as("student")
+    with time_machine.travel(NOW + timedelta(minutes=10, seconds=1), tick=False):
+        assert student.get(_url(event), params={"p": p}).json()["state"] == "TOKEN_EXPIRED"
+        r = student.post(_url(event), json={"p": p})
+    assert (r.status_code, r.json()["state"]) == (409, "TOKEN_EXPIRED") and _rows(db) == 0
+
+
+def test_pass_for_another_event(db: Session, client_as: ClientAs, event: Event) -> None:
+    skill = db.get(Skill, event.skill_id)
+    assert skill is not None
+    other = factories.event(db, skill, factories.user(db, "other@btu.test"), status="CHECKIN_OPEN")
+    db.commit()
+    with time_machine.travel(NOW, tick=False):
+        p = _pass(client_as(None), other, _t(other)).json()["pass"]
+    student = client_as("student")
+    with time_machine.travel(NOW + timedelta(minutes=1), tick=False):
+        r = student.post(_url(event), json={"p": p})
+    assert (r.status_code, r.json()["state"]) == (409, "TOKEN_EXPIRED") and _rows(db) == 0
+
+
+def test_pass_does_not_outlive_check_in(db: Session, client_as: ClientAs, event: Event) -> None:
+    with time_machine.travel(NOW, tick=False):
+        p = _pass(client_as(None), event, _t(event)).json()["pass"]
+    event.status = "CHECKIN_CLOSED"
+    db.commit()
+    with time_machine.travel(NOW + timedelta(minutes=1), tick=False):
+        r = client_as("student").post(_url(event), json={"p": p})
+    assert (r.status_code, r.json()["state"]) == (409, "CLOSED")
+
+
+def test_db_refuses_a_pass_used_twice(db: Session, event: Event) -> None:
+    """Backstop for two people racing with one pass: UNIQUE (event_id, pass_nonce)."""
+    from sqlalchemy.exc import IntegrityError
+
+    a = factories.participant(db, event, "a@btu.test")
+    a.pass_nonce = "n1"
+    db.flush()
+    b = factories.participant(db, event, "b@btu.test")
+    b.pass_nonce = "n1"
+    with pytest.raises(IntegrityError):
+        db.flush()

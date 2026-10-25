@@ -4,7 +4,7 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 EventStatus = Literal["DRAFT", "CHECKIN_OPEN", "CHECKIN_CLOSED", "COMPLETED"]
 Blocker = Literal["DRAFT", "CHECKIN_OPEN", "UNREGISTERED_PRESENT", "NO_PARTICIPANTS"]
@@ -139,7 +139,23 @@ class CheckinView(BaseModel):
 
 
 class CheckinIn(BaseModel):
+    """`t` is the QR token; `p` a check-in pass from a signed-out scan. Either is enough."""
+
+    t: str = ""
+    p: str = ""
+
+
+class CheckinPassIn(BaseModel):
     t: str
+
+
+class CheckinPass(BaseModel):
+    """Carried through sign-in in `/login?next=/checkin/{id}?p=...`."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    pass_: str = Field(alias="pass")
+    expires_at: datetime
 
 
 class CheckinResult(BaseModel):
