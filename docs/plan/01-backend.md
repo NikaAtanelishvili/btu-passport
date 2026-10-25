@@ -539,6 +539,8 @@ RETURNING *;
 
 ### BE-25 (continued) Renderer and template (M4) — `app/pdf/` ✅
 
+> **Changed 2026-10-26:** the template is now BTU's design (cover, About, skillset grid, detail table; no version page, last page or footer line). See "BE-25 (design)" under Deviations in `00-overview.md`.
+
 `render_passport(content: dict) -> bytes` renders only from `content_json`; it never queries the database, so the same content always gives the same PDF.
 
 - **Template:** `templates/passport.html.j2` with `passport.css`, Jinja2 with autoescape on. Build a plain placeholder layout now; BTU's design replaces the template later without code changes (`PASSPORT_TEMPLATE_DIR` setting, default `app/pdf/templates`).
