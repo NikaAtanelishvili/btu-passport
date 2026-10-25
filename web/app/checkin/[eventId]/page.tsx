@@ -31,7 +31,7 @@ type State = CheckinView["state"];
 
 export default function CheckinPage() {
   return (
-    <Suspense fallback={<Skeleton className="mx-auto h-64 w-full max-w-[46rem] rounded-[28px]" />}>
+    <Suspense fallback={<Skeleton className="mx-auto h-64 w-full max-w-[34rem] rounded-[28px]" />}>
       <Checkin />
     </Suspense>
   );
@@ -101,13 +101,13 @@ function Checkin() {
     // No pass (expired code, check-in not open, …): say so now, before any sign-in.
     const state = pass.error instanceof ApiError ? (pass.error.body.state as State | undefined) : undefined;
     return (
-      <div className="mx-auto w-full max-w-[46rem] space-y-6">
+      <div className="mx-auto w-full max-w-[34rem] space-y-6">
         {state && MESSAGES[state] ? <MessageCard state={state} /> : <ErrorAlert error={pass.error} />}
       </div>
     );
   }
   if (session.isPending || signedOut || (view.isPending && !view.isError)) {
-    return <Skeleton className="mx-auto h-64 w-full max-w-[46rem] rounded-[28px]" />;
+    return <Skeleton className="mx-auto h-64 w-full max-w-[34rem] rounded-[28px]" />;
   }
   if (view.isError) return <ErrorAlert error={view.error} />;
   const v = view.data;
@@ -115,7 +115,7 @@ function Checkin() {
   const isStudent = session.data ? hasRole(session.data, "student") : false;
 
   return (
-    <div className="mx-auto w-full max-w-[46rem] space-y-6">
+    <div className="mx-auto w-full max-w-[34rem] space-y-6">
       <StateCard
         state={state}
         view={v}
@@ -155,14 +155,14 @@ function EventHeading({ view }: { view: CheckinView }) {
 function SkillCard({ view, lead, eventLine = false }: { view: CheckinView; lead?: string; eventLine?: boolean }) {
   const e = view.event!;
   return (
-    <div className="flex items-center gap-5 rounded-[24px] border p-5 sm:p-6">
+    <div className="flex items-center gap-4 rounded-[24px] border p-4 sm:gap-5 sm:p-6 [&_img]:size-16 sm:[&_img]:size-20">
       {e.skill.stamp_sha256 && <StampImage sha256={e.skill.stamp_sha256} category={e.skill.category} size={80} />}
       <div className="min-w-0">
-        {lead && <p className="text-lg text-muted-foreground">{lead}</p>}
-        <p className="font-display text-2xl leading-tight font-extrabold sm:text-[1.75rem]">
+        {lead && <p className="text-muted-foreground sm:text-lg">{lead}</p>}
+        <p className="font-display text-xl leading-tight font-extrabold sm:text-[1.75rem]">
           {eventLine ? e.name : e.skill.name}
         </p>
-        <p className="text-lg text-muted-foreground">{eventLine ? formatDateTime(e.starts_at) : e.skill.category}</p>
+        <p className="text-muted-foreground sm:text-lg">{eventLine ? formatDateTime(e.starts_at) : e.skill.category}</p>
       </div>
     </div>
   );
