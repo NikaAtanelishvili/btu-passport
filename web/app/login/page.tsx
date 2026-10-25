@@ -51,7 +51,7 @@ function Login() {
   }
 
   return (
-    <div className="grid items-center gap-8 md:grid-cols-[1fr_minmax(0,1fr)] md:gap-16">
+    <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-16">
       <Cover />
       <div className="w-full max-w-md md:max-w-none">
       {email === null ? (
@@ -80,7 +80,7 @@ function Login() {
 /** The passport cover: pink panel, white wordmark and the brand stickers (fewer on phones). */
 function Cover() {
   return (
-    <div className="overflow-hidden rounded-[28px] bg-primary p-7 text-white sm:p-12">
+    <div className="overflow-hidden rounded-[28px] bg-primary p-6 text-white sm:p-12">
       <div className="hidden items-center gap-4 md:flex">
         <BtuLogo height={56} white />
         <span className="h-14 w-px bg-white" aria-hidden />
@@ -99,14 +99,14 @@ function Cover() {
             Passport
           </>
         }
-        className="text-[clamp(2.5rem,6vw,5.25rem)] md:mt-10"
+        className="text-[2rem] sm:text-[2.5rem] md:mt-8 md:text-[clamp(2.5rem,4.4vw,4rem)]"
       />
-      <div className="mt-6 flex items-center md:hidden" aria-hidden>
-        <Sticker name="intl-recognised" width={100} rotate={-6} />
-        <Sticker name="stamp-ai-advanced" width={80} className="-ml-3" />
-        <Sticker name="blockchain-verified" width={124} rotate={-6} className="-ml-1" />
+      <div className="mt-4 flex items-center md:hidden" aria-hidden>
+        <Sticker name="intl-recognised" width={88} rotate={-6} />
+        <Sticker name="stamp-ai-advanced" width={70} className="-ml-3" />
+        <Sticker name="blockchain-verified" width={136} rotate={-6} className="-ml-1" />
       </div>
-      <div className="relative mt-8 hidden h-[26rem] md:block" aria-hidden>
+      <div className="relative mt-6 hidden h-[21rem] md:block" aria-hidden>
         <Sticker name="issued-by-btu" width={205} rotate={-4} className="absolute top-6 left-0" />
         <Sticker name="latest-skillset" width={185} rotate={5} className="absolute top-0 right-0" />
         <Sticker name="blockchain-verified" width={190} rotate={-8} className="absolute top-[8rem] right-0" />
@@ -147,8 +147,8 @@ function EmailStep({ notice, onSent }: { notice: string | null; onSent: (email: 
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <DisplayHeading strong="Sign in" light="to your passport" className="text-[clamp(2.5rem,4.2vw,4rem)]" />
-        <p className="text-lg text-muted-foreground">We&apos;ll email you a 6-digit code. No password needed.</p>
+        <DisplayHeading strong="Sign in" light="to your passport" className="text-[2.25rem] sm:text-[2.5rem] md:text-[clamp(2.5rem,3.4vw,3.25rem)]" />
+        <p className="text-base text-muted-foreground sm:text-lg">We&apos;ll email you a 6-digit code. No password needed.</p>
       </div>
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-5">
         <FieldGroup>
@@ -246,8 +246,8 @@ function CodeStep({
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <DisplayHeading strong="Check" light="your email" className="text-[clamp(2.5rem,4.2vw,4rem)]" />
-        <p className="text-lg text-muted-foreground">
+        <DisplayHeading strong="Check" light="your email" className="text-[2.25rem] sm:text-[2.5rem] md:text-[clamp(2.5rem,3.4vw,3.25rem)]" />
+        <p className="text-base text-muted-foreground sm:text-lg">
           We sent a 6-digit code to <span className="font-semibold text-foreground">{email}</span>.
           {resent && " A new code is on its way; only the newest one works."}
         </p>

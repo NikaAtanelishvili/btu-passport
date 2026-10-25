@@ -359,3 +359,17 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* Toasts (sonner): flat, 1.5px black, status colour on the icon. */
+[data-sonner-toast] {
+  box-shadow: none !important;
+  border: 1.5px solid var(--foreground) !important;
+  border-radius: var(--radius-lg) !important;
+  font-size: 0.95rem;
+}
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: var(--status-valid-ink);
+}
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: var(--status-invalid-ink);
+}
