@@ -174,7 +174,7 @@ function Fact({ label, children, sub }: { label: string; children: React.ReactNo
   );
 }
 
-const BIG = "font-display text-3xl leading-tight font-extrabold normal-case sm:text-4xl";
+const BIG = "font-display text-3xl leading-tight font-extrabold sm:text-4xl";
 
 export function VerifyResultView({
   result,

@@ -97,7 +97,7 @@ function Presenter() {
               )}
               <div>
                 <p className="text-lg text-muted-foreground sm:text-xl">Everyone checked in earns</p>
-                <p className="font-display text-2xl leading-tight font-extrabold normal-case sm:text-3xl">{e.skill.name}</p>
+                <p className="font-display text-2xl leading-tight font-extrabold sm:text-3xl">{e.skill.name}</p>
               </div>
             </div>
           )}
@@ -126,7 +126,7 @@ function Presenter() {
             </>
           ) : (
             <div className="grid aspect-square w-full max-w-[min(70vh,600px)] place-items-center rounded-[28px] border-[1.5px] border-dashed border-foreground p-8 text-center">
-              <p className="font-display text-3xl font-extrabold uppercase sm:text-4xl">
+              <p className="font-display text-3xl leading-tight font-extrabold uppercase sm:text-4xl">
                 {q?.status === "DRAFT" ? "Check-in hasn't opened yet" : q ? "Check-in closed" : "Loading…"}
               </p>
             </div>

@@ -57,11 +57,11 @@ export function StatusPanel({
       >
         <IconDisc icon={t.icon} className={cn(t.iconColor, stacked && "sm:size-20")} />
         <div className="@container min-w-0 flex-1 text-black">
-          <p className="font-display font-black" style={{ fontSize }} {...wordProps}>
+          <p className="font-display leading-[0.92] font-black uppercase" style={{ fontSize }} {...wordProps}>
             {word}
           </p>
           {light && (
-            <p className="font-display text-[clamp(1.25rem,7.5cqw,3.25rem)] font-extralight">{light}</p>
+            <p className="font-display text-[clamp(1.25rem,7.5cqw,3.25rem)] leading-[0.95] font-extralight uppercase">{light}</p>
           )}
           {subtitle && <div className="mt-4 text-lg leading-snug font-semibold sm:text-2xl">{subtitle}</div>}
         </div>

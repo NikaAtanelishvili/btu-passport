@@ -40,23 +40,23 @@ export function DataTable<T>({
   const pages = total && pageSize ? Math.max(1, Math.ceil(total / pageSize)) : 1;
   return (
     <div className="space-y-3">
-      {toolbar && <div className="flex flex-wrap items-end gap-2">{toolbar}</div>}
+      {toolbar && <div className="flex flex-wrap items-end gap-3">{toolbar}</div>}
       {mobileCard && (
         <div className="space-y-3 sm:hidden">
           {loading && !rows ? (
-            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full rounded-[24px]" />
           ) : rows && rows.length > 0 ? (
             rows.map((row) => (
-              <Card key={rowKey(row)}>
-                <CardContent className="space-y-1 text-sm">{mobileCard(row)}</CardContent>
+              <Card key={rowKey(row)} className="py-5">
+                <CardContent className="space-y-1.5 px-5 text-base">{mobileCard(row)}</CardContent>
               </Card>
             ))
           ) : (
-            <p className="py-6 text-center text-sm text-muted-foreground">{empty}</p>
+            <p className="rounded-[24px] border-[1.5px] border-dashed border-foreground px-4 py-8 text-center text-muted-foreground">{empty}</p>
           )}
         </div>
       )}
-      <div className={mobileCard ? "hidden rounded-md border sm:block" : "rounded-md border"}>
+      <div className={mobileCard ? "hidden sm:block" : undefined}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -99,7 +99,7 @@ export function DataTable<T>({
         </Table>
       </div>
       {onPageChange && page && total !== undefined && pages > 1 && (
-        <div className="flex items-center justify-end gap-2 text-sm">
+        <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
           <span className="text-muted-foreground">
             Page {page} of {pages} · {total} total
           </span>

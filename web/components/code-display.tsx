@@ -22,7 +22,7 @@ export function CodeDisplay({ code }: { code: string }) {
   const shown = formatCode(code);
   return (
     <div className="flex items-center gap-2">
-      <span className="font-mono text-lg tracking-wider select-all">{shown}</span>
+      <span className="font-mono text-2xl tracking-wider select-all sm:text-3xl">{shown}</span>
       <Tooltip>
         <TooltipTrigger
           render={<Button variant="ghost" size="icon" aria-label="Copy code" onClick={() => copyText(shown, "Code copied")} />}

@@ -27,7 +27,7 @@ export function DisplayHeading({
   className?: string;
 }) {
   return (
-    <Tag className={cn("font-display", SIZES[size], className)}>
+    <Tag className={cn("font-display uppercase", SIZES[size], className, "leading-[0.92]")}>
       <span className={cn("font-black", !inline && "block")}>{strong}</span>
       {light && (
         <>

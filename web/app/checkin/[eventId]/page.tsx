@@ -160,7 +160,7 @@ function SkillCard({ view, lead, eventLine = false }: { view: CheckinView; lead?
       <div className="min-w-0">
         {lead && <p className="text-lg text-muted-foreground">{lead}</p>}
         <p className="font-display text-2xl leading-tight font-extrabold sm:text-[1.75rem]">
-          <span className="normal-case">{eventLine ? e.name : e.skill.name}</span>
+          {eventLine ? e.name : e.skill.name}
         </p>
         <p className="text-lg text-muted-foreground">{eventLine ? formatDateTime(e.starts_at) : e.skill.category}</p>
       </div>

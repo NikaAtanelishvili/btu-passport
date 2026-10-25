@@ -5,6 +5,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { DataTable } from "@/components/data-table";
+import { DisplayHeading } from "@/components/display";
 import { ErrorAlert } from "@/components/error-alert";
 import { StudentVersionBadge } from "@/components/status-badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -33,8 +34,8 @@ export default function HistoryPage() {
     refetchInterval: (query) => (query.state.data?.some((v) => IN_PROGRESS.has(v.status)) ? 5000 : false),
   });
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Version history</h1>
+    <div className="space-y-6">
+      <DisplayHeading strong="Version" light="history" />
       {versions.isError && <ErrorAlert error={versions.error} />}
       <DataTable<VersionSummary>
         rows={versions.data}
@@ -44,7 +45,7 @@ export default function HistoryPage() {
         mobileCard={(v) => (
           <>
             <div className="flex items-center justify-between gap-2">
-              <p className="font-medium">Version {v.version_no}</p>
+              <p className="font-display text-xl font-extrabold">Version {v.version_no}</p>
               <StudentVersionBadge version={v} />
             </div>
             <p className="text-muted-foreground">
@@ -56,7 +57,7 @@ export default function HistoryPage() {
           </>
         )}
         columns={[
-          { header: "Version", cell: (v) => `v${v.version_no}` },
+          { header: "Version", cell: (v) => <span className="font-display text-lg font-extrabold">v{v.version_no}</span> },
           { header: "Issued", cell: (v) => (v.issued_at ? formatDate(v.issued_at) : "—") },
           { header: "Skills", cell: (v) => v.skill_count },
           {

@@ -31,7 +31,7 @@ export function BtuLogo({ height, white = false, className }: { height: number; 
 /** "AI SKILLS / DIGITAL PASSPORT" beside the mark, as in the header. */
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className={cn("font-display text-[1.25rem] leading-[0.95] sm:text-[1.375rem]", className)}>
+    <span className={cn("font-display text-[1.25rem] leading-[0.95] uppercase sm:text-[1.375rem]", className)}>
       <span className="block font-black">AI Skills</span>
       <span className="block font-extralight">Digital Passport</span>
     </span>
