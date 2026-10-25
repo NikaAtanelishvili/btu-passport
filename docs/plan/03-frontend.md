@@ -218,19 +218,19 @@ Events (M7) first, because they are the main award path; then catalog, roles and
 
 Full-screen page with no shell: event name (large), the QR from `GET .../qr` (`svg` rendered with `dangerouslySetInnerHTML` — the SVG comes from our own server), the short URL as text, and "N checked in". Refetch `.../qr` when `refresh_in_seconds` runs out (and at least every 30 s); when status isn't CHECKIN_OPEN show "Check-in closed" instead of the QR.
 
-### FE-50 Skills (M9) — `/admin/skills`
+### FE-50 Skills (M9) — `/admin/skills` ✅
 
 `Table` with an "Include archived" `Checkbox`; columns: Skill ID · name · category (with stamp) · times awarded · status. "Add skill" and Edit open a `Dialog` form (name ≤ 80, category `Select`, description ≤ 300 with a character counter that warns past 150). Note in the form: "Changes apply to future passport versions only." Row menu (`dropdown-menu`): Archive / Unarchive, and Delete only when `times_awarded` is 0 (server 409 `in_use` shown as a toast otherwise).
 
-### FE-51 Categories & stamps (M9) — `/admin/categories`
+### FE-51 Categories & stamps (M9) — `/admin/categories` ✅
 
 `Table`: stamp · name · badge code · skills. "Add category" `Dialog` (name). Per row: Upload stamp (file `Input`, PNG/SVG, client checks ≤ 1 MB and square before `POST .../stamp`; the server re-checks), Rename, Archive, Delete (only with 0 skills). The note "A new stamp appears on future versions only" sits by the upload.
 
-### FE-52 Admins & roles (M9) — `/admin/roles`
+### FE-52 Admins & roles (M9) — `/admin/roles` ✅
 
 `Table`: name · email · role · granted by · granted on · last sign-in. "Add admin" `Dialog`: BTU email + role `Select` → `PUT /api/admin/roles/{email}`. Row actions: Change role, Revoke (`ConfirmDialog`: "They will be signed out immediately"). The last super admin's Revoke button is disabled with a tooltip explaining why.
 
-### FE-53 Audit log (M9) — `/admin/audit`
+### FE-53 Audit log (M9) — `/admin/audit` ✅
 
 `DataTable` on `GET /api/admin/audit` with filters: person (email), action (select), date range (two date inputs). Columns: time · who · action · entity (link where a page exists) · details. Details expand to show `before` and `after` as formatted JSON.
 

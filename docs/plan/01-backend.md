@@ -360,7 +360,7 @@ The complete contract, grouped by router. Shapes are written as Pydantic field l
 | `DELETE /api/admin/events/{id}/participants/{email}`        | —                                                                                                                 | 204                                                                                                                                                                         | Sets `removed_at`                                                   |
 | `POST /api/admin/events/{id}/complete`                      | —                                                                                                                 | `{submission_id, awarded: [{student_id, version_no}], skipped: [student_id]}`                                                                                               | 409 `cannot_complete` + blockers; repeat → stored response          |
 
-### Super admin: catalog, roles, audit (BE-50 – BE-53, M9)
+### Super admin: catalog, roles, audit (BE-50 – BE-53, M9) ✅
 
 | Method, path                                                         | Request                               | Response                                                                             | Notes                                                           |
 | -------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
