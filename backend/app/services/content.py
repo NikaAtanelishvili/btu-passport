@@ -36,6 +36,34 @@ def _source(kind: str, event_name: str | None) -> dict[str, str]:
     return {"type": kind.lower()}  # "direct" | "seed"
 
 
+def version_skills(db: Session, version_id: int) -> list[dict[str, Any]]:
+    """The version's own awards as content skills, by date earned then award ID. Also used for
+    LEGACY versions, which have no content snapshot (BE-47)."""
+    rows = db.execute(
+        select(SkillAward, Skill, SkillCategory, AwardSubmission.kind, Event.name)
+        .join(VersionAward, VersionAward.award_id == SkillAward.award_id)
+        .join(Skill, Skill.skill_id == SkillAward.skill_id)
+        .join(SkillCategory, SkillCategory.category_id == Skill.category_id)
+        .join(AwardSubmission, AwardSubmission.submission_id == SkillAward.submission_id)
+        .outerjoin(Event, Event.event_id == AwardSubmission.event_id)
+        .where(VersionAward.version_id == version_id)
+        .order_by(SkillAward.date_earned, SkillAward.award_id)
+    ).all()
+    return [
+        {
+            "skill_id": skill.skill_id,
+            "name": skill.name,
+            "category": category.name,
+            "badge_code": category.badge_code,
+            "stamp_sha256": category.stamp_sha256,
+            "description": skill.description,
+            "date_earned": award.date_earned.isoformat(),
+            "source": _source(kind, event_name),
+        }
+        for award, skill, category, kind, event_name in rows
+    ]
+
+
 def build_content(
     db: Session, version: PassportVersion, *, verification_code: str, issued_at: datetime
 ) -> dict[str, Any]:
@@ -53,17 +81,6 @@ def build_content(
         passport.first_issued_on = issued_at.astimezone(ZoneInfo(s.timezone)).date()
         db.flush()
 
-    rows = db.execute(
-        select(SkillAward, Skill, SkillCategory, AwardSubmission.kind, Event.name)
-        .join(VersionAward, VersionAward.award_id == SkillAward.award_id)
-        .join(Skill, Skill.skill_id == SkillAward.skill_id)
-        .join(SkillCategory, SkillCategory.category_id == Skill.category_id)
-        .join(AwardSubmission, AwardSubmission.submission_id == SkillAward.submission_id)
-        .outerjoin(Event, Event.event_id == AwardSubmission.event_id)
-        .where(VersionAward.version_id == version.version_id)
-        .order_by(SkillAward.date_earned, SkillAward.award_id)
-    ).all()
-
     return {
         "schema": SCHEMA,
         "passport_id": passport.passport_id,
@@ -78,19 +95,7 @@ def build_content(
         "issued_at": iso_utc(issued_at),
         "verification_code": verification_code,
         "verify_url": f"{s.public_base_url.rstrip('/')}/v/{verification_code}",
-        "skills": [
-            {
-                "skill_id": skill.skill_id,
-                "name": skill.name,
-                "category": category.name,
-                "badge_code": category.badge_code,
-                "stamp_sha256": category.stamp_sha256,
-                "description": skill.description,
-                "date_earned": award.date_earned.isoformat(),
-                "source": _source(kind, event_name),
-            }
-            for award, skill, category, kind, event_name in rows
-        ],
+        "skills": version_skills(db, version.version_id),
         "issuer": {
             "name": ISSUER_NAME,
             "chain_id": s.chain_id,

@@ -503,6 +503,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/passport": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Passport */
+        get: operations["my_passport_api_me_passport_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Versions
+         * @description Newest first, including LEGACY.
+         */
+        get: operations["my_versions_api_me_versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/versions/{version_no}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Pdf
+         * @description Own ANCHORED versions only, else 404.
+         */
+        get: operations["my_pdf_api_me_versions__version_no__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/versions/{version_no}/proof.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Proof
+         * @description Own ANCHORED versions only, else 404.
+         */
+        get: operations["my_proof_api_me_versions__version_no__proof_json_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/events": {
         parameters: {
             query?: never;
@@ -1030,6 +1107,11 @@ export interface components {
             /** Issuer Address */
             issuer_address: string;
         };
+        /** IssuingVersion */
+        IssuingVersion: {
+            /** Version No */
+            version_no: number;
+        };
         /** MyEvent */
         MyEvent: {
             /**
@@ -1058,6 +1140,19 @@ export interface components {
             status: "WAITING" | "AWARDED" | "ALREADY_HELD" | "NOT_CONFIRMED" | "EVENT_DELETED";
             /** Version No */
             version_no?: number | null;
+        };
+        /** MyPassport */
+        MyPassport: {
+            /** Passport Id */
+            passport_id: string;
+            /** Holder Name */
+            holder_name: string;
+            /** First Issued On */
+            first_issued_on: string | null;
+            current: components["schemas"]["VersionSummary"] | null;
+            issuing: components["schemas"]["IssuingVersion"] | null;
+            /** Skills */
+            skills: components["schemas"]["SkillOnPassport"][];
         };
         /** Page[EventRow] */
         Page_EventRow_: {
@@ -1274,6 +1369,31 @@ export interface components {
             email: string;
             /** Name */
             name: string;
+        };
+        /** SkillOnPassport */
+        SkillOnPassport: {
+            /** Name */
+            name: string;
+            /** Category */
+            category: string;
+            /** Badge Code */
+            badge_code: string;
+            /** Stamp Sha256 */
+            stamp_sha256: string | null;
+            /** Description */
+            description: string | null;
+            /**
+             * Date Earned
+             * Format: date
+             */
+            date_earned: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "EVENT" | "DIRECT" | "SEED";
+            /** Event Name */
+            event_name: string | null;
         };
         /** SkillRow */
         SkillRow: {
@@ -1521,6 +1641,26 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** VersionSummary */
+        VersionSummary: {
+            /** Version No */
+            version_no: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "LEGACY" | "PENDING" | "RENDERED" | "ANCHORING" | "ANCHORED" | "FAILED";
+            /** Issued At */
+            issued_at: string | null;
+            /** Verification Code */
+            verification_code: string | null;
+            /** Skill Count */
+            skill_count: number;
+            /** Added Skills */
+            added_skills: string[];
+            /** Superseded */
+            superseded: boolean;
         };
     };
     responses: never;
@@ -2531,6 +2671,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckinPass"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_passport_api_me_passport_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPassport"];
+                };
+            };
+        };
+    };
+    my_versions_api_me_versions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionSummary"][];
+                };
+            };
+        };
+    };
+    my_pdf_api_me_versions__version_no__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_proof_api_me_versions__version_no__proof_json_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofFile"];
                 };
             };
             /** @description Validation Error */

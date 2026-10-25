@@ -65,7 +65,11 @@ def _issued(db: Session, code: str) -> PassportVersion:
 )
 def official_pdf(code: str, db: DB) -> Response:
     """The stored bytes, to compare against the copy the verifier received."""
-    version = _issued(db, code)
+    return pdf_response(_issued(db, code))
+
+
+def pdf_response(version: PassportVersion) -> Response:
+    """Also served to students for their own versions (BE-47)."""
     filename = f"{version.passport_id}-v{version.version_no}.pdf"
     return Response(
         storage.get(version.pdf_key or ""),
@@ -77,14 +81,18 @@ def official_pdf(code: str, db: DB) -> Response:
 @router.get("/{code}/proof.json", response_model=ProofFile, response_model_by_alias=True)
 def proof_file(code: str, db: DB, response: Response) -> ProofFile:
     version = _issued(db, code)
-    response.headers["Content-Disposition"] = (
-        f'attachment; filename="{version.passport_id}-v{version.version_no}-proof.json"'
-    )
+    set_proof_filename(response, version)
     return build_proof_file(db, version)
 
 
+def set_proof_filename(response: Response, version: PassportVersion) -> None:
+    response.headers["Content-Disposition"] = (
+        f'attachment; filename="{version.passport_id}-v{version.version_no}-proof.json"'
+    )
+
+
 def build_proof_file(db: Session, version: PassportVersion) -> ProofFile:
-    """Also served to students for their own versions (BE-47, M8)."""
+    """Also served to students for their own versions (BE-47)."""
     s = get_settings()
     batch = db.get_one(AnchorBatch, version.batch_id)
     pdf_sha256 = version.pdf_sha256 or ""
