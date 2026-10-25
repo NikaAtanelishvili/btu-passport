@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 
 from app.auth.deps import require_admin
 from app.routers.admin import (
+    audit,
     awards,
     categories,
     dashboard,
@@ -23,3 +24,4 @@ router.include_router(awards.router)
 router.include_router(versions.router)
 router.include_router(events.router)
 router.include_router(roles.router)
+router.include_router(audit.router)

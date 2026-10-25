@@ -152,7 +152,60 @@ def test_A11_student_forbidden_on_every_admin_route(
         .replace("{version_id}", "1")
         .replace("{event_id}", "6b1f5d1e-6a43-4e0e-9d6c-2f1f5c3b9a10")
         .replace("{email}", "btu-t-0001@example.org")
+        .replace("{skill_id}", "SKL-001")
+        .replace("{category_id}", "1")
     )
     response = client_as("student").request(method, url, json={})
+    assert response.status_code == 403, response.text
+    assert response.json()["error"] == "forbidden"
+
+
+def _super_admin_only(method: str, path: str) -> bool:
+    """Writes to events and the catalog, the presenter QR, and all of roles and audit; admins
+    read events, skills and categories (Frontend tab §1, Backend tab §5)."""
+    if path.startswith(("/api/admin/roles", "/api/admin/audit")):
+        return True
+    if path.endswith("/qr"):
+        return True
+    catalog = path.startswith(("/api/admin/events", "/api/admin/skills", "/api/admin/categories"))
+    return catalog and method != "GET"
+
+
+SUPER_ADMIN_ROUTES = [r for r in _admin_routes() if _super_admin_only(*r)]
+
+
+def test_super_admin_routes_exist() -> None:
+    assert {
+        ("POST", "/api/admin/skills"),
+        ("PATCH", "/api/admin/skills/{skill_id}"),
+        ("DELETE", "/api/admin/skills/{skill_id}"),
+        ("POST", "/api/admin/skills/{skill_id}/archive"),
+        ("POST", "/api/admin/skills/{skill_id}/unarchive"),
+        ("POST", "/api/admin/categories"),
+        ("PATCH", "/api/admin/categories/{category_id}"),
+        ("DELETE", "/api/admin/categories/{category_id}"),
+        ("POST", "/api/admin/categories/{category_id}/archive"),
+        ("POST", "/api/admin/categories/{category_id}/unarchive"),
+        ("POST", "/api/admin/categories/{category_id}/stamp"),
+        ("GET", "/api/admin/roles"),
+        ("PUT", "/api/admin/roles/{email}"),
+        ("DELETE", "/api/admin/roles/{email}"),
+        ("GET", "/api/admin/audit"),
+        ("GET", "/api/admin/audit/actions"),
+    } <= set(SUPER_ADMIN_ROUTES)
+
+
+@pytest.mark.parametrize(("method", "path"), SUPER_ADMIN_ROUTES)
+def test_admin_forbidden_on_every_super_admin_route(
+    client_as: ClientAs, method: str, path: str
+) -> None:
+    """An Admin (not super admin) gets 403 before anything is looked up or changed."""
+    url = (
+        path.replace("{event_id}", "6b1f5d1e-6a43-4e0e-9d6c-2f1f5c3b9a10")
+        .replace("{email}", "superadmin@btu.test")
+        .replace("{skill_id}", "SKL-001")
+        .replace("{category_id}", "1")
+    )
+    response = client_as("admin").request(method, url, json={})
     assert response.status_code == 403, response.text
     assert response.json()["error"] == "forbidden"
