@@ -26,7 +26,7 @@ const OPERATIONS: NavItem[] = [
 const SUPER_ADMIN: (NavItem & { later?: boolean })[] = [
   { href: "/admin/events", label: "Events" },
   { href: "/admin/skills", label: "Skills" },
-  { href: "/admin/categories", label: "Categories & stamps", later: true },
+  { href: "/admin/categories", label: "Categories & stamps" },
   { href: "/admin/roles", label: "Admins & roles", later: true },
   { href: "/admin/audit", label: "Audit log", later: true },
 ];
