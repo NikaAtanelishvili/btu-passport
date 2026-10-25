@@ -164,14 +164,15 @@
  * components' own utilities; a page that needs another size uses an `!` utility.
  */
 
-/* Inputs, outline buttons, dialogs: 1.5px black. Outline buttons are the only stock
-   button variant that carries `border-border`. */
+/* Inputs, outline buttons, dialogs: 1.5px black. Buttons are matched by `group/button`, the
+   class buttonVariants() gives both <Button> and links styled as buttons; the outline variant
+   is the only one that carries `border-border`. */
 [data-slot="input"],
 [data-slot="textarea"],
 [data-slot="select-trigger"],
 [data-slot="input-group"],
 [data-slot="checkbox"],
-[data-slot="button"].border-border {
+.group\/button.border-border {
   border-width: 1.5px;
   border-color: var(--foreground);
 }
@@ -204,25 +205,25 @@
 }
 
 /* Buttons: semibold; the default and large sizes grow to the design's 40/48 px. */
-[data-slot="button"] {
+.group\/button {
   font-weight: 600;
   border-radius: var(--radius-md);
 }
-[data-slot="button"].h-8 {
+.group\/button.h-8 {
   height: 2.5rem;
   padding-inline: 1rem;
   font-size: 1rem;
 }
-[data-slot="button"].h-9 {
+.group\/button.h-9 {
   height: 3rem;
   padding-inline: 1.25rem;
   font-size: 1rem;
 }
-[data-slot="button"].size-8 {
+.group\/button.size-8 {
   width: 2.5rem;
   height: 2.5rem;
 }
-[data-slot="button"].bg-primary:hover {
+.group\/button.bg-primary:hover {
   background-color: color-mix(in oklab, var(--primary), black 12%);
 }
 
