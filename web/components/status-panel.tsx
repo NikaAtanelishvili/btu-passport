@@ -61,13 +61,13 @@ export function StatusPanel({
             {word}
           </p>
           {light && (
-            <p className="font-display text-[clamp(1.75rem,9cqw,3.25rem)] font-extralight">{light}</p>
+            <p className="font-display text-[clamp(1.25rem,7.5cqw,3.25rem)] font-extralight">{light}</p>
           )}
           {subtitle && <div className="mt-4 text-lg leading-snug font-semibold sm:text-2xl">{subtitle}</div>}
         </div>
         {aside}
       </div>
-      {children && <div className="px-6 py-7 sm:px-12 sm:py-10">{children}</div>}
+      {children && <div className={cn("px-6 py-7", stacked ? "sm:px-8 sm:py-8" : "sm:px-12 sm:py-10")}>{children}</div>}
     </section>
   );
 }
