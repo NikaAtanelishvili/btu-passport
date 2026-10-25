@@ -47,6 +47,15 @@ export default function MyEventsPage() {
         loading={events.isPending}
         rowKey={(e) => e.event_id}
         empty="No check-ins yet. Scan the QR code at a BTU event to check in."
+        mobileCard={(e) => (
+          <>
+            <p className="font-medium">{e.name}</p>
+            <p className="text-muted-foreground">
+              {formatDate(e.event_date)} · {e.skill_name}
+            </p>
+            <p>{status(e)}</p>
+          </>
+        )}
         columns={[
           { header: "Event", cell: (e) => e.name },
           { header: "Date", cell: (e) => formatDate(e.event_date) },
