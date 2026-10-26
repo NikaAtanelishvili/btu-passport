@@ -292,7 +292,7 @@ label:has(:disabled, [data-disabled]) {
   label:hover [data-slot="checkbox"]:not([data-checked], [data-disabled]) {
     background-color: var(--muted);
   }
-  a[href].text-link:hover {
+  :is(a[href], button:not(:disabled)).text-link:hover {
     color: color-mix(in oklab, var(--link), black 30%);
   }
 }

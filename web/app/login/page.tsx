@@ -297,14 +297,14 @@ function CodeStep({
       <div className="flex flex-wrap justify-between gap-3">
         <button
           type="button"
-          className="font-medium underline underline-offset-4 hover:no-underline"
+          className="font-medium underline underline-offset-4 hover:text-link"
           onClick={() => onRestart(null)}
         >
           Use a different email
         </button>
         <button
           type="button"
-          className="text-muted-foreground enabled:font-medium enabled:text-link enabled:underline enabled:underline-offset-4"
+          className="text-muted-foreground enabled:font-medium enabled:text-link enabled:underline enabled:underline-offset-4 enabled:hover:text-foreground"
           disabled={cooldown > 0}
           onClick={() => void resend()}
         >
