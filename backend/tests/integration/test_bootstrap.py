@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.models import AuditLog, UserRole
 from cli import bootstrap
 
@@ -56,3 +57,21 @@ def test_email_is_lower_cased_and_domain_checked(
     monkeypatch.setattr(bootstrap, "_super_admin_email", lambda: "boss@gmail.com")
     with pytest.raises(SystemExit, match="ALLOWED_EMAIL_DOMAINS"):
         bootstrap.run(db, dev_users=False)
+
+
+def test_dev_super_admins_from_env(db: Session, monkeypatch: pytest.MonkeyPatch) -> None:
+    """BE-16: DEV_SUPER_ADMIN_EMAILS (e.g. the developer's Gmail, allowed by ALLOWED_EMAILS)."""
+    s = get_settings()
+    monkeypatch.setattr(s, "dev_super_admin_emails", ["me@gmail.com"])
+    monkeypatch.setattr(s, "allowed_emails", ["me@gmail.com"])
+    assert bootstrap.run(db, dev_users=False) == 1  # only with --dev-users
+    assert bootstrap.run(db, dev_users=True) == 2
+    assert _roles(db)["me@gmail.com"] == "SUPER_ADMIN"
+
+
+def test_dev_super_admin_outside_the_allow_lists_is_refused(
+    db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(get_settings(), "dev_super_admin_emails", ["me@gmail.com"])
+    with pytest.raises(SystemExit, match="ALLOWED_EMAILS"):
+        bootstrap.run(db, dev_users=True)

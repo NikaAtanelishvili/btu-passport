@@ -11,7 +11,11 @@ def main() -> None:
     commands.add_parser("merkle-vectors", help="write shared/merkle-vectors.json (BC-05)")
     commands.add_parser("seed", help="import seed/test-data.csv (BE-04)")
     boot = commands.add_parser("bootstrap", help="grant the first super admin (BE-05)")
-    boot.add_argument("--dev-users", action="store_true", help="also make admin@btu.test ADMIN")
+    boot.add_argument(
+        "--dev-users",
+        action="store_true",
+        help="also make admin@btu.test ADMIN and DEV_SUPER_ADMIN_EMAILS SUPER_ADMIN",
+    )
     commands.add_parser(
         "demo-users", help="demo super admin, admin and student with real inboxes (DEMO_*)"
     )

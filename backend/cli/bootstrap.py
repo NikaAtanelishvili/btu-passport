@@ -1,4 +1,5 @@
-"""`python -m cli bootstrap [--dev-users]`: grant the first super admin (BE-05)."""
+"""`python -m cli bootstrap [--dev-users]`: grant the first super admin (BE-05); with
+--dev-users also the dev admin and DEV_SUPER_ADMIN_EMAILS (BE-16)."""
 
 import sys
 
@@ -17,10 +18,14 @@ def _super_admin_email() -> str:
 
 def grant(db: Session, email: str, role: str) -> bool:
     """Upsert one role; returns True (and writes an audit row) only if something changed."""
+    s = get_settings()
     email = email.strip().lower()
     domain = email.rpartition("@")[2]
-    if domain not in get_settings().allowed_email_domains:
-        sys.exit(f"{email}: domain {domain!r} is not in ALLOWED_EMAIL_DOMAINS")
+    if domain not in s.allowed_email_domains and email not in s.allowed_emails:
+        sys.exit(
+            f"{email}: domain {domain!r} is not in ALLOWED_EMAIL_DOMAINS "
+            "and the address is not in ALLOWED_EMAILS"
+        )
     existing = db.get(UserRole, email)
     if existing is not None and existing.role == role:
         return False
@@ -39,6 +44,7 @@ def run(db: Session, *, dev_users: bool) -> int:
     grants = [(_super_admin_email(), "SUPER_ADMIN")]
     if dev_users:
         grants.append((DEV_ADMIN_EMAIL, "ADMIN"))
+        grants += [(email, "SUPER_ADMIN") for email in get_settings().dev_super_admin_emails]
     return sum(grant(db, email, role) for email, role in grants)
 
 
