@@ -14,7 +14,7 @@ Key decisions, each traced to the requirements doc:
 | D2  | PostgreSQL is the single source of truth and also the job queue (no Redis)                                                                                                                                   | FR-14, FR-22, NFR-10         |
 | D3  | PDFs rendered from an HTML/CSS version of BTU's design, stored by SHA-256 and never overwritten                                                                                                              | FR-16, NFR-08, NFR-13        |
 | D4  | One Merkle root per issuance batch on a registry smart contract; only BTU's issuer address may write                                                                                                         | FR-19 – FR-21, NFR-01        |
-| D5  | Passwordless email-code sign-in built into the API, roles in our own `user_roles` table                                                                                                                      | FR-01, FR-25, NFR-04, NFR-05 |
+| D5  | Passwordless email-code sign-in built into the API, plus Sign in with Google (OIDC, 2026-10-26); roles in our own `user_roles` table                                                                                                                      | FR-01, FR-25, NFR-04, NFR-05 |
 | D6  | Two roles plus student: Super admin, Admin; no Auditor (dropped 2026-10-21) — the audit log is read by the Super admin                                                                                       | FR-08, FR-09                 |
 | D7  | Verification is public and works by code or by PDF upload; upload verification needs only chain data + the proof                                                                                             | FR-23, NFR-09                |
 | D8  | Events are the main source of awards: QR check-in collects participants, Mark as done turns them into one award submission that goes through the same issuance pipeline as a direct award (added 2026-10-21) | FR-26 – FR-33                |
@@ -40,7 +40,7 @@ Python on the backend (the team's strongest language), TypeScript only for the U
 | File storage   | MinIO (S3 API), keys = PDF SHA-256                                                                | Immutable, content-addressed (NFR-08); same code works on S3 in production                               | Docker volume                                                                         |
 | PDF            | Jinja2 HTML/CSS template → WeasyPrint; `segno` for QR                                             | Pure Python, paginates repeating skill blocks, embeds fonts (NFR-12)                                     | Playwright (Chromium) print-to-PDF                                                    |
 | Font           | Noto Sans Georgian, or BTU's brand font if it covers Georgian                                     | Georgian names must render (NFR-12)                                                                      | —                                                                                     |
-| Identity       | Email-code login in FastAPI (hashed 6-digit codes, rate limits); SMTP for sending, Mailpit in dev | No identity provider to run or configure; BTU SSO can be added later behind the same session layer (Q11) | Sign in with Google limited to btu.edu.ge (only if BTU mail runs on Google Workspace) |
+| Identity       | Email-code login in FastAPI (hashed 6-digit codes, rate limits); SMTP for sending, Mailpit in dev. Sign in with Google (OIDC code flow + PKCE, PyJWT) beside it, added 2026-10-26 | No identity provider to run; BTU mail is on Google Workspace (MX `aspmx.l.google.com`), so Google sign-in works for btu.edu.ge with only an OAuth client to register (Q11) | Google sign-in alone: the email code stays as the fallback for anyone without a usable Google account |
 | Smart contract | Solidity + Foundry, OpenZeppelin `Ownable`                                                        | Fast tests, scripted deploy                                                                              | Hardhat                                                                               |
 | Chain          | Local Anvil for development; a public EVM testnet (e.g. Sepolia) for the demo                     | Free, public, verifiable by the jury on a block explorer                                                 | Polygon testnet                                                                       |
 | Chain client   | web3.py inside the signing service                                                                | Same language as the backend                                                                             | ethers.js                                                                             |
@@ -222,11 +222,22 @@ Three boundaries: who you are (a one-time code sent to your BTU email), what you
 
 ### Sign-in flow
 
+**Email code** (always available):
+
 1. The login page posts the email to `/auth/request-code`. The API checks the domain against `ALLOWED_EMAIL_DOMAINS`, applies rate limits (per email and per IP), stores a hash of a random 6-digit code in `login_codes` with a 10-minute expiry, and emails the code over SMTP.
 2. The user types the code; the page posts it to `/auth/verify-code`. A wrong code increments `attempts`; the fifth wrong try or the expiry kills it.
 3. On a match, the API marks the code used, upserts `users` by email, creates a row in `sessions`, and sets the cookie.
 4. Each request: session → user → role from `user_roles` (cached ≤ 60 s); a student is matched to `students` by email.
 5. Admins have no second factor (accepted trade-off): whoever controls an admin's inbox can sign in as that admin. Revoking the role deletes their sessions, which locks them out at once.
+
+**Sign in with Google** (added 2026-10-26; on when `GOOGLE_CLIENT_ID` is set, else `/auth/google/*` return 404 and `/auth/providers` says `{google: false}`, so `/login` hides the button):
+
+1. The button is a link to `/auth/google/start?next=…`. The API drops an unsafe `next` (as for codes), creates `state`, `nonce` and a PKCE verifier, puts them with `next` in a signed HttpOnly cookie (`google_flow`, path `/auth/google`, SameSite=Lax, 10 min) and redirects to Google with scopes `openid email profile` and the S256 code challenge.
+2. Google redirects to `PUBLIC_BASE_URL/auth/google/callback?code&state`. The API checks `state` against the cookie, exchanges the code (with the verifier and the client secret) at Google's token endpoint, and verifies the ID token: RS256 signature against Google's JWKS (cached for an hour), `iss`, `aud` = client ID, `exp`, `nonce`. It requires `email_verified`, then the allow rule: domain in `ALLOWED_EMAIL_DOMAINS` (and `hd = btu.edu.ge` for BTU's Workspace domain) or the exact address in `ALLOWED_EMAILS`.
+3. Then step 3 of the email code: upsert `users`, create the session, set the cookies, redirect to `next` or the role's home. A check-in pass cookie (path `/api/checkin/{event}`) is untouched by the round trip, so a scan-then-sign-in check-in still completes.
+4. Any failure redirects to `/login?error=` (`google_cancelled`, `google_not_allowed`, `google_unavailable`, `google_failed`, `google_rate_limited`), never a 500. Start and callback are rate-limited per IP like code requests.
+
+Only the API talks to Google (two HTTPS calls per sign-in: token endpoint, JWKS when its cache is cold); no Google token is stored, and nothing about the person goes anywhere but our `users` row.
 
 ### Controls
 
@@ -236,6 +247,7 @@ Three boundaries: who you are (a one-time code sent to your BTU email), what you
 | Student reads another passport (IDOR) | `/api/me/*` queries filter by the session's `student_id`; IDs in the URL are never trusted                                                                                                              | NFR-05         |
 | Revoked admin keeps access            | Role re-read within 60 s; revocation also deletes their `sessions` rows                                                                                                                                 | FR-08          |
 | Session theft via script              | `__Host-` cookie, HttpOnly, Secure, SameSite=Lax; 8 h absolute, 30 min idle for admins                                                                                                                  | NFR-04, NFR-07 |
+| Forged or replayed Google sign-in      | PKCE (S256), `state` in a signed short-lived cookie, `nonce` in the ID token; ID token signature, issuer, audience and expiry checked; `email_verified` required; `hd` required for btu.edu.ge                       | FR-01, NFR-07  |
 | Guessing or flooding login codes      | Codes stored hashed; 10-minute expiry, single use, 5 attempts; rate limits per email and per IP on code requests; email domain checked on the server                                                    | FR-01, NFR-07  |
 | Cross-site form submission            | CSRF token required in a header on every POST/PUT/PATCH/DELETE                                                                                                                                          | NFR-07         |
 | Bypassing the form                    | Same Pydantic schema validates every request on the server                                                                                                                                              | FR-04          |
@@ -288,9 +300,21 @@ Everything runs from one `docker compose up`: seven containers on one machine fo
 
 | Environment         | Chain                                                       | Identity                                   | Data                                |
 | ------------------- | ----------------------------------------------------------- | ------------------------------------------ | ----------------------------------- |
-| Local dev           | Anvil (local, instant blocks)                               | Email codes, caught by Mailpit             | Seed import of the 18 test students |
-| Demo                | Public EVM testnet; contract verified on the block explorer | Email codes over a real SMTP account       | Seed + live awards during the demo  |
+| Local dev           | Anvil (local, instant blocks)                               | Email codes, caught by Mailpit; Google (OAuth app in Testing mode, test users only) | Seed import of the 18 test students |
+| Demo                | Public EVM testnet; contract verified on the block explorer | Email codes over a real SMTP account; Google with the demo domain's redirect URI | Seed + live awards during the demo  |
 | Production (future) | Mainnet or a low-fee L2 — BTU decision                      | Email codes via BTU mail, or BTU SSO later | Real data, HSM/KMS for the key      |
+
+**Sign-in configuration** (all in `.env`; full list in `.env.example` and the plan's Overview §4):
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `ALLOWED_EMAIL_DOMAINS` | `btu.edu.ge,btu.test,example.org` (dev) | Domains that may sign in (both methods), be granted roles or be registered as students |
+| `LOGIN_CODE_TTL_MINUTES`, `LOGIN_CODE_MAX_ATTEMPTS`, `LOGIN_RATE_PER_EMAIL_HOUR`, `LOGIN_RATE_PER_IP_HOUR` | `10`, `5`, `5`, `20` | Email codes; the per-IP hourly limit also covers Google start and callback |
+| `SMTP_*`, `DEV_LOG_LOGIN_CODES` | Mailpit, `true` (dev) | Sending codes |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | empty | OAuth client (Web application) from Google Cloud; empty ID = no Google button. Secret only in `.env` |
+| `ALLOWED_EMAILS` | empty | Exact addresses allowed to sign in with Google outside the domains (dev: the developer's Gmail) |
+| `PUBLIC_BASE_URL` | `http://localhost:3000` | Base of the Google redirect URI, `PUBLIC_BASE_URL/auth/google/callback`, which must be registered in Google Cloud |
+| `DEV_SUPER_ADMIN_EMAILS` | empty | Dev only: extra super admins from `make bootstrap` |
 
 **Repository layout:** `web/` (Next.js) · `backend/` (api, worker, signer as packages) · `contracts/` (Foundry) · `templates/` (passport HTML/CSS, stamps, fonts) · `infra/` (compose, Caddyfile) · `seed/` (importer + the test CSV).
 

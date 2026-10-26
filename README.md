@@ -55,7 +55,8 @@ passport's latest is known only to BTU's server.
 
 ## Signing in (dev)
 
-There are no passwords. Open http://localhost:3000/login, enter one of the test emails below
+There are no passwords. With a Google client configured you can also use **Sign in with
+Google** (next section). Open http://localhost:3000/login, enter one of the test emails below
 and press **Send code**. The email goes to Mailpit: open http://localhost:8025, click the
 newest message ("123456 is your BTU AI Skills Passport sign-in code") and type the 6 digits
 into the sign-in page. With `DEV_LOG_LOGIN_CODES=true` the code is also printed in the
@@ -80,6 +81,55 @@ while testing: `docker exec btu-passport-db-1 psql -U passport -c "DELETE FROM l
 to start with code logging on unless `ENV` is `dev` or `test`. Send yourself a code first and
 check it doesn't land in spam. There is no second factor for staff: whoever controls an
 admin's inbox can sign in as that admin (accepted trade-off).
+
+## Sign in with Google
+
+`/login` shows **Sign in with Google** above the email form when `GOOGLE_CLIENT_ID` is set;
+email codes stay as the fallback. BTU mail runs on Google Workspace, so `@btu.edu.ge` accounts
+can use it (the API also checks the account belongs to BTU's Workspace, the `hd` claim). Other
+allowed domains work if a Google account exists for the address; exact extra addresses go in
+`ALLOWED_EMAILS`.
+
+**Google Cloud setup (once):**
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → create or pick a project.
+2. **Google Auth Platform → Branding** (OAuth consent screen): app name "BTU AI Skills
+   Passport", support email, audience **External**, publishing status **Testing**. Scopes: the
+   defaults `openid`, `email`, `profile` (no sensitive scopes, so no Google review).
+3. **Audience → Test users:** add every Google account that should be able to sign in while
+   the app is in Testing (only those get past Google's consent screen).
+4. **Clients → Create client → Web application.** Authorized redirect URI:
+   `http://localhost:3000/auth/google/callback` (exactly `PUBLIC_BASE_URL` +
+   `/auth/google/callback`). No JavaScript origins are needed: the browser never calls Google's
+   APIs, only the API server does.
+5. Put the client ID and secret in `.env` (git-ignored) and restart `make dev`:
+
+```sh
+GOOGLE_CLIENT_ID=…apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=…        # never commit, print or log it
+ALLOWED_EMAILS=you@gmail.com            # dev only: your Gmail as an exception
+DEV_SUPER_ADMIN_EMAILS=you@gmail.com    # dev only: make it a super admin
+```
+
+```sh
+make bootstrap             # grants SUPER_ADMIN to DEV_SUPER_ADMIN_EMAILS (with --dev-users)
+```
+
+Then **Sign in with Google** on http://localhost:3000/login lands on `/admin`. Errors come back
+to `/login` as a message: cancelled, account not allowed, Google unreachable, or failed.
+
+**Demo domain (later):** in the same client add the redirect URI
+`https://<demo-domain>/auth/google/callback` (Google requires HTTPS for anything but
+`localhost`), and set `PUBLIC_BASE_URL=https://<demo-domain>` in the demo env. Add the demo
+users as test users, or publish the app (Audience → Publish app; with only the basic scopes
+no verification is needed, though unverified apps show a warning until the branding is
+verified). If BTU's Workspace admin restricts third-party apps, they must allow this client
+ID (Admin console → Security → API controls). Prefer `ALLOWED_EMAILS` for individual Gmail
+addresses over adding `gmail.com` to `ALLOWED_EMAIL_DOMAINS`, which would let any Gmail
+account in. Leaving `GOOGLE_CLIENT_ID` empty hides the button and makes `/auth/google/*` 404.
+
+**LAN phone test:** Google rejects plain-http redirect URIs on private IPs, so on a phone over
+the LAN use email codes.
 
 ## Phone test over the LAN (same Wi-Fi, plain http)
 

@@ -182,7 +182,7 @@ SHA-256 in a Merkle root on an EVM chain, and lets anyone verify it without logi
 
 ## Stack (locked)
 Next.js App Router + TS + Tailwind + stock shadcn/ui · FastAPI + Pydantic v2 +
-SQLAlchemy 2 + Alembic · PostgreSQL 16 · MinIO · WeasyPrint · email-code login (no IdP) ·
+SQLAlchemy 2 + Alembic · PostgreSQL 16 · MinIO · WeasyPrint · email-code login + Sign in with Google ·
 Solidity + Foundry · Anvil (dev) / Sepolia (demo) · web3.py signer.
 
 ## Commands

@@ -22,6 +22,8 @@ The MVP has to prove four things end to end: a skill awarded through the admin p
 
 **Change on 2026-10-24:** sign-in is a passwordless one-time code emailed to the user's BTU address, built into the app. Keycloak, OIDC single sign-on and the staff second factor (MFA) are dropped; verifiers never sign in (section 6).
 
+**Change on 2026-10-26:** **Sign in with Google** is added next to the email code, which stays as the fallback. BTU's mail runs on Google Workspace (its MX records point at `aspmx.l.google.com`), so `@btu.edu.ge` staff and students can use their BTU Google account; sessions and roles are unchanged (section 6).
+
 **How these requirements were gathered.** Elicitation so far is document analysis (the brief and the test dataset) plus mentor Q&A. User stories and use cases (sections 2–3) are the techniques used to *record and structure* what was elicited; the FR/NFR tables (sections 4–5) are derived from them, and every requirement points back to its story.
 
 ## 2. User stories
@@ -217,14 +219,14 @@ The real load is versions, not passports. The test data averages 3.3 skills per 
 
 ## 6. Authentication and authorization (recommendation)
 
-Sign everyone in with a one-time code emailed to their BTU address (passwordless, no external identity provider), keep roles in your own database (role-based access control), and keep the blockchain key in a separate signing service that no human session can reach. Authentication answers *who are you*; authorization answers *what may you do* — they are separate layers.
+Sign everyone in with their BTU Google account or, as the fallback, a one-time code emailed to their BTU address (passwordless either way), keep roles in your own database (role-based access control), and keep the blockchain key in a separate signing service that no human session can reach. Authentication answers *who are you*; authorization answers *what may you do* — they are separate layers.
 
 ### Who signs in, and how
 
 | Actor | Authentication | Authorization |
 | --- | --- | --- |
-| Super admin, Admin | 6-digit code emailed to the BTU address; no second factor (accepted trade-off: whoever controls the inbox controls the account) | Role from the app's `user_roles` table (an allowlist), re-checked on every request |
-| Student | Same email code | Ownership only: can read the passport whose student email matches the session |
+| Super admin, Admin | Sign in with Google (BTU Workspace account), or a 6-digit code emailed to the BTU address; no second factor from us (accepted trade-off: whoever controls the inbox or the Google account controls the app account; BTU's Workspace policies, e.g. 2-step verification, apply to Google sign-in) | Role from the app's `user_roles` table (an allowlist), re-checked on every request |
+| Student | Same: Google or email code | Ownership only: can read the passport whose student email matches the session |
 | Verifier | None. "Continue as guest" just opens the public Verify page; there is no guest session | Public, read-only, rate-limited endpoints that return the minimum data |
 | Signing service | Service credential, not a user | Accepts signing jobs only from the issuance worker over an internal queue |
 
@@ -252,13 +254,14 @@ Sign everyone in with a one-time code emailed to their BTU address (passwordless
 - Read the role from the database on each request (or cache ≤ 1 min) so a revoked admin is locked out immediately (US-06).
 - Use server-side sessions in HttpOnly cookies rather than tokens in `localStorage`; add CSRF tokens to every admin form.
 - **Email codes:** check the email domain on the server against an allowlist (`ALLOWED_EMAIL_DOMAINS`: `btu.edu.ge`, plus `example.org` in dev because the seed students use it). Store only a hash of the code; 10-minute expiry, single use, 5 wrong tries kill it, and rate-limit code requests per email and per IP.
+- **Sign in with Google (added 2026-10-26):** OpenID Connect authorization code flow with PKCE, `state` and `nonce`. The server verifies Google's ID token (signature against Google's published keys, issuer, audience = our client ID, expiry, nonce) and requires `email_verified`. Allowed when the email's domain is in `ALLOWED_EMAIL_DOMAINS` and, for `btu.edu.ge`, the token's hosted domain `hd` is `btu.edu.ge` (so a private Google account registered with a BTU address is refused); or when the exact address is in `ALLOWED_EMAILS` (named exceptions, e.g. a developer's Gmail in dev). After that it is the same sign-in as the email code: same session, same roles. Without a configured Google client the button is hidden and email codes are the only way in.
 - **Separate admin from signer.** An admin action only queues a job; the signing service holds the key and signs hashes produced by the issuance worker. A stolen admin session can create a wrong award (logged and revocable), but can never take BTU's key.
 - Record the session's user ID on every privileged action in the audit log.
 - *Could:* require a fresh sign-in (< 15 min) before confirming an issuance, since anchoring can't be undone; a second admin's approval for bulk awards above a threshold.
 
 ### For the hackathon
 
-Email-code login is built into the API (a few hundred lines), so there is no identity provider to set up. In development, Mailpit catches every outgoing email so you can read codes without a real mailbox; for the demo, send through an SMTP account (BTU mail, a Gmail app password, or Resend/Mailgun). Seed `user_roles`, and demo three users: super admin, admin, student, showing the student getting 403 on the admin panel.
+Email-code login is built into the API (a few hundred lines), so there is no identity provider to run; Sign in with Google only needs an OAuth client in Google Cloud (README). In development, Mailpit catches every outgoing email so you can read codes without a real mailbox; for the demo, send through an SMTP account (BTU mail, a Gmail app password, or Resend/Mailgun). Seed `user_roles`, and demo three users: super admin, admin, student, showing the student getting 403 on the admin panel.
 
 ## 7. Test dataset analysis (schema and seed data)
 
@@ -336,7 +339,7 @@ Ask these on day 1; each has a default so work isn't blocked while waiting.
 | Q8 | Any preference on blockchain network? Is a public testnet acceptable for the demo? | Public EVM testnet (e.g. Sepolia). |
 | Q9 | Can an admin revoke an award? | Out of scope for MVP; registry supports a revoked flag. |
 | Q10 | Should students be able to download older versions? | Yes, read-only, marked "superseded". |
-| Q11 | Which identity provider does BTU use (Microsoft Entra ID or Google Workspace), and can we get a test tenant? | Decided 2026-10-24: no external provider; passwordless email-code login built into the app. SSO can be added later. |
+| Q11 | Which identity provider does BTU use (Microsoft Entra ID or Google Workspace), and can we get a test tenant? | Decided 2026-10-24: no external provider; passwordless email-code login built into the app. Updated 2026-10-26: BTU mail is on Google Workspace (MX `aspmx.l.google.com`), so Sign in with Google is added beside the codes. |
 | Q12 | Do admins need narrower scopes, e.g. a lecturer may award only their own course's skills? | Two global roles: Super admin and Admin. |
 | Q13 | Is a CSV import of a whole cohort needed besides the form? | Should-have; the form comes first. |
 
