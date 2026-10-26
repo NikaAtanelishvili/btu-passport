@@ -386,6 +386,18 @@ label:has(:disabled, [data-disabled]) {
   border-radius: var(--radius-md);
 }
 
+/* Select menus: at least as wide as the trigger, growing to the longest option; within the
+   viewport, where long options wrap instead of being cut off. */
+[data-slot="select-content"] {
+  width: max-content;
+  min-width: var(--anchor-width);
+  max-width: calc(100vw - 2rem);
+}
+[data-slot="select-item"] > * {
+  white-space: normal;
+  flex-shrink: 1;
+}
+
 /* Tabs: a pill group, the active tab black (token sheet). */
 [data-slot="tabs-list"] {
   height: 2.75rem;
