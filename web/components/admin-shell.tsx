@@ -131,7 +131,7 @@ function MobileNav() {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex h-10 items-center rounded-full border-[1.5px] px-4 text-base font-medium whitespace-nowrap",
-                  active ? "border-stamp-navy bg-stamp-navy text-white" : "border-foreground",
+                  active ? "border-stamp-navy bg-stamp-navy text-white" : "border-foreground hover:bg-muted",
                 )}
               >
                 {item.label}

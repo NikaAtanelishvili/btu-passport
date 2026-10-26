@@ -223,8 +223,54 @@
   width: 2.5rem;
   height: 2.5rem;
 }
-.group\/button.bg-primary:hover {
-  background-color: color-mix(in oklab, var(--primary), black 12%);
+
+/* Interactive feedback, app-wide. Tailwind 4 leaves buttons on the default cursor, so every
+   enabled control gets the pointer here; disabled ones fall back to the default cursor. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="menuitem"],
+[role="menuitemcheckbox"],
+[role="menuitemradio"],
+[role="option"],
+[role="checkbox"],
+[role="radio"],
+[role="switch"],
+[data-slot="select-trigger"],
+label:has(input[type="checkbox"], input[type="radio"], input[type="file"], [role="checkbox"], [role="radio"]),
+input:is([type="checkbox"], [type="radio"], [type="file"], [type="submit"], [type="button"]),
+summary {
+  cursor: pointer;
+}
+:disabled,
+[aria-disabled="true"],
+[data-disabled],
+label:has(:disabled, [data-disabled]) {
+  cursor: default;
+}
+
+/* Hover: filled controls darken; tabs, select triggers and drop zones get the muted fill
+   (as outline and ghost buttons do); text links darken. Touch screens keep the plain look. */
+@media (hover: hover) {
+  :is(a[href], button:not(:disabled)).bg-primary:hover {
+    background-color: color-mix(in oklab, var(--primary), black 12%);
+  }
+  :is(a[href], button:not(:disabled)).bg-stamp-navy:hover {
+    background-color: color-mix(in oklab, var(--stamp-navy), black 25%);
+  }
+  :is(a[href], button:not(:disabled)).bg-foreground:hover {
+    background-color: color-mix(in oklab, var(--foreground), white 20%);
+  }
+  [data-slot="tabs-trigger"]:not([data-active], [aria-disabled="true"]):hover,
+  [data-slot="select-trigger"]:not(:disabled):hover,
+  label:has(> input[type="file"]):hover,
+  [data-slot="checkbox"]:not([data-checked], [data-disabled]):hover,
+  label:hover [data-slot="checkbox"]:not([data-checked], [data-disabled]) {
+    background-color: var(--muted);
+  }
+  a[href].text-link:hover {
+    color: color-mix(in oklab, var(--link), black 30%);
+  }
 }
 
 /* Dialogs and result panels: 1.5px black, 28px corners, a stripe on top. */

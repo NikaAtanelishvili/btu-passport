@@ -20,7 +20,7 @@ export function SiteHeader() {
   return (
     <header className="bg-black text-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-6 [body:has([data-admin-shell])_&]:max-w-7xl">
-        <Link href="/" className="flex shrink-0 items-center gap-3" aria-label="BTU AI Skills Digital Passport, home">
+        <Link href="/" className="flex shrink-0 items-center gap-3 transition-opacity hover:opacity-80" aria-label="BTU AI Skills Digital Passport, home">
           <BtuLogo height={48} />
           <span className="h-12 w-px bg-white/60" aria-hidden />
           <Wordmark />
