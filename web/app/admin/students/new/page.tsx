@@ -4,7 +4,7 @@
 // first version is issued with the student's first skill. ?email= pre-fills the email
 // (Unregistered check-ins on the event page, M7).
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useForm } from "react-hook-form";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { SelectField, TextField } from "@/components/form-fields";
+import { ProgramField } from "@/components/program-field";
 import { FieldGroup } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
@@ -32,10 +33,6 @@ function RegisterStudent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const email = useSearchParams().get("email") ?? "";
-  const programs = useQuery({
-    queryKey: queryKeys.admin.programs,
-    queryFn: async () => (await api.GET("/api/admin/programs")).data!,
-  });
   const form = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -75,12 +72,7 @@ function RegisterStudent() {
               <TextField form={form} name="last_name" label="Last name" />
             </div>
             <TextField form={form} name="email" label="BTU email" type="email" />
-            <TextField form={form} name="program" label="Program" list="programs" />
-            <datalist id="programs">
-              {(programs.data ?? []).map((p) => (
-                <option key={p} value={p} />
-              ))}
-            </datalist>
+            <ProgramField form={form} name="program" />
             <div className="grid gap-4 sm:grid-cols-2">
               <SelectField form={form} name="education_level" label="Education level" items={EDUCATION_LEVELS} />
               <SelectField form={form} name="status" label="Status" items={STUDENT_STATUSES} />

@@ -16,6 +16,7 @@ import { DisplayHeading } from "@/components/display";
 import { DataTable } from "@/components/data-table";
 import { ErrorAlert } from "@/components/error-alert";
 import { SelectField, TextField } from "@/components/form-fields";
+import { ProgramField } from "@/components/program-field";
 import { StampImage } from "@/components/stamp-image";
 import { StatusBadge, VersionPill } from "@/components/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -153,7 +154,7 @@ function ProfileCard({ detail }: { detail: StudentDetail }) {
               </p>
             )}
             <TextField form={form} name="email" label="BTU email" type="email" />
-            <TextField form={form} name="program" label="Program" />
+            <ProgramField form={form} name="program" />
             <div className="grid gap-4 sm:grid-cols-2">
               <SelectField form={form} name="education_level" label="Education level" items={EDUCATION_LEVELS} />
               <SelectField form={form} name="status" label="Status" items={STUDENT_STATUSES} />
