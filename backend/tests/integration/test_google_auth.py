@@ -279,10 +279,12 @@ def test_other_allowed_domain_needs_no_hd(db: Session, fake: FakeGoogle) -> None
     assert db.scalars(select(User.email)).all() == ["admin@btu.test"]
 
 
-def test_allowed_emails_exception(db: Session, fake: FakeGoogle, settings: Settings) -> None:
+def test_allowed_emails_exception(
+    db: Session, fake: FakeGoogle, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
     fake.claims = {"email": GMAIL, "email_verified": True}
     assert _error(_login(_client(), fake)) == "google_not_allowed"
-    settings.allowed_emails = [GMAIL]
+    monkeypatch.setattr(settings, "allowed_emails", [GMAIL])
     db.add(UserRole(email=GMAIL, role="SUPER_ADMIN"))
     db.commit()
     client = _client()
@@ -311,8 +313,10 @@ def test_unexpected_failure_is_not_a_500(
     assert _error(_login(_client(), fake)) == "google_failed"
 
 
-def test_rate_limited_per_ip(fake: FakeGoogle, settings: Settings) -> None:
-    settings.login_rate_per_ip_hour = 2
+def test_rate_limited_per_ip(
+    fake: FakeGoogle, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "login_rate_per_ip_hour", 2)
     client = _client("203.0.113.7")
     assert _start(client).headers["location"].startswith(google.AUTH_URL)
     assert _start(client).headers["location"].startswith(google.AUTH_URL)
