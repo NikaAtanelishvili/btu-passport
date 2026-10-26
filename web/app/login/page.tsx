@@ -101,18 +101,20 @@ function Cover() {
         }
         className="text-[2rem] sm:text-[2.5rem] md:mt-8 md:text-[clamp(2.5rem,4.4vw,4rem)]"
       />
-      <div className="mt-4 flex items-center md:hidden" aria-hidden>
-        <Sticker name="intl-recognised" width={88} rotate={-6} />
-        <Sticker name="stamp-ai-advanced" width={70} className="-ml-3" />
-        <Sticker name="blockchain-verified" width={136} rotate={-6} className="-ml-1" />
+      <div className="mt-4 flex items-center pl-1 md:hidden" aria-hidden>
+        <Sticker name="intl-recognised" width={92} rotate={-10} />
+        <Sticker name="stamp-ai-advanced" width={62} rotate={12} className="relative z-10 -mt-8 -ml-4" />
+        <Sticker name="blockchain-verified" width={128} rotate={-5} className="-ml-3 mt-3" />
       </div>
-      <div className="relative mt-6 hidden h-[21rem] md:block" aria-hidden>
-        <Sticker name="issued-by-btu" width={205} rotate={-4} className="absolute top-6 left-0" />
-        <Sticker name="latest-skillset" width={185} rotate={5} className="absolute top-0 right-0" />
-        <Sticker name="blockchain-verified" width={190} rotate={-8} className="absolute top-[8rem] right-0" />
-        <Sticker name="intl-recognised" width={140} className="absolute bottom-2 left-0" />
-        <Sticker name="ai-skills-digital-passport" width={180} className="absolute bottom-0 left-[34%]" />
-        <Sticker name="stamp-ai-advanced" width={96} className="absolute right-0 bottom-2" />
+      {/* A loose pile: sizes and positions in % of the cover so it scales with the column;
+          neighbours overlap a little, and the cover's overflow-hidden keeps them off the form. */}
+      <div className="relative mt-6 hidden aspect-[4/3] md:block [&>img]:absolute [&>img]:h-auto" aria-hidden>
+        <Sticker name="issued-by-btu" width={260} rotate={-6} className="top-[7%] left-0 w-[60%]" />
+        <Sticker name="latest-skillset" width={210} rotate={5} className="top-0 right-0 w-[48%]" />
+        <Sticker name="blockchain-verified" width={210} rotate={-9} className="top-[30%] left-[20%] z-10 w-[50%]" />
+        <Sticker name="stamp-ai-advanced" width={100} rotate={10} className="top-[30%] right-[3%] w-[24%]" />
+        <Sticker name="intl-recognised" width={150} rotate={-12} className="bottom-[3%] left-[1%] z-10 w-[35%]" />
+        <Sticker name="ai-skills-digital-passport" width={190} rotate={4} className="right-[12%] bottom-0 w-[45%]" />
       </div>
     </div>
   );
