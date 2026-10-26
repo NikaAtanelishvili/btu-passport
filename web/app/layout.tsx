@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Outfit } from "next/font/google";
+import { Inter, JetBrains_Mono, Outfit, Roboto } from "next/font/google";
 
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 
@@ -10,6 +10,8 @@ import { Providers } from "./providers";
 const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const jetbrainsMono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"] });
+// Roboto Medium only for the "Sign in with Google" label (Google's branding guidelines).
+const roboto = Roboto({ variable: "--font-roboto", weight: "500", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "BTU AI Skills Passport",
@@ -20,7 +22,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${outfit.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${outfit.variable} ${inter.variable} ${jetbrainsMono.variable} ${roboto.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <Providers>

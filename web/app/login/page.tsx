@@ -1,8 +1,10 @@
 "use client";
 
 // FE-04: passwordless sign-in in two steps (Web App Design P4). The API decides where the
-// user lands; this page only collects the email and the 6-digit code.
+// user lands; this page only collects the email and the 6-digit code. FE-05: "Sign in with
+// Google" above the email form when the API has a Google client, and its callback errors.
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -11,6 +13,7 @@ import { z } from "zod";
 
 import { BtuLogo, Sticker } from "@/components/brand";
 import { DisplayHeading } from "@/components/display";
+import { GoogleSignIn } from "@/components/google-sign-in";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -18,6 +21,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, ApiError } from "@/lib/api";
 import { applyServerErrors } from "@/lib/forms";
+import { queryKeys } from "@/lib/query-keys";
 import { homeFor, useSession } from "@/lib/session";
 
 const RESEND_SECONDS = 60;
@@ -37,8 +41,15 @@ export default function LoginPage() {
 
 function Login() {
   const router = useRouter();
-  const next = useSearchParams().get("next") ?? undefined;
+  const params = useSearchParams();
+  const next = params.get("next") ?? undefined;
+  const googleError = params.get("error");
   const session = useSession();
+  const providers = useQuery({
+    queryKey: queryKeys.authProviders,
+    queryFn: async () => (await api.GET("/auth/providers")).data ?? { google: false },
+    staleTime: Infinity,
+  });
   const [email, setEmail] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -46,7 +57,7 @@ function Login() {
     if (session.data?.authenticated) router.replace(homeFor(session.data));
   }, [session.data, router]);
 
-  if (session.isPending || session.data?.authenticated) {
+  if (session.isPending || providers.isPending || session.data?.authenticated) {
     return <Skeleton className="h-96 w-full rounded-[28px]" />;
   }
 
@@ -56,6 +67,9 @@ function Login() {
       <div className="w-full max-w-md md:max-w-none">
       {email === null ? (
         <EmailStep
+          google={providers.data?.google ?? false}
+          next={next}
+          googleError={googleError}
           notice={notice}
           onSent={(sentTo) => {
             setNotice(null);
@@ -126,7 +140,19 @@ async function requestCode(email: string): Promise<void> {
   await api.POST("/auth/request-code", { body: { email } });
 }
 
-function EmailStep({ notice, onSent }: { notice: string | null; onSent: (email: string) => void }) {
+function EmailStep({
+  google,
+  next,
+  googleError,
+  notice,
+  onSent,
+}: {
+  google: boolean;
+  next: string | undefined;
+  googleError: string | null;
+  notice: string | null;
+  onSent: (email: string) => void;
+}) {
   const form = useForm<EmailForm>({ resolver: zodResolver(emailSchema), defaultValues: { email: "" } });
 
   useEffect(() => {
@@ -150,8 +176,13 @@ function EmailStep({ notice, onSent }: { notice: string | null; onSent: (email: 
     <div className="space-y-6">
       <div className="space-y-4">
         <DisplayHeading strong="Sign in" light="to your passport" className="text-[2.25rem] sm:text-[2.5rem] md:text-[clamp(2.5rem,3.4vw,3.25rem)]" />
-        <p className="text-base text-muted-foreground sm:text-lg">We&apos;ll email you a 6-digit code. No password needed.</p>
+        <p className="text-base text-muted-foreground sm:text-lg">
+          {google
+            ? "Use your BTU Google account, or get a 6-digit code by email. No password needed."
+            : "We'll email you a 6-digit code. No password needed."}
+        </p>
       </div>
+      <GoogleSignIn enabled={google} next={next} error={googleError} />
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate className="space-y-5">
         <FieldGroup>
           <Controller

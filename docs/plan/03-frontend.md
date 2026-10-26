@@ -93,6 +93,14 @@ One client page, two steps (Web App Design P4), stock shadcn `Card`, `field`, `I
 
 **Done when (M3):** each test user signs in with a code read from Mailpit and lands on the right page; a non-BTU email shows the domain error; a wrong code shows the tries left.
 
+### FE-05 Sign in with Google on `/login` (added 2026-10-26) — `components/google-sign-in.tsx`, `lib/google-sign-in.ts` ✅
+
+- `GET /auth/providers` decides: when `google` is true, the email step shows **Sign in with Google** above the email form, separated by "or"; otherwise the page is exactly FE-04. The skeleton waits for both the session and the providers query, so the button doesn't pop in.
+- The button is a plain link to `/auth/google/start?next=…` (a full page load to Google and back; `next` from the URL, validated by the API). It follows Google's branding guidelines (light theme: white fill, `#747775` 1 px border, `#1F1F1F` Roboto Medium "Sign in with Google", the standard multicolour G), full width like the other buttons on the page.
+- `/login?error=` from the callback shows an alert above the button: `google_cancelled` "Google sign-in was cancelled…", `google_not_allowed` "This Google account can't sign in here. Use your BTU Google account (name@btu.edu.ge), or an email code below.", `google_unavailable`, `google_failed`, `google_rate_limited`; unknown codes are ignored. Each message points at the email code as the fallback.
+
+**Done when:** `tests/google-sign-in.test.ts` passes (button and divider with a client, hidden without; each error message; `next` encoded); with `GOOGLE_CLIENT_ID` set, `/login` shows the button and signing in with an allowed Google account lands on the role's page or `next`.
+
 ## 3. Public pages
 
 These must work well on a phone: most visitors are an employer opening a link or a student scanning a QR.
