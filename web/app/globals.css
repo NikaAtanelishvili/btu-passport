@@ -416,6 +416,17 @@ label:has(:disabled, [data-disabled]) {
   background: var(--foreground);
   color: var(--background);
 }
+/* The stock underline (line variant) sits below the trigger, invisible, and made a list that
+   scrolls sideways scroll vertically too. A list too wide for a phone scrolls without a bar. */
+[data-slot="tabs-list"][data-variant="default"] [data-slot="tabs-trigger"]::after {
+  display: none;
+}
+[data-slot="tabs-list"] {
+  scrollbar-width: none;
+}
+[data-slot="tabs-list"]::-webkit-scrollbar {
+  display: none;
+}
 
 /* Alerts: rounded like cards. */
 [data-slot="alert"] {
