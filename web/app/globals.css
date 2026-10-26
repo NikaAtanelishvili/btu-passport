@@ -461,3 +461,8 @@ label:has(:disabled, [data-disabled]) {
 [data-sonner-toast][data-type="error"] [data-icon] {
   color: var(--status-invalid-ink);
 }
+
+/* Presenter view: the overlay is the only scroller, so the page behind it doesn't scroll too. */
+body:has([data-presenter]) {
+  overflow: hidden;
+}
