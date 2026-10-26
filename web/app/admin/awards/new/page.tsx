@@ -189,7 +189,7 @@ function AwardFormCard({
                     </SelectContent>
                   </Select>
                   {skill && (
-                    <div className="flex items-start gap-3 text-sm">
+                    <div className="flex items-center gap-3 text-sm">
                       {skill.category.stamp_sha256 && (
                         <StampImage sha256={skill.category.stamp_sha256} category={skill.category.name} />
                       )}

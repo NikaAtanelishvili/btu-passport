@@ -198,6 +198,30 @@
   font-size: 1rem;
   border-radius: var(--radius-md);
 }
+/* Search box in a command list (student picker): a regular input, not the stock grey pill.
+   The stock `h-8! rounded-lg!` are important utilities, and an important declaration in an
+   earlier layer wins over a later one, so these sit in `base`. */
+@layer base {
+  [data-slot="command-input-wrapper"] [data-slot="input-group"] {
+    height: 2.75rem !important;
+    border-radius: var(--radius-md) !important;
+  }
+}
+[data-slot="command-input-wrapper"] [data-slot="input-group"] {
+  background-color: var(--background);
+}
+/* An input group's focus ring goes on the rounded box, not on the bare field inside it; the
+   command search box is focused whenever its list is open, so it has none. */
+[data-slot="input-group"] :focus-visible {
+  outline: none;
+}
+[data-slot="input-group"]:has(:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+[data-slot="command-input-wrapper"] [data-slot="input-group"] {
+  outline: none;
+}
 [data-slot="input"][aria-invalid="true"],
 [data-slot="textarea"][aria-invalid="true"],
 [data-slot="select-trigger"][aria-invalid="true"] {
