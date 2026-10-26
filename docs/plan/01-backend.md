@@ -288,6 +288,26 @@ Unauthenticated: `{"authenticated": false}` with status 200.
 
 **Done when (M3):** integration tests sign in by requesting a code and reading it from the \`fake_mailer\` fixture (no SMTP in tests) as a super admin, an admin, a student and an unknown BTU user; each gets the right `/api/session`; a student gets 403 on `GET /api/admin/students` (A11); a POST without the CSRF header gets 403; a revoked admin's next request gets 403 (A12); the right code after 5 wrong tries fails; an expired or reused code fails; a request over the rate limit gets 429; a non-allowed domain gets 422.
 
+### BE-15 Sign in with Google (added 2026-10-26) — `app/auth/google.py`, `app/routers/auth.py` ✅
+
+OpenID Connect authorization code flow with PKCE next to the email codes, which stay as the fallback. Sessions, roles, CSRF and check-in are unchanged: after Google proves the email, the callback takes the same path as `verify-code` (upsert `users`, BE-11 session, cookies, redirect). Off when `GOOGLE_CLIENT_ID` is empty: both routes 404 and `/login` hides the button.
+
+| Route | Behaviour |
+| --- | --- |
+| `GET /auth/providers` | `{google: bool}`: which buttons `/login` shows. |
+| `GET /auth/google/start?next=` | `next` validated as in BE-10 (dropped unless a path on this site). New `state`, `nonce` and PKCE verifier; they and `next` go into the `google_flow` cookie (HMAC-signed with a key derived from the client secret, HttpOnly, SameSite=Lax, path `/auth/google`, 10 minutes). 303 to Google with scopes `openid email profile`, `code_challenge_method=S256`, `prompt=select_account`; redirect URI `PUBLIC_BASE_URL/auth/google/callback`. |
+| `GET /auth/google/callback?code&state` (or `?error`) | Cookie missing, forged or expired, or `state` differs → `google_failed`, before the code is spent. Exchange the code (with the verifier) at Google's token endpoint; verify the ID token with PyJWT: RS256 signature against Google's JWKS (cached 1 h, refetched on an unknown `kid`), `iss` = accounts.google.com, `aud` = client ID, `exp`, `iat`, `sub` required, `nonce` equal. Require `email_verified = true`. Allowed: the domain is in `ALLOWED_EMAIL_DOMAINS` and, for `btu.edu.ge` (Workspace), `hd = btu.edu.ge`; or the exact address is in `ALLOWED_EMAILS`. Then sign in as `verify-code` does and 303 to `next` or the role's home; the flow cookie is cleared. |
+
+Errors never reach the user as a 500: every failure is a 303 to `/login?error=<code>[&next=]` with `google_cancelled` (Cancel at Google), `google_not_allowed`, `google_unavailable` (token endpoint or JWKS unreachable or 5xx), `google_failed` (state, code or token invalid; anything unexpected, logged) or `google_rate_limited`. Rate limit as BE-10's per-IP rule: `LOGIN_RATE_PER_IP_HOUR` per route per IP, counted in memory, loopback not limited.
+
+**Done when:** `tests/integration/test_google_auth.py` passes against a fake Google (patched token endpoint and JWKS, no network): valid login; bad state; missing or expired flow cookie; bad code; foreign `aud`, foreign `iss`, expired, missing `exp`, wrong nonce, foreign signing key; `email_verified` false; disallowed domain; `btu.edu.ge` without `hd`; `ALLOWED_EMAILS` exception; Google down; per-IP limit; a check-in pass completes after Google sign-in; 404 and `{google: false}` without a client ID.
+
+### BE-16 Dev super admins for Google sign-in (added 2026-10-26) — `cli/bootstrap.py` ✅
+
+`bootstrap --dev-users` also grants `SUPER_ADMIN` to each address in `DEV_SUPER_ADMIN_EMAILS` (empty by default; dev `.env` lists the developer's own Gmail, which `ALLOWED_EMAILS` lets sign in with Google). `grant` accepts an address whose domain is allowed or that is in `ALLOWED_EMAILS`.
+
+**Done when:** `tests/integration/test_bootstrap.py` passes; with the dev `.env`, `make bootstrap` makes the Gmail address a super admin and signing in with Google lands on `/admin`.
+
 ## 5. API endpoints
 
 The complete contract, grouped by router. Shapes are written as Pydantic field lists; `?` means optional. Every list returns `Page[T]`. Error codes used everywhere: `validation_error` (422), `unauthenticated` (401), `forbidden` / `csrf_failed` (403), `not_found` (404), `conflict` (409, with a specific `error` such as `duplicate_email`), `rate_limited` (429).

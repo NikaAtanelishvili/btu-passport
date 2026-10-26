@@ -17,6 +17,11 @@ os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL") or make_url(_de
 os.environ["S3_BUCKET"] = "passports-test"
 os.environ.setdefault("S3_SECRET_KEY", "minio-secret")
 os.environ.setdefault("SIGNER_HMAC_SECRET", "test")
+# Sign in with Google off and no exceptions, whatever .env says; BE-15 tests switch it on.
+os.environ["GOOGLE_CLIENT_ID"] = ""
+os.environ["GOOGLE_CLIENT_SECRET"] = ""
+os.environ["ALLOWED_EMAILS"] = ""
+os.environ["DEV_SUPER_ADMIN_EMAILS"] = ""
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

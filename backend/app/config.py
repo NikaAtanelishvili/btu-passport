@@ -51,7 +51,15 @@ class Settings(BaseSettings):
         "btu.test",
         "example.org",
     ]
+    # Exact addresses allowed to sign in with Google although their domain isn't (BE-15).
+    allowed_emails: Annotated[list[str], NoDecode] = []
     bootstrap_super_admin_email: str = "superadmin@btu.test"
+    # Extra super admins granted by `cli bootstrap --dev-users` (dev only, BE-16).
+    dev_super_admin_emails: Annotated[list[str], NoDecode] = []
+
+    # "Sign in with Google" (BE-15); empty client ID = the routes 404 and the button hides.
+    google_client_id: str = ""
+    google_client_secret: SecretStr = SecretStr("")
 
     # Demo accounts with real inboxes (`python -m cli demo-users`); set in the demo env only.
     demo_super_admin_email: str = ""
@@ -80,9 +88,11 @@ class Settings(BaseSettings):
 
     passport_template_dir: str = "app/pdf/templates"
 
-    @field_validator("allowed_email_domains", mode="before")
+    @field_validator(
+        "allowed_email_domains", "allowed_emails", "dev_super_admin_emails", mode="before"
+    )
     @classmethod
-    def _split_domains(cls, value: object) -> object:
+    def _split_list(cls, value: object) -> object:
         if isinstance(value, str):
             return [d.strip().lower() for d in value.split(",") if d.strip()]
         return value
@@ -94,6 +104,12 @@ class Settings(BaseSettings):
                 f"DEV_LOG_LOGIN_CODES=true is refused when ENV={self.env}: sign-in codes would "
                 "be written to the log. Set DEV_LOG_LOGIN_CODES=false."
             )
+        return self
+
+    @model_validator(mode="after")
+    def _google_needs_its_secret(self) -> "Settings":
+        if self.google_client_id and not self.google_client_secret.get_secret_value():
+            raise ValueError("GOOGLE_CLIENT_ID is set but GOOGLE_CLIENT_SECRET is empty")
         return self
 
 

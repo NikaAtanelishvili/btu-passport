@@ -14,6 +14,7 @@ dependencies = [
     "pycryptodome>=3.24.1",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.1",
+    "pyjwt[crypto]>=2.10",
     "python-multipart>=0.0.32",
     "segno>=1.6.6",
     "sqlalchemy>=2",

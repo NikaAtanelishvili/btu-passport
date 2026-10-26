@@ -15,3 +15,7 @@ class VerifyCodeIn(BaseModel):
 
 class VerifyCodeOut(BaseModel):
     redirect: str
+
+
+class AuthProvidersOut(BaseModel):
+    google: bool
