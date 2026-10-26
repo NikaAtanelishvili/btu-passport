@@ -52,7 +52,9 @@ export function StudentPicker({
   }
 
   return (
-    <div className="space-y-2">
+    // Flex gap, not space-y: Base UI adds focus guards after the trigger while the popover is
+    // open, and space-y would then give the trigger a bottom margin and push the page down.
+    <div className="flex flex-col gap-2">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
