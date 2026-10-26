@@ -158,6 +158,27 @@
   }
 }
 
+/* Brand caret and selection. Pink caret on every text field (command search boxes included;
+   the OTP boxes draw their own caret, so that one is recoloured); selected text gets the light
+   pink tint with black text. A field on a coloured fill (pink, black, navy, a stamp colour)
+   would hide a pink caret, so there it takes the field's own text colour, which is chosen to
+   contrast with the fill. */
+:is(input, textarea, [contenteditable="true"]) {
+  caret-color: var(--primary);
+}
+:is(.bg-primary, .bg-foreground, .bg-black, .bg-sidebar-primary, [class*="bg-stamp-"], [class*="bg-status-"]:not([class*="-soft"]))
+  :is(input, textarea, [contenteditable="true"]),
+:is(input, textarea).bg-primary {
+  caret-color: currentColor;
+}
+[data-slot="input-otp-slot"] .animate-caret-blink {
+  background-color: var(--primary);
+}
+::selection {
+  background-color: var(--accent);
+  color: #000000;
+}
+
 /*
  * Stock shadcn components stay untouched (components/ui is generated); the design's borders
  * and focus ring are applied here by their data-slot. Unlayered, so these win over the
