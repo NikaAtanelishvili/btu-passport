@@ -34,7 +34,7 @@ from app.schemas.student import (
     StudentProfile,
 )
 from app.schemas.version import version_row
-from app.services import audit, events
+from app.services import audit, events, issuance
 
 if TYPE_CHECKING:
     from app.auth.deps import Principal
@@ -109,11 +109,16 @@ def _flush_unique(db: Session, values: dict[str, str], own_id: str | None) -> No
 
 
 def create_student(
-    db: Session, actor: "Principal | None", body: StudentCreate, action: str = "student.create"
+    db: Session,
+    actor: "Principal | None",
+    body: StudentCreate,
+    action: str = "student.create",
+    first_version: bool = True,
 ) -> Student:
-    """FR-02/FR-10: the student and their one passport, with the next Passport ID. Frozen
-    fields stay empty until the first version is issued (BE-02). `actor` None: the CLI or the
-    Sheet sync (action `sheet.student.create`)."""
+    """FR-02/FR-10: the student and their one passport, with the next Passport ID, and (D5,
+    SH-08) its first version V1 queued at once, even with no skills. Frozen fields are set
+    when V1 is rendered (BE-02). `actor` None: the CLI or the Sheet sync (action
+    `sheet.student.create`, `first_version=False`: the sync issues V1 with that run's records)."""
     values, fields = clean_fields(body.model_dump())
     if fields:
         raise AppError("validation_error", "Some fields are invalid.", 422, fields)
@@ -125,6 +130,8 @@ def create_student(
     passport_id = f"BTU-AI-{db.scalar(passport_number_seq.next_value()):06d}"
     db.add(Passport(passport_id=passport_id, student_id=student.student_id))
     db.flush()
+    if first_version:
+        issuance.create_versions(db, [student.student_id])
     events.link_participants(db, student.student_id, student.email)  # Unregistered check-ins
     audit.record(
         db,

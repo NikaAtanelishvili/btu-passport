@@ -209,7 +209,7 @@ function PassportCard({ detail }: { detail: StudentDetail }) {
         <DataTable<VersionRow>
           rows={detail.passport.versions}
           rowKey={(v) => v.version_id}
-          empty="No versions yet. The first is issued with the student's first skill."
+          empty="No versions yet."
           columns={[
             { header: "Version", cell: (v) => <VersionPill versionNo={v.version_no} /> },
             { header: "Status", cell: (v) => <StatusBadge status={v.status} /> },

@@ -183,6 +183,7 @@ b, .label { font-weight: 900; }
   line-height: 1.3;
 }
 .detail tbody tr:first-child td { border-top: 0; }
+.detail td.c-none { text-align: center; font-size: 13px; font-weight: 600; }
 .detail .c-stamp { width: 145px; }
 .detail .c-skill { width: 132px; font-size: 12px; font-weight: 900; line-height: 1.1; }
 .detail th.c-skill { font-size: 13.6px; }

@@ -39,7 +39,11 @@ def test_register_creates_student_and_one_passport(seeded: Session, admin: TestC
     assert body["profile"]["email"] == "giorgi.kapanadze@btu.edu.ge"  # stored lower-case
     # The seed's highest Passport ID is BTU-AI-000142.
     assert body["passport"]["passport_id"] == "BTU-AI-000143"
-    assert body["passport"]["frozen"] is False and body["passport"]["versions"] == []
+    # D5 (SH-08): the passport's first version V1 is queued at registration, with no skills.
+    assert body["passport"]["frozen"] is False
+    assert [(v["version_no"], v["status"]) for v in body["passport"]["versions"]] == [
+        (1, "PENDING")
+    ]
     passports = seeded.scalars(select(Passport).where(Passport.student_id == "BTU-T-0100")).all()
     assert len(passports) == 1 and passports[0].holder_first_name is None
     audit = seeded.scalars(select(AuditLog).where(AuditLog.action == "student.create")).one()
@@ -218,3 +222,33 @@ def test_dashboard_recent_lists_anchored_versions(seeded: Session, admin: TestCl
     seeded.commit()
     recent = admin.get("/api/admin/dashboard").json()["recent"]
     assert [v["version_no"] for v in recent] == list(range(13, 3, -1))
+
+
+def test_registered_student_gets_an_anchored_v1_that_verifies(
+    seeded: Session,
+    admin: TestClient,
+    fake_chain: Any,
+    run_jobs: Callable[[], int],
+    s3_bucket: str,
+) -> None:
+    """SH-08 (D5, spec FR 1 "Adding a new student"): no award needed for the first PDF."""
+    import hashlib
+
+    from app.services import storage
+
+    admin.post("/api/admin/students", json=_new())
+    run_jobs()
+    seeded.expire_all()
+    passport = seeded.scalars(select(Passport).where(Passport.student_id == "BTU-T-0100")).one()
+    [v1] = seeded.scalars(
+        select(PassportVersion).where(PassportVersion.passport_id == passport.passport_id)
+    ).all()
+    assert (v1.version_no, v1.status) == (1, "ANCHORED")
+    assert v1.content_json is not None and v1.content_json["skills"] == []
+    # Frozen fields are set at V1.
+    assert (passport.holder_first_name, passport.holder_last_name) == ("Giorgi", "Kapanadze")
+    assert passport.first_issued_on is not None
+    assert passport.latest_version_id == v1.version_id
+    pdf = storage.get(storage.pdf_key(v1.pdf_sha256 or ""))
+    verdict = admin.post("/api/verify/hash", json={"sha256": hashlib.sha256(pdf).hexdigest()})
+    assert verdict.json()["verdict"] == "VALID", verdict.text

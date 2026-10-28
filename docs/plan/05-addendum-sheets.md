@@ -193,7 +193,7 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - Built with the existing design tokens; works at 390 px.
 - **Done when:** after the demo rows from SH-02, the page shows each outcome correctly and the links work.
 
-### SH-08 Initial passport at student creation (D5)
+### SH-08 Initial passport at student creation (D5) ✅
 
 - Creating a student, through the admin form or the Sheet, creates the passport and enqueues V1, even with zero skills. Frozen fields are set at V1.
 - The PDF template handles zero skills: empty grid boxes and a "No verified skills yet" line in the detail table.

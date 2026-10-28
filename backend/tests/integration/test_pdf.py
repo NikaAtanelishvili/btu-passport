@@ -134,3 +134,12 @@ def test_same_content_gives_the_same_bytes(salome: dict[str, Any]) -> None:
 def test_different_code_gives_different_bytes(salome: dict[str, Any]) -> None:
     other = {**salome, "verification_code": "AAAA0000AA", "verify_url": "x/v/AAAA0000AA"}
     assert render_passport(salome) != render_passport(other)
+
+
+def test_zero_skills(salome: dict[str, Any], tmp_path: Path) -> None:
+    """SH-08: a new student's V1 has no skills: ten empty grid boxes and one table line."""
+    pages = _pages(render_passport(_with_skills(salome, 0)), tmp_path)
+    grids = [text for text in pages if "VERIFIED AI SKILLSET" in text]
+    assert len(grids) == 1
+    detail = " ".join(" ".join(t for t in pages if "DETAILED INFORMATION" in t).split())
+    assert "NO VERIFIED SKILLS YET" in detail.upper()

@@ -19,6 +19,7 @@ from app.models import (
     VersionAward,
 )
 from app.services import issuance, storage
+from tests import factories
 from tests import factories as f
 from tests.conftest import FakeSigner
 
@@ -177,3 +178,15 @@ def test_A10_bulk_one_batch(
     batches = db.scalars(select(AnchorBatch)).all()
     assert [(b.leaf_count, b.status) for b in batches] == [(18, "ANCHORED")]
     assert fake_signer.calls == [(batches[0].merkle_root, 18)]
+
+
+def test_issue_pending_gives_v1_to_a_passport_without_versions(seeded: Session) -> None:
+    """SH-08: a student registered before D5 (no award, no version) gets an empty V1."""
+    db = seeded
+    factories.student(db, 900)
+    issuance.issue_pending(db)
+    versions = db.scalars(
+        select(PassportVersion).where(PassportVersion.passport_id == "BTU-AI-000900")
+    ).all()
+    assert [(v.version_no, v.status) for v in versions] == [(1, "PENDING")]
+    assert issuance.issue_pending(db) == 0

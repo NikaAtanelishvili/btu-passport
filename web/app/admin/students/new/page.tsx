@@ -1,7 +1,7 @@
 "use client";
 
-// FE-22: register a student (Web App Design A2). The server generates the Passport ID; the
-// first version is issued with the student's first skill. ?email= pre-fills the email
+// FE-22: register a student (Web App Design A2). The server generates the Passport ID and
+// issues the first version V1 at once, even with no skills (D5, SH-08). ?email= pre-fills the email
 // (Unregistered check-ins on the event page, M7).
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -60,7 +60,7 @@ function RegisterStudent() {
       <CardHeader>
         <CardTitle className="font-display text-3xl font-black uppercase">Register student</CardTitle>
         <CardDescription>
-          A Passport ID is generated on save. The first version is issued when the student gets their first skill.
+          A Passport ID is generated on save, and the first version of the passport is issued right away.
         </CardDescription>
       </CardHeader>
       <form onSubmit={form.handleSubmit((body) => register.mutate(body))} noValidate>

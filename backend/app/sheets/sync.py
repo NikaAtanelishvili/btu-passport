@@ -446,7 +446,11 @@ class _Engine:
         student = db.get(Student, values["student_id"], with_for_update=True)
         if student is None:
             created = students.create_student(
-                db, None, StudentCreate(**values), action="sheet.student.create"
+                db,
+                None,
+                StudentCreate(**values),
+                action="sheet.student.create",
+                first_version=False,
             )
             passport = db.scalars(
                 select(Passport).where(Passport.student_id == created.student_id)

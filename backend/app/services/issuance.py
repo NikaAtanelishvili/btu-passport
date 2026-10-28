@@ -226,10 +226,12 @@ def create_versions(db: Session, student_ids: list[str]) -> list[NewVersion]:
     return created
 
 
-# Students with an award that isn't in their highest-numbered version (of any status).
+# Students with an award that isn't in their highest-numbered version (of any status), or
+# with no version at all (registered before D5 gave every new passport its V1, SH-08).
 _PENDING_STUDENTS = text("""
     SELECT p.student_id FROM passports p
-    WHERE EXISTS (
+    WHERE NOT EXISTS (SELECT 1 FROM passport_versions v WHERE v.passport_id = p.passport_id)
+    OR EXISTS (
       SELECT 1 FROM skill_awards a
       WHERE a.student_id = p.student_id AND NOT EXISTS (
         SELECT 1 FROM version_awards va JOIN passport_versions v USING (version_id)

@@ -72,7 +72,7 @@ export default function MyPassportPage() {
         </Notice>
       )}
 
-      {nothingYet && <EmptyState>No passport yet. Attend a BTU event to earn your first skill.</EmptyState>}
+      {nothingYet && <EmptyState>No passport yet. It is issued as soon as BTU registers you.</EmptyState>}
       {p.current && <CurrentVersion version={p.current} />}
       {!p.current && p.skills.length > 0 && (
         <Notice>

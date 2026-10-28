@@ -184,6 +184,8 @@
         <td class="c-through">{{ s | earned_through }}</td>
         <td class="c-date">{{ s.date_earned | dotted_date }}</td>
       </tr>
+      {%- else %}
+      <tr><td class="c-none" colspan="5">No verified skills yet</td></tr>
       {%- endfor %}
     </tbody>
   </table>
