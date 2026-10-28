@@ -186,7 +186,7 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - With `SHEET_WRITEBACK=true`, after each run write `sync_status`, `sync_message`, `synced_at` for every row decided in that run, in one `values.batchUpdate`; create the three header cells if missing; never touch other columns.
 - **Done when:** after a live sync the Verified Skills tab shows the outcome next to each row; turning write-back off leaves the Sheet untouched.
 
-### SH-07 Admin "Google Sheets" page and dashboard card — `/admin/sheets`
+### SH-07 Admin "Google Sheets" page and dashboard card — `/admin/sheets` ✅
 
 - Last run (time, status, counts), next scheduled run, a **Sync now** button, and a records table filtered by outcome (errors and flags first) with the message, row number and links to the student and version.
 - Dashboard: a "Google Sheets" card with last successful sync time and the number of errors and flags; it turns red if the last run failed.
