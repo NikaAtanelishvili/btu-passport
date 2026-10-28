@@ -10,6 +10,7 @@ from app.routers.admin import (
     dashboard,
     events,
     roles,
+    sheets,
     skills,
     students,
     versions,
@@ -25,3 +26,4 @@ router.include_router(versions.router)
 router.include_router(events.router)
 router.include_router(roles.router)
 router.include_router(audit.router)
+router.include_router(sheets.router)

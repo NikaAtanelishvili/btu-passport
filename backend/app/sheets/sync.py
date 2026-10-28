@@ -211,6 +211,11 @@ def sync_now(source: SheetSource, trigger: str = "MANUAL") -> SyncResult:
     return execute(run_id, source)
 
 
+def fail_run(run_id: int, error: str) -> SyncResult:
+    """End a run that couldn't start (no Sheet configured, no key)."""
+    return _finish(SyncResult(run_id, "FAILED", error), time.monotonic())
+
+
 def execute(run_id: int, source: SheetSource) -> SyncResult:
     with SessionLocal() as db, db.begin():
         run = db.get_one(SheetSyncRun, run_id, with_for_update=True)

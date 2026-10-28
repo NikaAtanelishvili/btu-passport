@@ -175,7 +175,7 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - Pure decision logic plus the per-student transactions in section 5; uses the existing services for students, awards and versions; never touches a passport outside its own transaction.
 - **Done when** tests cover every outcome in section 5 and these invariants: a repeated sync adds nothing; PENDING and REJECTED never create awards; an unknown student or skill changes nothing; one student's error doesn't block another's record; two new CONFIRMED records for one student give one version; a processed row edited later is flagged, not applied; Passport ID, first-issued date and earlier skills are unchanged after an update.
 
-### SH-05 Scheduled job and API
+### SH-05 Scheduled job and API ✅
 
 - Worker job type `SHEET_SYNC`, enqueued every `SHEET_SYNC_INTERVAL_SECONDS` with `dedupe_key='sheet-sync'`; disabled when `GOOGLE_SHEETS_ID` is empty.
 - `POST /api/admin/sheet-sync` (Admin and Super admin): enqueue now, return the run ID; `GET /api/admin/sheet-sync/runs` and `GET /api/admin/sheet-sync/records?outcome=&tab=&q=` (paged).

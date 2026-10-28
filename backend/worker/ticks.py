@@ -1,5 +1,6 @@
-"""Worker timers (BE-26), checked on every loop iteration: anchoring, stale jobs, and the
-event tick (every 15 s, BE-40) that opens and closes check-in by each event's window."""
+"""Worker timers (BE-26), checked on every loop iteration: anchoring, stale jobs, the event
+tick (every 15 s, BE-40) that opens and closes check-in by each event's window, and the Sheet
+tick (every 5 s, SH-05) that queues a sync once SHEET_SYNC_INTERVAL_SECONDS has passed."""
 
 import logging
 import time
@@ -11,10 +12,12 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.models import AnchorBatch, PassportVersion
 from app.services import events, jobs
+from app.sheets import service as sheets
 
 log = logging.getLogger("worker")
 STALE_CHECK_SECONDS = 60
 EVENT_TICK_SECONDS = 15
+SHEET_TICK_SECONDS = 5
 
 
 def anchor_tick(db: Session) -> bool:
@@ -38,6 +41,7 @@ class Timers:
         self.next_anchor = 0.0
         self.next_stale_check = time.monotonic() + STALE_CHECK_SECONDS
         self.next_event_tick = 0.0
+        self.next_sheet_tick = 0.0
 
     def run_due(self) -> None:
         now = time.monotonic()
@@ -54,6 +58,12 @@ class Timers:
             with SessionLocal() as db:
                 if n := events.tick(db):
                     log.info("event tick: %s event(s) opened or closed", n)
+                db.commit()
+        if now >= self.next_sheet_tick:
+            self.next_sheet_tick = now + SHEET_TICK_SECONDS
+            with SessionLocal() as db:
+                if run_id := sheets.tick(db):
+                    log.info("sheet tick: sync run %s queued", run_id)
                 db.commit()
         if now >= self.next_anchor:
             self.next_anchor = now + self.anchor_every

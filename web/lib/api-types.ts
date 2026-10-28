@@ -756,6 +756,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/sheet-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Now
+         * @description Queue a sync now; while one is queued or running, its run ID is returned instead.
+         */
+        post: operations["sync_now_api_admin_sheet_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/sheet-sync/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sync Status */
+        get: operations["sync_status_api_admin_sheet_sync_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/sheet-sync/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Runs */
+        get: operations["list_runs_api_admin_sheet_sync_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/sheet-sync/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Records */
+        get: operations["list_records_api_admin_sheet_sync_records_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/checkin/{event_id}": {
         parameters: {
             query?: never;
@@ -1541,6 +1612,28 @@ export interface components {
             /** Page Size */
             page_size: number;
         };
+        /** Page[SheetRecordRow] */
+        Page_SheetRecordRow_: {
+            /** Items */
+            items: components["schemas"]["SheetRecordRow"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[SheetRunOut] */
+        Page_SheetRunOut_: {
+            /** Items */
+            items: components["schemas"]["SheetRunOut"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** Page[StudentRow] */
         Page_StudentRow_: {
             /** Items */
@@ -1771,6 +1864,83 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** SheetRecordRow */
+        SheetRecordRow: {
+            /** Tab */
+            tab: string;
+            /** Key */
+            key: string;
+            /** Row Number */
+            row_number: number;
+            /** Outcome */
+            outcome: string;
+            /** Message */
+            message: string | null;
+            /**
+             * First Seen At
+             * Format: date-time
+             */
+            first_seen_at: string;
+            /**
+             * Decided At
+             * Format: date-time
+             */
+            decided_at: string;
+            /** Student Id */
+            student_id: string | null;
+            /** Passport Id */
+            passport_id: string | null;
+            /** Version Id */
+            version_id: number | null;
+            /** Version No */
+            version_no: number | null;
+        };
+        /** SheetRunOut */
+        SheetRunOut: {
+            /** Run Id */
+            run_id: number;
+            /** Trigger */
+            trigger: string;
+            /** Status */
+            status: string;
+            /** Source */
+            source: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Started At */
+            started_at: string | null;
+            /** Finished At */
+            finished_at: string | null;
+            /** Counts */
+            counts: {
+                [key: string]: unknown;
+            };
+            /** Error */
+            error: string | null;
+        };
+        /** SheetStatus */
+        SheetStatus: {
+            /** Configured */
+            configured: boolean;
+            /** Writeback */
+            writeback: boolean;
+            /** Interval Seconds */
+            interval_seconds: number;
+            last_run: components["schemas"]["SheetRunOut"] | null;
+            /** Last Success At */
+            last_success_at: string | null;
+            /** Next Run At */
+            next_run_at: string | null;
+            /** Active Run Id */
+            active_run_id: number | null;
+            /** Errors */
+            errors: number;
+            /** Flags */
+            flags: number;
+        };
         /**
          * SkillCreate
          * @description Field rules are checked in app/services/catalog.py, so all errors come back at once.
@@ -1928,6 +2098,15 @@ export interface components {
             latest_version_no?: number | null;
             /** Latest Status */
             latest_status?: string | null;
+        };
+        /** SyncRequested */
+        SyncRequested: {
+            /** Run Id */
+            run_id: number;
+            /** Status */
+            status: string;
+            /** Already Running */
+            already_running: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -3605,6 +3784,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": string[];
+                };
+            };
+        };
+    };
+    sync_now_api_admin_sheet_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncRequested"];
+                };
+            };
+        };
+    };
+    sync_status_api_admin_sheet_sync_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetStatus"];
+                };
+            };
+        };
+    };
+    list_runs_api_admin_sheet_sync_runs_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_SheetRunOut_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_records_api_admin_sheet_sync_records_get: {
+        parameters: {
+            query?: {
+                /** @description Comma-separated outcomes */
+                outcome?: string | null;
+                tab?: string | null;
+                q?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_SheetRecordRow_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

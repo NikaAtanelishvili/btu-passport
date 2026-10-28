@@ -14,6 +14,7 @@ from app.models import AnchorBatch, Passport, PassportVersion
 from app.pdf.render import render_passport
 from app.services import anchoring, codes, merkle, storage
 from app.services.content import build_content
+from app.sheets import service as sheets
 
 Payload = dict[str, Any]
 
@@ -163,7 +164,17 @@ def _advance_latest(db: Session, version: PassportVersion) -> None:
         passport.latest_version_id = version.version_id
 
 
+def sheet_sync(db: Session, payload: Payload) -> None:
+    """SH-05: one Sheet sync run; it uses its own transactions (one per student)."""
+    sheets.run_job(payload["run_id"])
+
+
+def fail_sheet_sync(db: Session, payload: Payload, error: str) -> None:
+    sheets.give_up(payload["run_id"], error)
+
+
 HANDLERS: dict[str, JobHandler] = {
     "ISSUE_VERSION": JobHandler(run=issue_version, give_up=fail_issue),
     "ANCHOR_BATCH": JobHandler(run=anchor_batch),
+    "SHEET_SYNC": JobHandler(run=sheet_sync, give_up=fail_sheet_sync),
 }
