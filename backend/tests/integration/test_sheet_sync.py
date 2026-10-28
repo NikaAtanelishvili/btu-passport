@@ -568,3 +568,15 @@ def test_today_is_not_the_future(seeded: Session, sheet: TableSource) -> None:
     sync.sync_now(sheet)
     assert outcome(seeded, VERIFIED, "REC-1101")[0] == "PROCESSED"
     assert outcome(seeded, VERIFIED, "REC-1102")[0] == "ERROR"
+
+
+def test_thousands_of_rows_in_one_run(seeded: Session, sheet: TableSource) -> None:
+    """SH-12's bench found one IN list of every (tab, key) too big for Postgres; now chunked."""
+    sheet.add(
+        VERIFIED, *[record(f"REC-{90000 + i}", "BTU-T-9999", "SKL-001") for i in range(12000)]
+    )
+    result = sync.sync_now(sheet)
+    assert result.status == "DONE", result.error
+    assert result.counts[VERIFIED] == {"DUPLICATE": 60, "ERROR": 12000}
+    again = sync.sync_now(sheet)
+    assert again.status == "DONE", again.error

@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, select, tuple_
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -77,6 +77,7 @@ FINAL = {
     VERIFIED: ("PROCESSED", "DUPLICATE"),
 }
 FLAGS = ("CHANGED_AFTER_PROCESSING", "REVOKED_IN_SHEET", "CONFLICT")
+UPSERT_CHUNK = 1000
 
 
 @dataclass
@@ -769,13 +770,18 @@ def _upsert(db: Session, decisions: list[Decision], run_id: int) -> None:
     when the outcome or message changes (it is the `synced_at` written back to the Sheet)."""
     if not decisions:
         return
-    keys = [(d.tab, d.key) for d in decisions]
-    stored = {
-        (r.tab, r.key): r
-        for r in db.scalars(
-            select(SheetRecord).where(tuple_(SheetRecord.tab, SheetRecord.key).in_(keys))
-        )
-    }
+    by_tab: dict[str, list[str]] = {}
+    for d in decisions:
+        by_tab.setdefault(d.tab, []).append(d.key)
+    stored: dict[tuple[str, str], SheetRecord] = {}
+    for tab, keys in by_tab.items():
+        # Chunks: one IN list of thousands of keys is too much for Postgres (SH-12 bench).
+        for i in range(0, len(keys), UPSERT_CHUNK):
+            chunk = keys[i : i + UPSERT_CHUNK]
+            for found in db.scalars(
+                select(SheetRecord).where(SheetRecord.tab == tab, SheetRecord.key.in_(chunk))
+            ):
+                stored[(found.tab, found.key)] = found
     now = datetime.now(UTC)
     for d in decisions:
         r = stored.get((d.tab, d.key))

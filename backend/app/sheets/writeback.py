@@ -67,13 +67,9 @@ def plan(tab: Tab, decided: dict[int, tuple[str, str, str]]) -> list[CellWrite]:
 
 def _decided(result: SyncResult) -> dict[int, tuple[str, str, str]]:
     """Each Verified Skills row decided in this run, with its stored decision time."""
-    keys = [d.key for d in result.decisions if d.tab == VERIFIED]
-    with SessionLocal() as db:
+    with SessionLocal() as db:  # the whole tab: one query, however many rows
         stored = {
-            r.key: r
-            for r in db.scalars(
-                select(SheetRecord).where(SheetRecord.tab == VERIFIED, SheetRecord.key.in_(keys))
-            )
+            r.key: r for r in db.scalars(select(SheetRecord).where(SheetRecord.tab == VERIFIED))
         }
     out = {}
     for d in result.decisions:
