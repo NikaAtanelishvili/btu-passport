@@ -231,11 +231,11 @@ def run(db: Session) -> SeedCounts:
                 "skill_id": r.skill_id,
                 "date_earned": r.date_earned,
                 "submission_id": SEED_SUBMISSION_ID,
-                "legacy_record_id": r.record_id,
+                "source_record_id": r.record_id,
             }
             for r in rows
         ],
-        ["legacy_record_id"],
+        ["source_record_id"],
     )
 
     new_versions = _legacy_versions(db, rows)
@@ -261,7 +261,7 @@ def _legacy_versions(db: Session, rows: list[SeedRow]) -> int:
     award_ids = {
         record_id: award_id
         for record_id, award_id in db.execute(
-            select(SkillAward.legacy_record_id, SkillAward.award_id)
+            select(SkillAward.source_record_id, SkillAward.award_id)
         )
     }
     created = 0

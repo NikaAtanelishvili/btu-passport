@@ -4,7 +4,7 @@ import uuid
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, Date, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import BigInteger, CheckConstraint, Date, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -31,12 +31,17 @@ class SkillAward(Base):
     """Never deleted (trigger skill_awards_no_delete): issued versions reference them."""
 
     __tablename__ = "skill_awards"
-    __table_args__ = (UniqueConstraint("student_id", "skill_id"),)
+    __table_args__ = (
+        UniqueConstraint("student_id", "skill_id"),
+        CheckConstraint("length(earned_through) <= 120", name="earned_through_length"),
+    )
 
     award_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     student_id: Mapped[str] = mapped_column(ForeignKey("students.student_id"))
     skill_id: Mapped[str] = mapped_column(ForeignKey("skills.skill_id"))
     date_earned: Mapped[date] = mapped_column(Date)
     submission_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("award_submissions.submission_id"))
-    legacy_record_id: Mapped[str | None] = mapped_column(Text, unique=True)  # 'REC-0001'
+    # The Record ID of the seed or Sheet row the award came from ('REC-0001'): one award each.
+    source_record_id: Mapped[str | None] = mapped_column(Text, unique=True)
+    earned_through: Mapped[str | None] = mapped_column(Text)  # Sheet's earned_through column
     created_at: Mapped[datetime] = created_at()

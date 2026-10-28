@@ -165,7 +165,7 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - `seed/sheets/demo-rows.md`: the rows to paste live in the demo: one new student with one CONFIRMED skill, one new CONFIRMED skill for BTU-T-0001, one PENDING, one REJECTED, one with an unknown student ID, one with a future date, one exact repeat of a processed record.
 - **Done when:** the three CSVs import into Google Sheets without edits, and a FileSource run on them against the seeded database produces only `UNCHANGED` / `DUPLICATE`.
 
-### SH-03 Data model — migration `0003`
+### SH-03 Data model — migration `0003` (built as `0005`) ✅
 
 - The tables and changes in section 5; downgrade works; `alembic check` clean.
 - **Done when:** migration up and down on a copy of the dev database; seed and existing tests still pass.

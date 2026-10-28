@@ -1103,7 +1103,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "DIRECT" | "EVENT" | "SEED";
+            source: "DIRECT" | "EVENT" | "SEED" | "SHEET";
             /**
              * Submission Id
              * Format: uuid
@@ -1113,8 +1113,8 @@ export interface components {
             event_id: string | null;
             /** Event Name */
             event_name: string | null;
-            /** Legacy Record Id */
-            legacy_record_id: string | null;
+            /** Source Record Id */
+            source_record_id: string | null;
             /** Reason */
             reason: string | null;
             /** Awarded By */

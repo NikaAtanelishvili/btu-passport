@@ -41,7 +41,7 @@ def test_legacy_version_holds_only_synced_awards(db: Session, s3_bucket: str) ->
     )
     assert v1.issued_at == datetime(2026, 10, 17, 10, 0, tzinfo=UTC)
     records = db.scalars(
-        select(SkillAward.legacy_record_id)
+        select(SkillAward.source_record_id)
         .join(VersionAward, VersionAward.award_id == SkillAward.award_id)
         .where(VersionAward.version_id == v1.version_id)
     ).all()

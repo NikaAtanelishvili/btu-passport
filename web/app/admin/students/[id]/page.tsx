@@ -237,7 +237,8 @@ function PassportCard({ detail }: { detail: StudentDetail }) {
 
 function source(a: AwardRow): string {
   if (a.source === "EVENT") return `Event: ${a.event_name ?? "deleted event"}`;
-  if (a.source === "SEED") return `Imported${a.legacy_record_id ? ` (${a.legacy_record_id})` : ""}`;
+  if (a.source === "SEED") return `Imported${a.source_record_id ? ` (${a.source_record_id})` : ""}`;
+  if (a.source === "SHEET") return `Google Sheet (${a.source_record_id ?? "record"})`;
   return `Direct award${a.reason ? `: ${a.reason}` : ""}`;
 }
 

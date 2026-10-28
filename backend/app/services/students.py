@@ -228,7 +228,7 @@ def _awards(db: Session, student_id: str) -> list[AwardRow]:
             submission_id=submission.submission_id,
             event_id=submission.event_id,
             event_name=event_name,
-            legacy_record_id=award.legacy_record_id,
+            source_record_id=award.source_record_id,
             reason=submission.reason,
             awarded_by=awarded_by,
         )

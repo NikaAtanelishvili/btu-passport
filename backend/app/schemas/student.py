@@ -75,11 +75,11 @@ class AwardRow(BaseModel):
     category: str
     stamp_sha256: str | None
     date_earned: date
-    source: Literal["DIRECT", "EVENT", "SEED"]
+    source: Literal["DIRECT", "EVENT", "SEED", "SHEET"]
     submission_id: uuid.UUID
     event_id: uuid.UUID | None
     event_name: str | None
-    legacy_record_id: str | None
+    source_record_id: str | None
     reason: str | None
     awarded_by: str | None  # email; None for the seed
 

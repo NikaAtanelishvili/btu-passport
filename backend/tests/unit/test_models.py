@@ -8,7 +8,7 @@ TABLES = {
     "students", "passports", "skill_categories", "skills", "award_submissions",
     "skill_awards", "passport_versions", "version_awards", "anchor_batches", "jobs",
     "users", "user_roles", "sessions", "login_codes", "audit_log", "events",
-    "event_participants",
+    "event_participants", "sheet_sync_runs", "sheet_records",
 }  # fmt: skip
 
 
@@ -20,7 +20,7 @@ def _unique_sets(table: str) -> set[frozenset[str]]:
     return sets
 
 
-def test_seventeen_tables() -> None:
+def test_nineteen_tables() -> None:  # seventeen + two for the Sheet (SH-03)
     assert set(Base.metadata.tables) == TABLES
 
 
@@ -31,6 +31,7 @@ def test_one_passport_per_student_and_key_uniques() -> None:
     assert frozenset({"event_id", "email"}) in _unique_sets("event_participants")  # FR-29
     assert frozenset({"event_id"}) in _unique_sets("award_submissions")  # FR-32
     assert frozenset({"idempotency_key"}) in _unique_sets("award_submissions")
+    assert frozenset({"source_record_id"}) in _unique_sets("skill_awards")  # one award a record
 
 
 def test_version_statuses_match_claude_md() -> None:
