@@ -25,6 +25,8 @@ next-env.d.ts
 contracts/out/
 contracts/cache/
 contracts/broadcast/*/31337/
+# Sepolia broadcast logs (incl. failed attempts); deployments/11155111.json keeps the receipt data
+contracts/broadcast/*/11155111/
 # Local Anvil deployment: the address depends on the local chain's state.
 contracts/deployments/31337.json
 

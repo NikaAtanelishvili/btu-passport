@@ -1,10 +1,13 @@
 """BC-03 post-deploy step (stdlib only), run by `make chain-deploy` after `forge script`.
 
 Completes deployments/<chainId>.json with deploy_tx, block_number and deployed_at from the
-broadcast receipt, then writes CONTRACT_ADDRESS into the repo's .env.
+broadcast receipt, then writes CONTRACT_ADDRESS into the repo's .env (or the env file given
+as the third argument, e.g. .env.demo). The RPC URL may come from ETH_RPC_URL instead of the
+command line, so a URL holding a provider key isn't visible in the process list.
 """
 
 import json
+import os
 import re
 import sys
 import urllib.request
@@ -22,7 +25,9 @@ def rpc(url: str, method: str, *params: object) -> dict:
         return json.load(response)["result"]
 
 
-def main(chain_id: str, rpc_url: str) -> None:
+def main(chain_id: str, rpc_url: str = "", env_file: str = "") -> None:
+    rpc_url = rpc_url or os.environ["ETH_RPC_URL"]
+    env_path = CONTRACTS.parent / env_file if env_file else ENV_FILE
     run = json.loads((CONTRACTS / f"broadcast/Deploy.s.sol/{chain_id}/run-latest.json").read_text())
     tx = next(t for t in run["transactions"] if t["transactionType"] == "CREATE")
     receipt = rpc(rpc_url, "eth_getTransactionReceipt", tx["hash"])
@@ -46,14 +51,14 @@ def main(chain_id: str, rpc_url: str) -> None:
     path.write_text(json.dumps({k: deployment[k] for k in keys}, indent=2) + "\n")
 
     line = f"CONTRACT_ADDRESS={deployment['contract_address']}"
-    env = ENV_FILE.read_text() if ENV_FILE.exists() else ""
+    env = env_path.read_text() if env_path.exists() else ""
     if re.search(r"^CONTRACT_ADDRESS=.*$", env, flags=re.M):
         env = re.sub(r"^CONTRACT_ADDRESS=.*$", line, env, flags=re.M)
     else:
         env += ("" if env.endswith("\n") or not env else "\n") + line + "\n"
-    ENV_FILE.write_text(env)
-    print(f"wrote {path.relative_to(CONTRACTS.parent)}; .env {line}")
+    env_path.write_text(env)
+    print(f"wrote {path.relative_to(CONTRACTS.parent)}; {env_path.name} {line}")
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:3])
+    main(*sys.argv[1:4])

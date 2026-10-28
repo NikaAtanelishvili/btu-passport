@@ -14,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets railway-env chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets railway-env chain-deploy-sepolia chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -151,6 +151,23 @@ chain-deploy:
 	cd contracts && forge script script/Deploy.s.sol --rpc-url $(RPC_URL) --broadcast \
 		--private-key $(DEPLOYER_PRIVATE_KEY) $(DEPLOY_FLAGS)
 	python3 contracts/script/post_deploy.py $$(cast chain-id --rpc-url $(RPC_URL)) $(RPC_URL)
+
+# BC-08: deploys PassportRegistry to the chain in $(DEMO_ENV) (Sepolia) with the key in its
+# ISSUER_PRIVATE_KEY_FILE, after checking the wallet has at least 0.01 ETH. The key and the RPC
+# URL travel only in this recipe's environment (never argv, never printed). Gas comes from the
+# node (--skip-simulation): forge's local EVM under-estimated Sepolia's contract creation and
+# the first deploy ran out of gas. Writes
+# contracts/deployments/<chainId>.json (committed) and CONTRACT_ADDRESS into $(DEMO_ENV).
+chain-deploy-sepolia:
+	@test -f $(DEMO_ENV) || { echo "$(DEMO_ENV) not found" >&2; exit 1; }
+	@set -a && . ./$(DEMO_ENV) && set +a && \
+	export ETH_RPC_URL="$$RPC_URL" DEMO_RPC_URL="$$RPC_URL" DEPLOYER_PRIVATE_KEY_ENV="$$(tr -d '[:space:]' < "$$ISSUER_PRIVATE_KEY_FILE")" && \
+	unset DEPLOYER_PRIVATE_KEY RPC_URL && \
+	chain=$$(cast chain-id) && [ "$$chain" = "$$CHAIN_ID" ] || { echo "RPC chain $$chain != CHAIN_ID $$CHAIN_ID" >&2; exit 1; } && \
+	bal=$$(cast balance --ether "$$ISSUER_ADDRESS") && echo "issuer $$ISSUER_ADDRESS on chain $$chain: $$bal ETH" && \
+	python3 -c "import sys; sys.exit(float('$$bal') < 0.01)" || { echo "not funded (< 0.01 ETH); nothing deployed" >&2; exit 1; } && \
+	cd contracts && forge script script/Deploy.s.sol --rpc-url demo --broadcast --skip-simulation $(DEPLOY_FLAGS) && \
+	python3 script/post_deploy.py "$$chain" "" $(DEMO_ENV)
 
 # ABI for Python (shared/) and the browser (web/lib/, typed `as const` for viem).
 chain-abi:

@@ -17,3 +17,8 @@ fs_permissions = [
 
 [fmt]
 line_length = 100
+
+# BC-08: `make chain-deploy-sepolia` passes --rpc-url demo, so the provider URL (it holds an
+# API key) comes from the environment instead of the command line.
+[rpc_endpoints]
+demo = "${DEMO_RPC_URL}"

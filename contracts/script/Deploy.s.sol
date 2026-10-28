@@ -12,7 +12,11 @@ contract Deploy is Script {
     function run() external returns (PassportRegistry registry) {
         address issuer = vm.envAddress("ISSUER_ADDRESS");
 
-        vm.startBroadcast();
+        // Sepolia (`make chain-deploy-sepolia`): the key comes from the environment, so it
+        // never appears on a command line. Dev passes Anvil's key with --private-key instead.
+        uint256 deployerKey = vm.envOr("DEPLOYER_PRIVATE_KEY_ENV", uint256(0));
+        if (deployerKey != 0) vm.startBroadcast(deployerKey);
+        else vm.startBroadcast();
         registry = new PassportRegistry(issuer);
         vm.stopBroadcast();
 

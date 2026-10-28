@@ -247,6 +247,31 @@ the backend images copy, and it is a build argument of the web image.
 Before either target, check `.env.demo` locally with the production build (`make prod-up`,
 "Local production rehearsal" below).
 
+### Sepolia contract
+
+Deployed once for the demo (BC-08) and committed: `contracts/deployments/11155111.json`.
+
+| | |
+| --- | --- |
+| Registry | [`0x7F90747ee05b30278B67EDE1F832dA3A46680Fb2`](https://sepolia.etherscan.io/address/0x7F90747ee05b30278B67EDE1F832dA3A46680Fb2) |
+| Owner = issuer | `0xFa5be866CA615744eCD72394A777D74B1cCb7e55` (key: `secrets/issuer_key_sepolia`) |
+| Deploy transaction | [`0x5a5fab86…a87081`](https://sepolia.etherscan.io/tx/0x5a5fab866fabb1c582bb0532d202c5181fc42087122446f224bd9eb676a87081), block 12013607, 2,590,230 gas |
+
+To deploy again (a new address; every version anchored on the old one stops verifying):
+
+```sh
+make chain-deploy-sepolia   # reads .env.demo: RPC_URL, CHAIN_ID, ISSUER_ADDRESS, ISSUER_PRIVATE_KEY_FILE
+```
+
+It refuses unless the RPC's chain is `CHAIN_ID` and the issuer holds at least 0.01 ETH, signs
+with the key file (passed to forge through the environment, never on the command line), lets
+the node estimate gas, then writes the deployments file and `CONTRACT_ADDRESS` into
+`.env.demo`. Rebuild the images afterwards (the backend images copy the deployments file; the
+web image builds the address in). The source isn't verified on Etherscan (no
+`ETHERSCAN_API_KEY`); with one, add `DEPLOY_FLAGS=--verify`. Read-only browser checks use
+the public RPC `https://ethereum-sepolia-rpc.publicnode.com` (`NEXT_PUBLIC_RPC_URL`), never
+the keyed `RPC_URL`.
+
 ### Railway deploy
 
 Five services in one project: `web` (the only public one), `api`, `worker`, `signer`,
