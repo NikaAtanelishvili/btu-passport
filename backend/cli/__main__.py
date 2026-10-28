@@ -29,6 +29,7 @@ def main() -> None:
         "export-sheets", help="write the seed as seed/sheets/*.csv for Google Sheets (SH-02)"
     )
     export.add_argument("--xlsx", metavar="FILE", help="also write the three tabs as one .xlsx")
+    commands.add_parser("bench", help="scaling measurements on a *_bench database (SH-12)")
     args = parser.parse_args()
 
     if args.command == "merkle-vectors":
@@ -45,6 +46,10 @@ def main() -> None:
         sheets.check()
     elif args.command == "export-sheets":
         export_sheets.main(args.xlsx)
+    elif args.command == "bench":
+        from cli import bench
+
+        bench.main()
 
 
 def issue_pending() -> None:

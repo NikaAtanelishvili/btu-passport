@@ -216,7 +216,7 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - On `/admin/sheets`, upload an `.xlsx` with the same three tabs; it runs the same engine through `FileSource`, recorded as a run with trigger `UPLOAD`.
 - **Done when:** uploading the SH-02 data as `.xlsx` gives only `UNCHANGED` / `DUPLICATE`.
 
-### SH-12 Deliverable documents — `docs/deliverables/`
+### SH-12 Deliverable documents — `docs/deliverables/` ✅
 
 - `architecture-brief.md` (1–2 pages): data sources (Sheet and admin panel), processing, PDF generation, versions, blockchain anchoring and issuer check.
 - `scaling-vision.md`: how 5,000+ passports a year work, with numbers from measurements (render time per PDF, worker count, batch size, transactions per batch, one Sheets read per interval, database indexes, chain cost options).
