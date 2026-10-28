@@ -18,6 +18,7 @@ const OPERATIONS: NavItem[] = [
   { href: "/admin/students", label: "Students" },
   { href: "/admin/awards/new", label: "Direct award" },
   { href: "/admin/issuance", label: "Issuance" },
+  { href: "/admin/sheets", label: "Google Sheets" },
 ];
 
 const SUPER_ADMIN: NavItem[] = [

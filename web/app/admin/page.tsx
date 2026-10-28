@@ -16,6 +16,7 @@ import type { components } from "@/lib/api-types";
 import { formatDateTime } from "@/lib/format";
 import { queryKeys } from "@/lib/query-keys";
 import { hasRole, useSession } from "@/lib/session";
+import { cn } from "@/lib/utils";
 
 type VersionRow = components["schemas"]["VersionRow"];
 
@@ -29,6 +30,43 @@ function Counter({ label, value, href }: { label: string; value: number | undefi
     </Card>
   );
   return href ? <Link href={href}>{card}</Link> : card;
+}
+
+// SH-07: last successful sync, errors and flags; red when the last run failed.
+function SheetsCard() {
+  const status = useQuery({
+    queryKey: queryKeys.admin.sheetStatus,
+    queryFn: async () => (await api.GET("/api/admin/sheet-sync/status")).data!,
+    refetchInterval: 15_000,
+  });
+  const s = status.data;
+  const failed = s?.last_run?.status === "FAILED";
+  return (
+    <Link href="/admin/sheets">
+      <Card className={cn("transition-colors", failed ? "bg-status-invalid-soft" : "hover:bg-muted/50")}>
+        <CardHeader>
+          <CardDescription>Google Sheets</CardDescription>
+          <CardTitle className="text-xl">
+            {!s
+              ? "–"
+              : !s.configured
+                ? "Not configured"
+                : failed
+                  ? "Last sync failed"
+                  : s.last_success_at
+                    ? `Synced ${formatDateTime(s.last_success_at)}`
+                    : "Not synced yet"}
+          </CardTitle>
+          {s && (
+            <CardDescription className="text-black">
+              {s.errors} error{s.errors === 1 ? "" : "s"} · {s.flags} flag{s.flags === 1 ? "" : "s"}
+              {failed && s.last_success_at ? ` · last success ${formatDateTime(s.last_success_at)}` : ""}
+            </CardDescription>
+          )}
+        </CardHeader>
+      </Card>
+    </Link>
+  );
 }
 
 export default function AdminDashboardPage() {
@@ -73,6 +111,9 @@ export default function AdminDashboardPage() {
           />
           <Counter label="Unregistered check-ins" value={d?.unregistered_checkins} href="/admin/events?status=CHECKIN_CLOSED" />
           <Counter label="Failed issuances" value={d?.failed_versions} href="/admin/issuance?tab=failed" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SheetsCard />
         </div>
       </section>
 

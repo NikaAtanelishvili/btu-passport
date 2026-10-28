@@ -30,5 +30,8 @@ export const queryKeys = {
     event: (id: string) => ["admin", "event", id] as const,
     participants: (id: string) => ["admin", "participants", id] as const,
     qr: (id: string) => ["admin", "qr", id] as const,
+    sheetStatus: ["admin", "sheets", "status"] as const,
+    sheetRecords: (params: Record<string, unknown> = {}) => ["admin", "sheets", "records", params] as const,
+    sheetRuns: (lastRun: string) => ["admin", "sheets", "runs", lastRun] as const,
   },
 };
