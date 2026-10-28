@@ -211,3 +211,25 @@ make infra-up chain-deploy
 Old Merkle roots are gone after this, so anything the database says was anchored no longer
 verifies: also reset the database (`make infra-reset` wipes Postgres, MinIO and Anvil
 together), then `make infra-up chain-deploy migrate seed bootstrap`.
+
+## Resetting for a Sheets demo
+
+After rehearsing the Google Sheets demo, `make demo-reset` puts the Sheet and the dev database
+back to the seed data, so `seed/sheets/demo-rows.md` gives fresh results again. It asks you to
+type `yes`, then:
+
+1. stops the dev servers (`make stop`);
+2. in the Google Sheet: deletes every row below the seed data (*Students* after row 19,
+   *Verified Skills* after row 61) and empties the write-back columns `sync_status`,
+   `sync_message`, `synced_at` (G–I) of the seed rows. No other cell changes. It refuses and
+   changes nothing if the seed rows are not where the import put them, in the import's
+   order (someone sorted or edited the tab);
+3. drops and recreates the dev database, then runs `migrate seed bootstrap issue-pending`.
+
+Then run `make dev`: the worker renders and anchors the 18 seed passports, and the first
+scheduled sync marks every seed row `DUPLICATE` again. The chain and MinIO stay as they are
+(the new versions get new verification codes, so new Merkle roots); test inboxes in Mailpit are
+not cleared. Signed-in sessions end with the database.
+
+If you can't reset (for example on the hosted demo), paste the second set of rows,
+`seed/sheets/demo-rows-live.md`, instead: same scenarios, fresh IDs.

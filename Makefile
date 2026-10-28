@@ -14,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check export-sheets chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -120,6 +120,20 @@ issue-pending:
 # Google Sheets (M11): read the Sheet once / write the seed as the three import CSVs.
 sheets-check:
 	cd backend && uv run python -m cli sheets-check
+
+sheets-reset:
+	cd backend && uv run python -m cli sheets-reset
+
+# Back to a clean demo: the Sheet to the seed data (rows below it deleted, the sync columns
+# emptied; nothing else touched), then a fresh dev database. Keeps the chain and MinIO: the
+# new versions get new codes, so new Merkle roots. Stops the dev servers first.
+demo-reset:
+	@read -p "This deletes the dev database and every Sheet row below the seed data. Type 'yes': " ans && [ "$$ans" = yes ]
+	$(MAKE) stop
+	$(MAKE) sheets-reset
+	$(COMPOSE) exec -T db psql -U passport -d postgres -c 'DROP DATABASE IF EXISTS passport WITH (FORCE)' -c 'CREATE DATABASE passport'
+	$(MAKE) migrate seed bootstrap issue-pending
+	@echo "demo-reset: done. Run make dev: the worker renders and anchors the seed passports."
 
 export-sheets:
 	cd backend && uv run python -m cli export-sheets

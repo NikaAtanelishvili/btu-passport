@@ -358,6 +358,27 @@ class GoogleSheetSource:
         )
         return int(body.get("totalUpdatedCells", 0))
 
+    def clear(self, ranges: list[str]) -> None:
+        """values.batchClear: empties these A1 ranges' values (formatting stays)."""
+        if ranges:
+            url = f"{SHEETS_API}/{quote(self.sheet_id)}/values:batchClear"
+            self._call("POST", url, json={"ranges": ranges})
+
+    def delete_rows(self, title: str, first: int, last: int) -> None:
+        """Deletes rows first..last (1-based, inclusive) of the tab with this title."""
+        body = self._call(
+            "GET",
+            f"{SHEETS_API}/{quote(self.sheet_id)}",
+            params={"fields": "sheets.properties(sheetId,title)"},
+        )
+        ids = {s["properties"]["title"]: s["properties"]["sheetId"] for s in body["sheets"]}
+        if title not in ids:
+            raise SourceError(f"No tab named {title}")
+        rows = {"sheetId": ids[title], "dimension": "ROWS", "startIndex": first - 1}
+        request = {"deleteDimension": {"range": rows | {"endIndex": last}}}
+        url = f"{SHEETS_API}/{quote(self.sheet_id)}:batchUpdate"
+        self._call("POST", url, json={"requests": [request]})
+
 
 def _api_error(response: httpx.Response) -> str:
     try:

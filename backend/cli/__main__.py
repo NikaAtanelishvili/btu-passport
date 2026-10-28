@@ -25,6 +25,10 @@ def main() -> None:
     commands.add_parser(
         "sheets-check", help="read the Google Sheet and print its tabs and row counts (SH-01)"
     )
+    commands.add_parser(
+        "sheets-reset",
+        help="delete Sheet rows below the seed data and empty the write-back columns",
+    )
     export = commands.add_parser(
         "export-sheets", help="write the seed as seed/sheets/*.csv for Google Sheets (SH-02)"
     )
@@ -44,6 +48,8 @@ def main() -> None:
         issue_pending()
     elif args.command == "sheets-check":
         sheets.check()
+    elif args.command == "sheets-reset":
+        sheets.reset()
     elif args.command == "export-sheets":
         export_sheets.main(args.xlsx)
     elif args.command == "bench":
