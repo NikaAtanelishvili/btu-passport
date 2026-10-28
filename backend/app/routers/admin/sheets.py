@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app.auth.deps import AdminUser
@@ -25,6 +25,15 @@ def sync_now(principal: AdminUser, db: DB) -> SyncRequested:
             "sheets_not_configured", "No Google Sheet is configured (GOOGLE_SHEETS_ID).", 409
         )
     return service.enqueue(db, "MANUAL", principal)
+
+
+@router.post("/sheet-sync/upload", status_code=201, response_model=SheetRunOut)
+def upload_workbook(file: UploadFile, principal: AdminUser) -> SheetRunOut:
+    """SH-11: import an .xlsx with the Sheet's three tabs (at most 5 MB) through the same
+    engine; recorded as a run with trigger UPLOAD. 422 `fields.file` for an unreadable file,
+    409 `sync_running` while another run is queued or running."""
+    data = file.file.read(service.UPLOAD_MAX_BYTES + 1)
+    return service.upload(principal, file.filename or "upload.xlsx", data)
 
 
 @router.get("/sheet-sync/status", response_model=SheetStatus)

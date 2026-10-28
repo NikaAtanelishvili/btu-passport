@@ -776,6 +776,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/sheet-sync/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Workbook
+         * @description SH-11: import an .xlsx with the Sheet's three tabs (at most 5 MB) through the same
+         *     engine; recorded as a run with trigger UPLOAD. 422 `fields.file` for an unreadable file,
+         *     409 `sync_running` while another run is queued or running.
+         */
+        post: operations["upload_workbook_api_admin_sheet_sync_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/sheet-sync/status": {
         parameters: {
             query?: never;
@@ -1200,6 +1222,11 @@ export interface components {
         };
         /** Body_upload_stamp_api_admin_categories__category_id__stamp_post */
         Body_upload_stamp_api_admin_categories__category_id__stamp_post: {
+            /** File */
+            file: string;
+        };
+        /** Body_upload_workbook_api_admin_sheet_sync_upload_post */
+        Body_upload_workbook_api_admin_sheet_sync_upload_post: {
             /** File */
             file: string;
         };
@@ -3804,6 +3831,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SyncRequested"];
+                };
+            };
+        };
+    };
+    upload_workbook_api_admin_sheet_sync_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_workbook_api_admin_sheet_sync_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetRunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

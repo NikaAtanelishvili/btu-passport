@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, aliased
 
 from app.config import get_settings
 from app.db import SessionLocal
+from app.errors import AppError
 from app.models import (
     Passport,
     PassportVersion,
@@ -21,7 +22,7 @@ from app.schemas.common import Page
 from app.schemas.sheets import SheetRecordRow, SheetRunOut, SheetStatus, SyncRequested
 from app.services import audit, jobs
 from app.sheets import sync, writeback
-from app.sheets.source import GoogleSheetSource, SheetSource, SourceError
+from app.sheets.source import FileSource, GoogleSheetSource, SheetSource, SourceError
 
 if TYPE_CHECKING:
     from app.auth.deps import Principal
@@ -102,14 +103,54 @@ def give_up(run_id: int, error: str) -> None:
             run.finished_at = datetime.now(UTC)
 
 
+UPLOAD_MAX_BYTES = 5 * 1024 * 1024
+
+
+def upload(actor: "Principal", filename: str, data: bytes) -> SheetRunOut:
+    """SH-11: an .xlsx with the three tabs, through the same engine, as an UPLOAD run. Runs in
+    the request (a few seconds); refused while another run is queued or running. Write-back is
+    off: there is no Sheet to write to."""
+    fields = {}
+    if not filename.lower().endswith(".xlsx"):
+        fields["file"] = "Upload an .xlsx file."
+    elif len(data) > UPLOAD_MAX_BYTES:
+        fields["file"] = "The file is larger than 5 MB."
+    if fields:
+        raise AppError("validation_error", "The file can't be imported.", 422, fields)
+    label = f"upload {filename}"[:200]
+    with SessionLocal() as db, db.begin():
+        db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:k))"), {"k": DEDUPE_KEY})
+        if (active := sync.active_run(db)) is not None:
+            raise AppError(
+                "sync_running",
+                f"Sync run {active.run_id} is {active.status.lower()}; try again when it ends.",
+                409,
+            )
+        run_id = sync.create_run(db, "UPLOAD", label)
+        audit.record(db, actor, "sheet.sync.upload", "sheet_sync_run", str(run_id),
+                     after={"file": filename, "bytes": len(data)})  # fmt: skip
+    result = sync.execute(run_id, FileSource(xlsx=data, label=label))
+    with SessionLocal() as db:
+        run = db.get_one(SheetSyncRun, run_id)
+        if result.status == "FAILED" and result.error and result.error.startswith("Not a readable"):
+            raise AppError(
+                "validation_error", "The file can't be imported.", 422, {"file": result.error}
+            )
+        return run_out(run)
+
+
 def run_out(run: SheetSyncRun) -> SheetRunOut:
     return SheetRunOut.model_validate(run, from_attributes=True)
 
 
 def status(db: Session) -> SheetStatus:
     s = get_settings()
+    # The Sheet's health: uploads (SH-11) are listed with the runs but don't count here.
     last = db.scalars(
-        select(SheetSyncRun).order_by(SheetSyncRun.run_id.desc()).limit(1)
+        select(SheetSyncRun)
+        .where(SheetSyncRun.trigger != "UPLOAD")
+        .order_by(SheetSyncRun.run_id.desc())
+        .limit(1)
     ).one_or_none()
     active = sync.active_run(db)
     counts = dict(
@@ -125,7 +166,9 @@ def status(db: Session) -> SheetStatus:
         interval_seconds=s.sheet_sync_interval_seconds,
         last_run=run_out(last) if last else None,
         last_success_at=db.scalar(
-            select(func.max(SheetSyncRun.finished_at)).where(SheetSyncRun.status == "DONE")
+            select(func.max(SheetSyncRun.finished_at)).where(
+                SheetSyncRun.status == "DONE", SheetSyncRun.trigger != "UPLOAD"
+            )
         ),
         next_run_at=next_run_at(db),
         active_run_id=active.run_id if active else None,

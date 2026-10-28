@@ -206,12 +206,12 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - Verify by file keeps the authentic, outdated and not-valid results, labelled as file checks.
 - **Done when:** screenshots of both paths at 1440 and 390 px; the A-tests for verify still pass.
 
-### SH-10 Student notification email (Should)
+### SH-10 Student notification email (Should) ✅
 
 - When a version reaches ANCHORED, email the student: "Your AI Skills Passport was updated to version N", with the new skills and a link to `/me`. Use the existing mailer (Resend in demo, Mailpit in dev). No email for V1 of seeded students.
 - **Done when:** a Sheet-driven award produces exactly one email in Mailpit.
 
-### SH-11 Excel import (Could)
+### SH-11 Excel import (Could) ✅
 
 - On `/admin/sheets`, upload an `.xlsx` with the same three tabs; it runs the same engine through `FileSource`, recorded as a run with trigger `UPLOAD`.
 - **Done when:** uploading the SH-02 data as `.xlsx` gives only `UNCHANGED` / `DUPLICATE`.

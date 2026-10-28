@@ -4,9 +4,9 @@
 // row's last decision (errors and flags first) with links to the student and version. Status
 // refetches every 3 s while a run is queued or running, else every 15 s.
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RefreshCwIcon, SheetIcon } from "lucide-react";
+import { RefreshCwIcon, SheetIcon, UploadIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table";
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type { components } from "@/lib/api-types";
 import { formatDateTime } from "@/lib/format";
 import { queryKeys } from "@/lib/query-keys";
@@ -125,6 +125,30 @@ export default function SheetsPage() {
     onError: (error) => toast.error(error.message),
   });
 
+  // SH-11: the same three tabs as an .xlsx, through the same checks, as an Upload run.
+  const fileInput = useRef<HTMLInputElement>(null);
+  const importFile = useMutation({
+    mutationFn: async (file: File) => {
+      const body = new FormData();
+      body.append("file", file);
+      return (
+        await api.POST("/api/admin/sheet-sync/upload", {
+          // The generated type says string; openapi-fetch sends FormData as multipart as is.
+          body: body as unknown as { file: string },
+        })
+      ).data!;
+    },
+    onSuccess: (run) => {
+      if (run.status === "DONE") toast.success(`Imported ${run.source.replace(/^upload /, "")}: run ${run.run_id}`);
+      else toast.error(`Import failed: ${run.error ?? "see the run"}`);
+      void queryClient.invalidateQueries({ queryKey: ["admin", "sheets"] });
+    },
+    onError: (error) => toast.error(error instanceof ApiError && error.fields.file ? error.fields.file : error.message),
+    onSettled: () => {
+      if (fileInput.current) fileInput.current.value = "";
+    },
+  });
+
   function filter(set: (value: string) => void) {
     return (value: string) => {
       set(value);
@@ -139,16 +163,34 @@ export default function SheetsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <DisplayHeading strong="Google" light="Sheets" />
-        <Button onClick={() => syncNow.mutate()} disabled={!s?.configured || busy}>
-          <RefreshCwIcon className={busy ? "animate-spin" : undefined} aria-hidden />
-          {busy ? "Syncing…" : "Sync now"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            className="sr-only"
+            aria-label="Excel file to import"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) importFile.mutate(file);
+            }}
+          />
+          <Button variant="outline" onClick={() => fileInput.current?.click()} disabled={busy || importFile.isPending}>
+            <UploadIcon aria-hidden />
+            {importFile.isPending ? "Importing…" : "Import Excel file"}
+          </Button>
+          <Button onClick={() => syncNow.mutate()} disabled={!s?.configured || busy || importFile.isPending}>
+            <RefreshCwIcon className={busy ? "animate-spin" : undefined} aria-hidden />
+            {busy ? "Syncing…" : "Sync now"}
+          </Button>
+        </div>
       </div>
 
       <p className="max-w-3xl text-base text-muted-foreground">
         BTU&apos;s official channel for students and verified skills. Staff enter records in the Google Sheet; every
         sync reads it, checks each row and issues new passport versions for new CONFIRMED records. Events and direct
-        awards in this panel add to the same passports.
+        awards in this panel add to the same passports. An Excel file with the same three tabs (Students, Skills
+        Catalog, Verified Skills) can be imported through the same checks.
       </p>
 
       {status.isError && <ErrorAlert error={status.error} />}
