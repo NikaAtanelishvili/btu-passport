@@ -34,3 +34,12 @@ def test_earned_through() -> None:
 def test_dotted_date() -> None:
     assert _dotted_date("2026-03-07") == "07.03.2026"
     assert _dotted_date("2026-10-22T15:40:12Z") == "22.10.2026"
+
+
+def test_earned_through_for_sheet_records() -> None:
+    """SH-04: the Sheet's earned_through column, else DEFAULT(PDF) "Verified by BTU"."""
+    from app.pdf.render import _earned_through
+
+    sheet = {"type": "sheet", "earned_through": "AI Ethics Masterclass"}
+    assert _earned_through({"source": sheet}) == "AI Ethics Masterclass"
+    assert _earned_through({"source": {"type": "sheet"}}) == "Verified by BTU"

@@ -30,12 +30,16 @@ def iso_utc(moment: datetime) -> str:
     return moment.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _source(kind: str, event_name: str | None, reason: str | None) -> dict[str, str]:
+def _source(
+    kind: str, event_name: str | None, reason: str | None, earned_through: str | None
+) -> dict[str, str]:
     if kind == "EVENT":
         return {"type": "event", "event_name": event_name or ""}
     if kind == "DIRECT" and reason:
         return {"type": "direct", "reason": reason}
-    return {"type": kind.lower()}  # "direct" | "seed"
+    if kind == "SHEET" and earned_through:
+        return {"type": "sheet", "earned_through": earned_through}
+    return {"type": kind.lower()}  # "direct" | "seed" | "sheet"
 
 
 def version_skills(db: Session, version_id: int) -> list[dict[str, Any]]:
@@ -67,7 +71,7 @@ def version_skills(db: Session, version_id: int) -> list[dict[str, Any]]:
             "stamp_sha256": category.stamp_sha256,
             "description": skill.description,
             "date_earned": award.date_earned.isoformat(),
-            "source": _source(kind, event_name, reason),
+            "source": _source(kind, event_name, reason, award.earned_through),
         }
         for award, skill, category, kind, event_name, reason in rows
     ]

@@ -54,11 +54,14 @@ def _dotted_date(value: str) -> str:
 
 
 def _earned_through(skill: dict[str, Any]) -> str:
-    """The event's name, else the direct award's reason. DEFAULT(PDF): seed awards (earlier BTU
-    records) and direct awards without a reason say "Direct award"."""
+    """The event's name, the direct award's reason, or the Sheet's earned_through. DEFAULT(PDF):
+    seed awards (earlier BTU records) and direct awards without a reason say "Direct award";
+    Sheet records without earned_through say "Verified by BTU"."""
     source = skill["source"]
     if source["type"] == "event":
         return str(source["event_name"])
+    if source["type"] == "sheet":
+        return str(source.get("earned_through") or "Verified by BTU")
     return str(source.get("reason") or "Direct award")
 
 

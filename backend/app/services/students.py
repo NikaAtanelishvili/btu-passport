@@ -46,7 +46,7 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PROFILE_FIELDS = ("first_name", "last_name", "email", "program", "education_level", "status")
 
 
-def _clean(values: dict[str, str]) -> tuple[dict[str, str], dict[str, str]]:
+def clean_fields(values: dict[str, str]) -> tuple[dict[str, str], dict[str, str]]:
     """Normalise the given fields and check them; returns (values, field errors)."""
     out: dict[str, str] = {}
     fields: dict[str, str] = {}
@@ -78,7 +78,7 @@ def _clean(values: dict[str, str]) -> tuple[dict[str, str], dict[str, str]]:
     return out, fields
 
 
-def _duplicate_error(db: Session, values: dict[str, str], own_id: str | None) -> AppError | None:
+def duplicate_error(db: Session, values: dict[str, str], own_id: str | None) -> AppError | None:
     if "student_id" in values and db.get(Student, values["student_id"]) is not None:
         return AppError(
             "duplicate_student_id",
@@ -104,17 +104,20 @@ def _flush_unique(db: Session, values: dict[str, str], own_id: str | None) -> No
         with db.begin_nested():
             db.flush()
     except IntegrityError:
-        error = _duplicate_error(db, values, own_id)
+        error = duplicate_error(db, values, own_id)
         raise error or AppError("conflict", "The student was changed concurrently.", 409) from None
 
 
-def create_student(db: Session, actor: "Principal | None", body: StudentCreate) -> Student:
+def create_student(
+    db: Session, actor: "Principal | None", body: StudentCreate, action: str = "student.create"
+) -> Student:
     """FR-02/FR-10: the student and their one passport, with the next Passport ID. Frozen
-    fields stay empty until the first version is issued (BE-02). `actor` None: the CLI."""
-    values, fields = _clean(body.model_dump())
+    fields stay empty until the first version is issued (BE-02). `actor` None: the CLI or the
+    Sheet sync (action `sheet.student.create`)."""
+    values, fields = clean_fields(body.model_dump())
     if fields:
         raise AppError("validation_error", "Some fields are invalid.", 422, fields)
-    if error := _duplicate_error(db, values, None):
+    if error := duplicate_error(db, values, None):
         raise error
     student = Student(**values)
     db.add(student)
@@ -126,7 +129,7 @@ def create_student(db: Session, actor: "Principal | None", body: StudentCreate) 
     audit.record(
         db,
         actor,
-        "student.create",
+        action,
         "student",
         student.student_id,
         after={**values, "passport_id": passport_id},
@@ -144,11 +147,11 @@ def update_student(
     if student is None:
         raise AppError("not_found", "No such student.", 404)
     given = {k: v for k, v in body.model_dump(exclude_unset=True).items() if v is not None}
-    values, fields = _clean(given)
+    values, fields = clean_fields(given)
     if fields:
         raise AppError("validation_error", "Some fields are invalid.", 422, fields)
     changed = {k: v for k, v in values.items() if getattr(student, k) != v}
-    if error := _duplicate_error(db, changed, student_id):
+    if error := duplicate_error(db, changed, student_id):
         raise error
     if changed:
         before = {k: getattr(student, k) for k in changed}

@@ -25,7 +25,7 @@ class SkillOnPassport(BaseModel):
     stamp_sha256: str | None
     description: str | None
     date_earned: date
-    source: Literal["EVENT", "DIRECT", "SEED"]
+    source: Literal["EVENT", "DIRECT", "SEED", "SHEET"]
     event_name: str | None
 
 

@@ -1804,7 +1804,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "EVENT" | "DIRECT" | "SEED";
+            source: "EVENT" | "DIRECT" | "SEED" | "SHEET";
             /** Event Name */
             event_name: string | null;
         };

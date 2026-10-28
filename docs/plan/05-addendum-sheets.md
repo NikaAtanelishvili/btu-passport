@@ -170,7 +170,7 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - The tables and changes in section 5; downgrade works; `alembic check` clean.
 - **Done when:** migration up and down on a copy of the dev database; seed and existing tests still pass.
 
-### SH-04 Sync engine — `backend/app/sheets/sync.py` (invariants: tests first)
+### SH-04 Sync engine — `backend/app/sheets/sync.py` (invariants: tests first) ✅
 
 - Pure decision logic plus the per-student transactions in section 5; uses the existing services for students, awards and versions; never touches a passport outside its own transaction.
 - **Done when** tests cover every outcome in section 5 and these invariants: a repeated sync adds nothing; PENDING and REJECTED never create awards; an unknown student or skill changes nothing; one student's error doesn't block another's record; two new CONFIRMED records for one student give one version; a processed row edited later is flagged, not applied; Passport ID, first-issued date and earlier skills are unchanged after an update.
