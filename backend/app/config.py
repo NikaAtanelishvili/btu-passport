@@ -8,7 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import SecretStr, field_validator, model_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -34,11 +34,17 @@ class Settings(BaseSettings):
     s3_secret_key: SecretStr
     s3_bucket: str = "passports"
 
+    # Outgoing email: SMTP (Mailpit in dev) or Resend's HTTP API (hosts that block SMTP).
+    mail_provider: Literal["smtp", "resend"] = "smtp"
+    # SMTP_FROM is the name this had before MAIL_PROVIDER; still accepted.
+    mail_from: str = Field(
+        "passport@btu.test", validation_alias=AliasChoices("MAIL_FROM", "SMTP_FROM")
+    )
+    resend_api_key: SecretStr = SecretStr("")
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     smtp_user: str = ""
     smtp_password: SecretStr = SecretStr("")
-    smtp_from: str = "passport@btu.test"
 
     login_code_ttl_minutes: int = 10
     login_code_max_attempts: int = 5
@@ -112,6 +118,12 @@ class Settings(BaseSettings):
                 f"DEV_LOG_LOGIN_CODES=true is refused when ENV={self.env}: sign-in codes would "
                 "be written to the log. Set DEV_LOG_LOGIN_CODES=false."
             )
+        return self
+
+    @model_validator(mode="after")
+    def _resend_needs_its_key(self) -> "Settings":
+        if self.mail_provider == "resend" and not self.resend_api_key.get_secret_value():
+            raise ValueError("MAIL_PROVIDER=resend needs RESEND_API_KEY")
         return self
 
     @model_validator(mode="after")

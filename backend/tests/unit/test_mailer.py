@@ -4,10 +4,13 @@ from collections.abc import Iterator
 from email.message import EmailMessage
 from typing import Any, ClassVar
 
+import httpx
 import pytest
 
 from app.config import get_settings
 from app.services import mailer
+
+REAL_NOTICE = mailer.send_version_notice  # before the autouse fixture replaces it
 
 
 class FakeSMTP:
@@ -68,3 +71,77 @@ def test_starttls_and_login_on_587(smtp: type[FakeSMTP], monkeypatch: pytest.Mon
     mailer.send_login_code("newcomer@btu.test", "654321")
     (conn,) = smtp.instances
     assert conn.calls[:2] == ["starttls", "login:sender"]
+
+
+# --- MAIL_PROVIDER=resend: Resend's HTTP API (M10; Railway blocks outbound SMTP) ---
+
+
+class FakeResend:
+    """Stands in for httpx.post: records each request and answers with `status`."""
+
+    def __init__(self, status: int = 200, body: str = '{"id": "fake-id"}') -> None:
+        self.status, self.body = status, body
+        self.requests: list[dict[str, Any]] = []
+
+    def __call__(self, url: str, **kwargs: Any) -> httpx.Response:
+        self.requests.append({"url": url, **kwargs})
+        return httpx.Response(self.status, text=self.body, request=httpx.Request("POST", url))
+
+
+@pytest.fixture
+def resend(monkeypatch: pytest.MonkeyPatch, smtp: type[FakeSMTP]) -> FakeResend:
+    fake = FakeResend()
+    monkeypatch.setattr("httpx.post", fake)
+    _configure(
+        monkeypatch, MAIL_PROVIDER="resend", RESEND_API_KEY="re_test_key",
+        MAIL_FROM="passport@btuaipassport.space",
+    )  # fmt: skip
+    return fake
+
+
+def test_resend_sends_the_code_over_https(resend: FakeResend, smtp: type[FakeSMTP]) -> None:
+    mailer.send_login_code("someone@btu.edu.ge", "123456")
+    (req,) = resend.requests
+    assert req["url"] == "https://api.resend.com/emails"
+    assert req["headers"]["Authorization"] == "Bearer re_test_key"
+    body = req["json"]
+    assert body["from"] == "passport@btuaipassport.space"
+    assert body["to"] == ["someone@btu.edu.ge"]
+    assert body["subject"].startswith("123456 ")
+    assert "123456" in body["text"] and "10 minutes" in body["text"]
+    assert smtp.instances == []  # no SMTP connection at all
+
+
+def test_resend_sends_version_notices(resend: FakeResend) -> None:
+    REAL_NOTICE(
+        email="s@btu.edu.ge", first_name="Nino", passport_id="BTU-AI-000001",
+        version_no=2, skills=["Prompting"], url="https://btuaipassport.space/me",
+    )  # fmt: skip
+    (req,) = resend.requests
+    assert req["json"]["to"] == ["s@btu.edu.ge"] and "Prompting" in req["json"]["text"]
+
+
+@pytest.mark.parametrize("status", [401, 422, 500])
+def test_resend_refusal_raises_oserror(resend: FakeResend, status: int) -> None:
+    resend.status, resend.body = status, '{"message": "nope"}'
+    with pytest.raises(OSError, match=str(status)):
+        mailer.send_login_code("someone@btu.edu.ge", "123456")
+
+
+def test_resend_network_error_raises_oserror(
+    resend: FakeResend, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def boom(url: str, **kwargs: Any) -> httpx.Response:
+        raise httpx.ConnectError("no route")
+
+    monkeypatch.setattr("httpx.post", boom)
+    with pytest.raises(OSError) as excinfo:
+        mailer.send_login_code("someone@btu.edu.ge", "123456")
+    assert "re_test_key" not in str(excinfo.value)
+
+
+def test_smtp_from_still_accepted(smtp: type[FakeSMTP], monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("MAIL_FROM", raising=False)
+    _configure(monkeypatch, SMTP_PORT="1025", SMTP_USER="", SMTP_FROM="old@btu.test")
+    mailer.send_login_code("newcomer@btu.test", "123456")
+    assert smtp.instances[0].messages[0]["From"] == "old@btu.test"

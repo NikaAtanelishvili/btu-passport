@@ -69,3 +69,17 @@ def test_settings_errors_never_echo_secrets(monkeypatch: pytest.MonkeyPatch) -> 
     message = str(excinfo.value)
     assert "super-secret" not in message
     assert "input_value" not in message  # pydantic truncates, so check nothing is echoed at all
+
+
+def test_mail_provider_defaults_to_smtp(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("MAIL_PROVIDER", raising=False)
+    assert Settings(_env_file=None).mail_provider == "smtp"
+
+
+def test_resend_needs_its_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("MAIL_PROVIDER", "resend")
+    monkeypatch.delenv("RESEND_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="RESEND_API_KEY"):
+        Settings(_env_file=None)
+    monkeypatch.setenv("RESEND_API_KEY", "re_x")
+    assert Settings(_env_file=None).mail_provider == "resend"
