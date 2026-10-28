@@ -181,3 +181,32 @@ def test_dev_keeps_its_relaxed_settings(monkeypatch: pytest.MonkeyPatch, env: st
     monkeypatch.setenv("SESSION_SECURE", "false")
     monkeypatch.setenv("ALLOWED_EMAILS", "x@gmail.com")
     assert Settings(_env_file=None).allowed_emails == ["x@gmail.com"]
+
+
+# --- M10: cookie prefixes need an https origin ------------------------------------------
+# Browsers drop a __Host- / __Secure- cookie set over plain http, even on localhost (Chrome:
+# blockedReason InvalidPrefix). The prod rehearsal on http://localhost:3000 signed in, got
+# no session cookie, and every guarded page bounced back to /login.
+
+
+@pytest.mark.parametrize("name", ["__Host-session", "__Secure-session"])
+def test_prefixed_cookie_refused_without_https(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    _demo_env(monkeypatch)
+    monkeypatch.setenv("SESSION_COOKIE_NAME", name)
+    monkeypatch.setenv("PUBLIC_BASE_URL", "http://localhost:3000")
+    with pytest.raises(ValueError, match="SESSION_COOKIE_NAME"):
+        Settings(_env_file=None)
+
+
+def test_prefixed_cookie_accepted_with_https(monkeypatch: pytest.MonkeyPatch) -> None:
+    _demo_env(monkeypatch)
+    monkeypatch.setenv("SESSION_COOKIE_NAME", "__Host-session")
+    monkeypatch.setenv("PUBLIC_BASE_URL", "https://btuaipassport.space")
+    assert Settings(_env_file=None).session_cookie_name == "__Host-session"
+
+
+def test_plain_secure_cookie_fine_on_localhost(monkeypatch: pytest.MonkeyPatch) -> None:
+    _demo_env(monkeypatch)
+    monkeypatch.setenv("SESSION_COOKIE_NAME", "passport_session")
+    monkeypatch.setenv("PUBLIC_BASE_URL", "http://localhost:3000")
+    assert Settings(_env_file=None).session_secure is True

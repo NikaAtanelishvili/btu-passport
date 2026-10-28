@@ -27,6 +27,9 @@ x-backend-env: &backend-env
   S3_REGION: us-east-1
   S3_ADDRESSING_STYLE: path
   PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?}
+  # Follows PUBLIC_BASE_URL: __Host-session over https, a plain name on http://localhost
+  # (browsers refuse cookie prefixes over http; the API refuses to start with that mix).
+  SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:?}
   SIGNER_URL: http://signer:8100
   GOOGLE_SHEETS_CREDENTIALS_FILE: /run/secrets/google_sheets_sa
   GOOGLE_SHEETS_CREDENTIALS_JSON: ""

@@ -149,6 +149,19 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _cookie_prefix_needs_https(self) -> "Settings":
+        """Browsers drop a __Host- / __Secure- cookie set over plain http, even on localhost
+        (Chrome: InvalidPrefix), and sign-in then silently never sticks."""
+        prefixed = self.session_cookie_name.startswith(("__Host-", "__Secure-"))
+        if prefixed and not self.public_base_url.startswith("https://"):
+            raise ValueError(
+                f"SESSION_COOKIE_NAME={self.session_cookie_name} needs an https PUBLIC_BASE_URL "
+                f"(it is {self.public_base_url}): browsers refuse the cookie prefix over http. "
+                "Use a name without the prefix there, e.g. passport_session."
+            )
+        return self
+
+    @model_validator(mode="after")
     def _resend_needs_its_key(self) -> "Settings":
         if self.mail_provider == "resend" and not self.resend_api_key.get_secret_value():
             raise ValueError("MAIL_PROVIDER=resend needs RESEND_API_KEY")

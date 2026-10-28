@@ -270,8 +270,13 @@ make prod-down                     # stop (data kept; add -v by hand to wipe the
 ```
 
 Sign in at http://localhost:3000/login: the code reaches the real inbox through Resend, and
-Google works with the dev redirect URI `http://localhost:3000/auth/google/callback`. The
-demo's Secure `__Host-session` cookie works because browsers treat localhost as secure.
+Google works with the dev redirect URI `http://localhost:3000/auth/google/callback`. Locally
+the session cookie is `passport_session` (Secure, HttpOnly): browsers refuse the demo's
+`__Host-session` over plain http even on localhost, so `infra/prod-local.env` swaps the name,
+and the API refuses to start with a `__Host-`/`__Secure-` name and an http `PUBLIC_BASE_URL`.
+Check a running stack with `make prod-smoke` (health, issuer file, `/admin`); add
+`SMOKE_EMAIL=… SMOKE_CODE=…` (a fresh code from the inbox) or `SMOKE_COOKIE=name=value`
+(copied from the browser) to check that sign-in sticks.
 Every anchored batch is a real Sepolia transaction (about 130,000 gas, a tiny fraction of the
 wallet). The Google Sheet is the one dev uses: don't run the dev worker (`make dev`) and the
 prod stack at the same time, or both sync and write back to it.
@@ -416,7 +421,8 @@ publishes ports (80, 443).
    make demo-reset STACK=prod         # later: back to the seed data (typed yes)
    ```
 
-6. **Check:** `curl https://btuaipassport.space/api/healthz` → `{"ok":true}`; sign in with a
+6. **Check:** `make prod-smoke` (with `PROD_MODE=server`; add `SMOKE_EMAIL`/`SMOKE_CODE` to
+   check sign-in) or `curl https://btuaipassport.space/api/healthz` → `{"ok":true}`; sign in with a
    code to `DEMO_SUPER_ADMIN_EMAIL` and with Google (the redirect URI
    `https://btuaipassport.space/auth/google/callback` is registered); the Issuance page
    reaches ANCHORED; the verify page links the transaction on Sepolia Etherscan.

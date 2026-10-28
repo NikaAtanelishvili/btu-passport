@@ -14,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets railway-env chain-deploy-sepolia prod-build prod-up prod-down prod-ps prod-logs prod-cli chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets railway-env chain-deploy-sepolia prod-build prod-up prod-down prod-ps prod-logs prod-cli prod-smoke chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -180,6 +180,12 @@ prod-ps:
 
 prod-logs:
 	$(PROD_COMPOSE) logs -f --tail 100 $(SERVICE)
+
+# Checks the running stack from outside (infra/smoke.py): health, issuer file, /admin, and
+# with SMOKE_COOKIE=name=value or SMOKE_EMAIL + SMOKE_CODE, that sign-in sticks.
+# Local: http://localhost:3000; PROD_MODE=server: PUBLIC_BASE_URL from $(DEMO_ENV).
+prod-smoke:
+	@python3 infra/smoke.py $(if $(filter server,$(PROD_MODE)),$$(grep -E '^PUBLIC_BASE_URL=' $(DEMO_ENV) | cut -d= -f2-),http://localhost:3000)
 
 # One-off CLI command in an api container, e.g. make prod-cli ARGS="demo-users"
 prod-cli:
