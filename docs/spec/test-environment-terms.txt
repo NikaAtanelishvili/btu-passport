@@ -1,0 +1,19 @@
+Test Environment and Data Protection Terms
+For the hackathon, BTU will provide participating teams with a structured test database containing records of fictitious students, a catalog of AI skills, data on verified skills, and scenarios for testing system functionality.
+The test database will be provided in Google Sheets format. Each team will work on its own copy of the database, ensuring independent operation and preventing any unintentional modification of shared data.
+The following conditions apply to the test environment:
+Data Protection: Participating teams will be provided exclusively with fictitious or appropriately anonymized data. There is no need to use the personal data of actual students.
+Data Source: Google Sheets will serve as the source of information regarding students and their verified skills. Actions taken by university staff can be simulated by adding new entries or updating the status of existing records within the relevant tabs.
+Access Rights: Each team will be granted editing access to their own dedicated test file. The original BTU database shall remain unchanged.
+Technical Integration: Teams shall independently select a mechanism for connecting to Google Sheets—such as an API, an appropriate automation tool, or another compatible solution.
+Authorization: Access to a student’s personal "passport" must be secured. The public verification interface must not allow for the unrestricted retrieval of other students' personal data.
+Blockchain: The use of a test blockchain network is permitted. Personal student data must not be stored on the blockchain unless strictly necessary for the technical verification mechanism.
+Security: API keys, authorization credentials, and other sensitive technical information must not be included in publicly accessible code or repositories.
+During the final hackathon demonstration, teams must show how the system processes a new verified record added by the university, how it updates the corresponding "passport," and how it handles erroneous or unverified data. Data Structure and Student Identification
+The test database is divided into three main data registers:
+Students: Contains each student's unique identifier, first name, last name, test email address, and core information related to their passport.
+Skills Catalog: A catalog of AI skills, comprising a unique skill code, name, category, description, and the identifier for the corresponding badge/stamp.
+Verified Skills: Records of skills assigned to students, specifying the student identifier, skill code, date of acquisition, and verification status.
+Each assignment record possesses an independent Record ID, used to uniquely identify the entry and prevent duplicate processing.
+The system reflects only those skills with a "CONFIRMED" status in the official passport. Records with "PENDING" or "REJECTED" statuses should not trigger a passport update.
+Participating teams must ensure that students are identified via their Student ID, the relevant skill is located within the catalog, and the verified record is linked to the correct passport. Passport ID, the passport version identifier, and the Verification Code/ID are data managed by the system. University staff are not required to manually generate or modify these when adding new skills.

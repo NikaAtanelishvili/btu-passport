@@ -138,6 +138,25 @@ An arrow means "needs": M4 needs both the contract (M1) and sign-in (M3); M10 ne
 | M8 | Student portal | BE-47, FE-40, FE-41 | M5 | A student sees only their passport, history and downloads; A8 passes |
 | M9 | Super admin | BE-50 – BE-53, FE-50 – FE-53 | M6 | Skills, categories with stamp upload, roles and audit log work; revocation takes effect on the next request (A12) |
 | M10 | Hardening and demo | BE-60, BC-08, IN-05 – IN-07, FE-60 | all | All of A1 – A16 pass in the `demo` configuration on Sepolia behind Caddy; README and demo script written |
+| M11 | Google Sheets and mandatory gaps (added 2026-10-28, runs before M10) | SH-01 – SH-13 (`docs/plan/05-addendum-sheets.md`) | M9, UI polish | The demo rows of `seed/sheets/demo-rows.md`, pasted into the real Sheet, end with the outcomes of the addendum's §5 and the write-back column filled; every MVP scenario of the hackathon spec has an automated test (SH-13) |
+
+**M11 tasks** (defined and ticked in `docs/plan/05-addendum-sheets.md`; the hackathon spec in `docs/spec/` wins where it contradicts older docs):
+
+| Task | What | Priority |
+| --- | --- | --- |
+| SH-01 | Sheet source adapter (Google Sheet, `.xlsx` / CSV folder), `cli sheets-check` | Must |
+| SH-02 | Sheet import files from the seed and the demo rows (`seed/sheets/`) | Must |
+| SH-03 | Migration: `sheet_sync_runs`, `sheet_records`, `source_record_id`, `SHEET` submissions | Must |
+| SH-04 | Sync engine (outcomes, one version per student per sync) | Must |
+| SH-05 | `SHEET_SYNC` worker job, schedule, `/api/admin/sheet-sync*` | Must |
+| SH-06 | Write-back of `sync_status`, `sync_message`, `synced_at` | Must |
+| SH-07 | `/admin/sheets` page and dashboard card | Must |
+| SH-08 | Passport and V1 at student creation, zero-skill PDF | Must |
+| SH-09 | Verify wording: record versus file | Must |
+| SH-10 | Student email when a version is anchored | Should |
+| SH-11 | Excel import on `/admin/sheets` | Could |
+| SH-12 | Deliverable documents (`docs/deliverables/`) | Must |
+| SH-13 | Acceptance tests for the spec's MVP table | Must |
 
 ## 6. Working rules and definition of done
 

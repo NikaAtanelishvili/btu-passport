@@ -7,6 +7,8 @@ SHA-256 in a Merkle root on an EVM chain, and lets anyone verify it without logi
 - docs/plan/00-overview.md — implementation plan index; one file per area in docs/plan/.
   The plan wins over other docs.
 - docs/01-requirements.md, docs/02-system-design.md, docs/03-web-app-design.md — background and IDs.
+- docs/plan/05-addendum-sheets.md — milestone M11 (Google Sheets, mandatory gaps); runs before M10.
+- docs/spec/ — the full hackathon spec; it wins where it contradicts the older docs.
 
 ## Stack (locked)
 Next.js App Router + TS + Tailwind + stock shadcn/ui · FastAPI + Pydantic v2 +
