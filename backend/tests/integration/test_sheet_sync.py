@@ -1,5 +1,6 @@
 """SH-04: the sync engine. Every outcome of the addendum's §5 and its invariants."""
 
+import re
 from collections.abc import Callable
 from datetime import date, timedelta
 from typing import Any
@@ -580,3 +581,45 @@ def test_thousands_of_rows_in_one_run(seeded: Session, sheet: TableSource) -> No
     assert result.counts[VERIFIED] == {"DUPLICATE": 60, "ERROR": 12000}
     again = sync.sync_now(sheet)
     assert again.status == "DONE", again.error
+
+
+def demo_file(name: str) -> tuple[list[list[str]], list[list[str]], list[str]]:
+    """A seed/sheets demo file: its Students rows, Verified Skills rows, and the outcome its
+    table documents for each of them, in order."""
+    text = (export_sheets.OUT_DIR / name).read_text()
+    students, records = (
+        [line.split("\t") for line in block.strip().splitlines()]
+        for block in re.findall(r"```tsv\n(.*?)```", text, re.S)
+    )
+    expected = re.findall(r"^\| (?:Students|\d+) \|[^|]*\| `([A-Z_]+)`", text, re.M)
+    return students, records, expected
+
+
+@pytest.mark.parametrize(
+    "files",
+    [["demo-rows.md"], ["demo-rows-live.md"], ["demo-rows.md", "demo-rows-live.md"]],
+    ids=["first", "live", "live-after-first"],
+)
+def test_demo_files_give_their_documented_outcomes(
+    seeded: Session, sheet: TableSource, files: list[str]
+) -> None:
+    """The second set still shows real PROCESSED results after the first was rehearsed."""
+    for name in files:
+        students, records, expected = demo_file(name)
+        first_row = 2 + len(sheet.base[VERIFIED].rows) + len(sheet.extra[VERIFIED])
+        sheet.add(STUDENTS, *students).add(VERIFIED, *records)
+        assert sync.sync_now(sheet).status == "DONE"
+        seeded.expire_all()
+        got = [outcome(seeded, STUDENTS, students[0][0])[0]]
+        for row in range(first_row, first_row + len(records)):
+            found = seeded.scalar(
+                select(SheetRecord).where(
+                    SheetRecord.tab == VERIFIED, SheetRecord.row_number == row
+                )
+            )
+            assert found is not None, f"{name}: no decision for row {row}"
+            got.append(found.outcome)
+        assert got == expected, name
+        versions = count(seeded, PassportVersion)
+        assert sync.sync_now(sheet).status == "DONE"
+        assert count(seeded, PassportVersion) == versions, f"{name}: second sync added a version"

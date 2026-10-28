@@ -2,7 +2,10 @@
 
 How adding a verified skill in Google Sheets updates a student's passport automatically, and
 how wrong or unverified records are stopped. About 6 minutes. The rows to paste are in
-[`seed/sheets/demo-rows.md`](../../seed/sheets/demo-rows.md).
+[`seed/sheets/demo-rows.md`](../../seed/sheets/demo-rows.md). If that set was already pasted
+and synced in a rehearsal, use the second set in
+[`seed/sheets/demo-rows-live.md`](../../seed/sheets/demo-rows-live.md) (same steps, fresh IDs:
+BTU-T-0031 and REC-0201 onward), or start over with `make demo-reset`.
 
 ## Before the demo
 
