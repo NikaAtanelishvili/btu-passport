@@ -66,7 +66,7 @@ export default function VerifyPage() {
           </CardContent>
         </Card>
 
-        <Card className="gap-6 rounded-[28px]! py-8 sm:py-12">
+        <Card id="check-pdf" className="scroll-mt-24 gap-6 rounded-[28px]! py-8 sm:py-12">
           <CardHeader className="px-6 sm:px-12">
             <CardTitle className="font-display text-[clamp(1.5rem,2.6vw,2rem)] leading-tight uppercase">
               <span className="font-black">Or check</span> <span className="font-extralight">the PDF you received</span>

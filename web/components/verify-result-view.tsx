@@ -1,9 +1,12 @@
 "use client";
 
 // FE-11: the verdict, the two checks, the browser's own chain check (FE-12), the official data
-// and the proof. Shared by /v/[code] and the upload card on /verify.
+// and the proof. Shared by /v/[code] and the upload card on /verify. SH-09 (spec FR 7): a code
+// lookup only finds the official record ("Record found"), never says anything about a file; an
+// upload is labelled a file check ("Authentic", "Outdated", "Not valid").
 import { useQuery } from "@tanstack/react-query";
-import { CheckIcon, InfoIcon, LoaderIcon, TriangleAlertIcon, XIcon } from "lucide-react";
+import { CheckIcon, FileSearchIcon, InfoIcon, LoaderIcon, TriangleAlertIcon, XIcon } from "lucide-react";
+import Link from "next/link";
 
 import { Sticker } from "@/components/brand";
 import { Eyebrow } from "@/components/display";
@@ -106,27 +109,48 @@ function describe(
 
 type Verdict = VerifyResult["verdict"];
 
-const PANEL: Record<Verdict, { tone: Tone; word: string }> = {
-  VALID: { tone: "valid", word: "Valid" },
-  SUPERSEDED: { tone: "superseded", word: "Superseded" },
-  NOT_FOUND: { tone: "invalid", word: "Not valid" },
-  UNKNOWN_CODE: { tone: "invalid", word: "Not valid" },
-  NOT_ISSUED_BY_BTU: { tone: "invalid", word: "Not valid" },
-  REVOKED: { tone: "invalid", word: "Not valid" },
+/** "record": looked up by verification code; "file": an uploaded PDF was checked. */
+export type CheckKind = "record" | "file";
+
+const PANEL: Record<CheckKind, Record<Verdict, { tone: Tone; word: string }>> = {
+  record: {
+    VALID: { tone: "valid", word: "Record found" },
+    SUPERSEDED: { tone: "superseded", word: "Record found" },
+    NOT_FOUND: { tone: "invalid", word: "Not found" },
+    UNKNOWN_CODE: { tone: "invalid", word: "Not found" },
+    NOT_ISSUED_BY_BTU: { tone: "invalid", word: "Not valid" },
+    REVOKED: { tone: "invalid", word: "Not valid" },
+  },
+  file: {
+    VALID: { tone: "valid", word: "Authentic" },
+    SUPERSEDED: { tone: "superseded", word: "Outdated" },
+    NOT_FOUND: { tone: "invalid", word: "Not valid" },
+    UNKNOWN_CODE: { tone: "invalid", word: "Not valid" },
+    NOT_ISSUED_BY_BTU: { tone: "invalid", word: "Not valid" },
+    REVOKED: { tone: "invalid", word: "Not valid" },
+  },
 };
 
-function subtitle(result: VerifyResult): string {
+function replaced(result: VerifyResult): string {
+  return result.latest_issued_at
+    ? `A newer version replaced it on ${formatDate(result.latest_issued_at)}.`
+    : `A newer version (v${result.latest_version_no ?? "?"}) replaced it.`;
+}
+
+function subtitle(result: VerifyResult, kind: CheckKind): string {
   switch (result.verdict) {
     case "VALID":
-      return "Issued by Business and Technology University. This is the latest version and it matches the blockchain record.";
+      return kind === "record"
+        ? "Official record found: issued by Business and Technology University. It is the latest version."
+        : "This file is unchanged since Business and Technology University issued it, and it is the latest version.";
     case "SUPERSEDED":
-      return result.latest_issued_at
-        ? `A real BTU passport, but not the latest. A newer version replaced it on ${formatDate(result.latest_issued_at)}.`
-        : `A real BTU passport, but not the latest. A newer version (v${result.latest_version_no ?? "?"}) replaced it.`;
+      return kind === "record"
+        ? `Official record found, issued by BTU, but it is not the latest version. ${replaced(result)}`
+        : `This file is authentic and unchanged, but it is not the latest version. ${replaced(result)}`;
     case "NOT_FOUND":
       return "This file doesn't match any passport BTU issued.";
     case "UNKNOWN_CODE":
-      return "No passport matches this code.";
+      return "No official record matches this code.";
     case "NOT_ISSUED_BY_BTU":
       return "This passport was not issued by BTU.";
     case "REVOKED":
@@ -187,29 +211,48 @@ export function VerifyResultView({
   localSha256?: string;
 }) {
   const input = checkInputFor(result, localSha256);
+  const kind: CheckKind = localSha256 ? "file" : "record";
   const version = result.version;
   const chain = result.chain;
   const code = version?.verification_code;
   const unknown = result.verdict === "NOT_FOUND" || result.verdict === "UNKNOWN_CODE";
-  const { tone, word } = PANEL[result.verdict];
+  const { tone, word } = PANEL[kind][result.verdict];
+  const found = result.verdict === "VALID" || result.verdict === "SUPERSEDED";
   const failure = FAILURE[result.verdict];
   const superseded = result.verdict === "SUPERSEDED";
   const fingerprint = result.proof?.pdf_sha256;
 
   return (
-    <div data-testid="verify-result">
+    <div data-testid="verify-result" data-check={kind} className="space-y-3">
+      <Eyebrow>{kind === "record" ? "Record lookup by verification code" : "File check of the uploaded PDF"}</Eyebrow>
       <StatusPanel
         tone={tone}
         word={word}
         wordProps={{ "data-testid": "verdict", title: verdictHeadline(result.verdict, result.latest_version_no) }}
-        subtitle={subtitle(result)}
+        subtitle={subtitle(result, kind)}
         aside={
+          kind === "file" &&
           result.verdict === "VALID" && (
             <Sticker name="blockchain-verified" width={240} rotate={-6} className="w-[200px] sm:w-[240px]" />
           )
         }
       >
         <div className="space-y-8">
+          {kind === "record" && found && (
+            <div className="flex flex-col gap-4 rounded-2xl border-[1.5px] border-dashed border-foreground p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <p className="flex items-start gap-3 sm:text-lg" data-testid="record-not-file">
+                <FileSearchIcon className="mt-0.5 size-6 shrink-0" aria-hidden />
+                <span>
+                  <strong>This confirms the record. To check a file, upload the PDF.</strong> A code only finds
+                  BTU&apos;s official record; it can&apos;t tell whether a PDF someone sent you was changed.
+                </span>
+              </p>
+              <Link href="/verify#check-pdf" className={cn(buttonVariants({ variant: "outline" }), "shrink-0")}>
+                Check a PDF file
+              </Link>
+            </div>
+          )}
+
           {failure && (
             <>
               <p className="max-w-3xl text-lg">{failure.why}</p>
@@ -301,12 +344,14 @@ export function VerifyResultView({
                     <CheckRow
                       ok={result.checks.document}
                       label={
-                        superseded && result.checks.document
-                          ? `Fingerprint matches the v${version?.version_no} record`
-                          : "Document unchanged since issue"
+                        kind === "record"
+                          ? "Official record on the blockchain"
+                          : superseded && result.checks.document
+                            ? `File matches the v${version?.version_no} record`
+                            : "File unchanged since issue"
                       }
                     />
-                    <CheckRow ok={result.checks.issuer} label="Issued by BTU" />
+                    <CheckRow ok={result.checks.issuer} label={kind === "record" ? "Issuer verified: BTU" : "Issued by BTU"} />
                   </ul>
                 )}
                 {input && <IndependentCheckRow input={input} expected={result.checks} />}
@@ -400,10 +445,11 @@ export function ChainOnlyResult({ input, hasProofFile }: { input: CheckInput; ha
   }
   const valid = result.documentOk && result.issuerOk && !result.revoked;
   return (
-    <div data-testid="verify-result">
+    <div data-testid="verify-result" data-check="file" className="space-y-3">
+      <Eyebrow>File check of the uploaded PDF, on the blockchain only</Eyebrow>
       <StatusPanel
         tone={valid ? "valid" : "invalid"}
-        word={valid ? "Valid" : "Not valid"}
+        word={valid ? "Authentic" : "Not valid"}
         wordProps={{ "data-testid": "verdict" }}
         subtitle={
           valid
@@ -426,7 +472,7 @@ export function ChainOnlyResult({ input, hasProofFile }: { input: CheckInput; ha
                 : "Even a one-character change gives a different fingerprint."}
           </p>
           <ul className="flex flex-col gap-2 sm:flex-row sm:gap-x-6">
-            <CheckRow ok={result.documentOk} label="Document unchanged since issue" />
+            <CheckRow ok={result.documentOk} label="File unchanged since issue" />
             <CheckRow ok={result.issuerOk} label="Issued by BTU" />
           </ul>
           {result.issuerSource === "bundled" && (
