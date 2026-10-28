@@ -1,0 +1,7 @@
+7d80fdda59ebb688c788720fa7b1c26bf68b7913:backend/tests/unit/test_signer_key.py:generic-api-key:13
+7d80fdda59ebb688c788720fa7b1c26bf68b7913:backend/tests/unit/test_signer_key.py:generic-api-key:14
+908e64660e769fecb7f07308873e964ade224ac7:backend/tests/integration/test_students_admin.py:generic-api-key:129
+4c6c00784bb7726adbe958fb2912f9743c8b59d6:backend/tests/chain/test_signer.py:generic-api-key:20
+4c6c00784bb7726adbe958fb2912f9743c8b59d6:backend/tests/chain/test_verify.py:generic-api-key:25
+5d8fb317575dd42e8e2a023fa51a048ed12accce:backend/tests/chain/test_signer.py:generic-api-key:20
+f414cc459ed74134afe15b215717127877a11ba6:.env.example:generic-api-key:82
