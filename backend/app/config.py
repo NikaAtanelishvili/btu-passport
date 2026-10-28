@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     s3_access_key: str = "minio"
     s3_secret_key: SecretStr
     s3_bucket: str = "passports"
+    # MinIO: us-east-1 with path-style URLs; a hosted bucket (Railway) may need its own.
+    s3_region: str = "us-east-1"
+    s3_addressing_style: Literal["path", "virtual"] = "path"
 
     # Outgoing email: SMTP (Mailpit in dev) or Resend's HTTP API (hosts that block SMTP).
     mail_provider: Literal["smtp", "resend"] = "smtp"
@@ -101,6 +104,16 @@ class Settings(BaseSettings):
     google_sheets_credentials_json: SecretStr = SecretStr("")
     sheet_sync_interval_seconds: int = 60
     sheet_writeback: bool = False
+
+    @field_validator("database_url")
+    @classmethod
+    def _psycopg_driver(cls, value: str) -> str:
+        # Hosted Postgres (Railway) gives postgresql:// or postgres://; SQLAlchemy would pick
+        # psycopg2, which isn't installed.
+        for prefix in ("postgresql://", "postgres://"):
+            if value.startswith(prefix):
+                return "postgresql+psycopg://" + value.removeprefix(prefix)
+        return value
 
     @field_validator(
         "allowed_email_domains", "allowed_emails", "dev_super_admin_emails", mode="before"

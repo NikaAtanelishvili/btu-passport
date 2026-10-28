@@ -27,12 +27,19 @@ class SignerSettings(BaseSettings):
     signer_hmac_secret: SecretStr
     # Relative paths are taken from the repository root.
     issuer_private_key_file: Path = Path("secrets/issuer_key")
+    # The key itself, for hosts without secret files (Railway); wins over the file when set.
+    issuer_private_key: SecretStr = SecretStr("")
     confirmations: int = 1
     receipt_timeout_seconds: int = 120
 
     def key_path(self) -> Path:
         path = self.issuer_private_key_file
         return path if path.is_absolute() else REPO_ROOT / path
+
+    def private_key(self) -> str:
+        """ISSUER_PRIVATE_KEY if set, else the content of ISSUER_PRIVATE_KEY_FILE (OSError)."""
+        content = self.issuer_private_key.get_secret_value().strip()
+        return content or self.key_path().read_text().strip()
 
     def abi_path(self) -> Path:
         return REPO_ROOT / "shared" / "PassportRegistry.abi.json"

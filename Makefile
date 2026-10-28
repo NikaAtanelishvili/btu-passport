@@ -14,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets railway-env chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -137,6 +137,11 @@ demo-reset:
 
 export-sheets:
 	cd backend && uv run python -m cli export-sheets
+
+# Railway variables per service from .env.demo into secrets/railway/*.env (README "Railway
+# deploy"); prints variable names only.
+railway-env:
+	python3 infra/railway/env_blocks.py $(DEMO_ENV)
 
 ## Chain -------------------------------------------------------------------------
 

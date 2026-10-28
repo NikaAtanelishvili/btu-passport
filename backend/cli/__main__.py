@@ -34,6 +34,10 @@ def main() -> None:
     )
     export.add_argument("--xlsx", metavar="FILE", help="also write the three tabs as one .xlsx")
     commands.add_parser("bench", help="scaling measurements on a *_bench database (SH-12)")
+    reset = commands.add_parser(
+        "demo-reset", help="Sheet back to the seed data, fresh database, seed, accounts (M10)"
+    )
+    reset.add_argument("--yes", action="store_true", help="confirm: deletes all data")
     args = parser.parse_args()
 
     if args.command == "merkle-vectors":
@@ -56,6 +60,10 @@ def main() -> None:
         from cli import bench
 
         bench.main()
+    elif args.command == "demo-reset":
+        from cli import demo_reset
+
+        demo_reset.main(yes=args.yes)
 
 
 def issue_pending() -> None:

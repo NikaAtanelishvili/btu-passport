@@ -83,3 +83,33 @@ def test_resend_needs_its_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
         Settings(_env_file=None)
     monkeypatch.setenv("RESEND_API_KEY", "re_x")
     assert Settings(_env_file=None).mail_provider == "resend"
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["postgresql://u:p@db.internal:5432/railway", "postgres://u:p@db.internal:5432/railway"],
+)
+def test_plain_postgres_url_gets_the_psycopg_driver(
+    monkeypatch: pytest.MonkeyPatch, url: str
+) -> None:
+    # Railway's Postgres hands out postgresql:// (and some hosts postgres://) URLs.
+    monkeypatch.setenv("DATABASE_URL", url)
+    assert Settings(_env_file=None).database_url == (
+        "postgresql+psycopg://u:p@db.internal:5432/railway"
+    )
+
+
+def test_explicit_driver_kept(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://passport:x@localhost/passport")
+    assert Settings(_env_file=None).database_url.startswith("postgresql+psycopg://passport")
+
+
+def test_s3_region_and_addressing_default_to_minio(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("S3_REGION", raising=False)
+    monkeypatch.delenv("S3_ADDRESSING_STYLE", raising=False)
+    s = Settings(_env_file=None)
+    assert (s.s3_region, s.s3_addressing_style) == ("us-east-1", "path")
+    monkeypatch.setenv("S3_REGION", "auto")
+    monkeypatch.setenv("S3_ADDRESSING_STYLE", "virtual")
+    s = Settings(_env_file=None)
+    assert (s.s3_region, s.s3_addressing_style) == ("auto", "virtual")

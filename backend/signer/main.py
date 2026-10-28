@@ -166,13 +166,16 @@ class Signer:
 def load_signer(settings: SignerSettings) -> Signer:
     """Startup checks (BC-07): key matches ISSUER_ADDRESS, right chain, our contract and owner."""
     try:
-        key = settings.key_path().read_text().strip()
+        key = settings.private_key()
     except OSError as exc:
-        raise StartupError(f"Cannot read ISSUER_PRIVATE_KEY_FILE ({exc.strerror}).") from None
+        raise StartupError(
+            "ISSUER_PRIVATE_KEY is empty and ISSUER_PRIVATE_KEY_FILE can't be read "
+            f"({exc.strerror})."
+        ) from None
     try:
         account: LocalAccount = Account.from_key(key)
     except Exception:  # the message could contain key material; say nothing about the value
-        raise StartupError("ISSUER_PRIVATE_KEY_FILE does not hold a valid private key.") from None
+        raise StartupError("ISSUER_PRIVATE_KEY(_FILE) does not hold a valid private key.") from None
     del key
     if account.address.lower() != settings.issuer_address.lower():
         raise StartupError(

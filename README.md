@@ -233,3 +233,85 @@ not cleared. Signed-in sessions end with the database.
 
 If you can't reset (for example on the hosted demo), paste the second set of rows,
 `seed/sheets/demo-rows-live.md`, instead: same scenarios, fresh IDs.
+
+## Deploying (M10)
+
+Two targets run the same images: **Railway** (managed, preferred) and a **plain Linux server**
+with Docker Compose and Caddy (fallback). Both use the demo configuration in `.env.demo`
+(git-ignored; every variable is documented in `.env.example`, `# demo:` lines give the demo
+value). Images: `backend/Dockerfile` (api, worker, CLI), `backend/signer.Dockerfile`,
+`web/Dockerfile`, all built from the repo root. The Sepolia contract must be deployed first
+(see "Sepolia contract" below): its address is in `contracts/deployments/11155111.json`, which
+the backend images copy, and it is a build argument of the web image.
+
+Before either target, check `.env.demo` locally with the production build (`make prod-up`,
+"Local production rehearsal" below).
+
+### Railway deploy
+
+Five services in one project: `web` (the only public one), `api`, `worker`, `signer`,
+`Postgres`, plus a storage bucket. Sheets sync runs inside the worker. No Caddy (Railway
+terminates HTTPS), no Mailpit (Resend sends mail over HTTPS; Railway blocks SMTP), no Anvil.
+`api`, `worker` and `signer` have no public domain; `web` forwards `/api`, `/auth` and
+`/.well-known` to `api` over the private network.
+
+1. **Variables from `.env.demo`:** `make railway-env` writes one block per service to
+   `secrets/railway/{api,worker,signer,web}.env` (git-ignored, mode 0600; it prints only
+   variable names). The signer key goes into `signer.env` only.
+2. **Project:** in Railway, *New Project → Deploy from GitHub repo* → this repository. Rename
+   the first service to `api`. Then *+ New → GitHub repo* (same repo) three more times for
+   `worker`, `signer`, `web`; *+ New → Database → PostgreSQL* (keep the name `Postgres`);
+   *+ New → Bucket* (name it `Bucket`). Service names matter: they are the private host
+   names (`api.railway.internal`, `signer.railway.internal`) and the variable references
+   (`${{Postgres.DATABASE_URL}}`, `${{Bucket.…}}`).
+3. **Per service, Settings:** leave *Root Directory* empty (builds use the repo root) and set
+   *Config-as-code → Railway config file* to:
+
+   | Service | Config file | What it sets |
+   | --- | --- | --- |
+   | api | `/infra/railway/api.json` | `backend/Dockerfile`, pre-deploy `alembic upgrade head`, healthcheck `/api/healthz` |
+   | worker | `/infra/railway/worker.json` | `backend/Dockerfile`, start `python -m worker` |
+   | signer | `/infra/railway/signer.json` | `backend/signer.Dockerfile`, healthcheck `/healthz` |
+   | web | `/infra/railway/web.json` | `web/Dockerfile`, healthcheck `/verify` |
+
+4. **Per service, Variables → Raw Editor:** paste the matching `secrets/railway/<service>.env`.
+   Open the bucket's *Variables* tab and check its variable names match the `${{Bucket.…}}`
+   references in `api.env` / `worker.env` (`ENDPOINT`, `ACCESS_KEY_ID`, `SECRET_ACCESS_KEY`,
+   `BUCKET`, `REGION`); rename the references if Railway shows other names. If uploads fail
+   with an addressing error, set `S3_ADDRESSING_STYLE=path` on api and worker.
+5. **Networking:** only `web` gets a domain: *web → Settings → Networking → Custom Domain* →
+   `btuaipassport.space`, target port `3000`. Don't generate domains for the others.
+6. **DNS at Namecheap** (*Domain List → Manage → Advanced DNS*): delete the default parking
+   records for `@` and `www` (CNAME / URL Redirect), keep Resend's records, then add exactly
+   what Railway shows for the custom domain, normally:
+
+   | Type | Host | Value |
+   | --- | --- | --- |
+   | ALIAS Record | `@` | the `….up.railway.app` target Railway shows |
+   | TXT Record | the host Railway shows (e.g. `_railway-verify`) | the value Railway shows, if it shows one |
+
+   Namecheap has no CNAME at the apex; its *ALIAS Record* is the equivalent. Railway issues
+   the certificate once DNS resolves (minutes to an hour).
+7. **Deploy** all four (the api's pre-deploy step migrates the database). Then, in a terminal
+   with the Railway CLI (`npm i -g @railway/cli`, `railway login`, `railway link`), run the
+   one-off commands inside the api service:
+
+   ```sh
+   railway ssh --service api
+   python -m cli seed                  # seed students, passports, skills (once)
+   python -m cli demo-users            # DEMO_* super admin, admin, student
+   python -m cli issue-pending         # the worker renders and anchors the seed passports
+   python -m cli sheets-check          # reads the Sheet's three tabs
+   python -m cli demo-reset --yes      # later: Sheet + database back to the seed data
+   exit
+   ```
+
+8. **Check:** `https://btuaipassport.space/api/healthz` → `{"ok":true}`;
+   `https://btuaipassport.space/.well-known/ai-passport-issuer.json` names the Sepolia
+   contract; sign in with a code to `DEMO_SUPER_ADMIN_EMAIL`; the Issuance page reaches
+   ANCHORED and the verify page links the transaction on Sepolia Etherscan.
+
+Notes: Railway's private network has no per-service isolation, so the API can reach the signer
+too (the HMAC header still guards `/anchor`; on the plain server only the worker shares a
+network with the signer). Changing `CONTRACT_ADDRESS` or `NEXT_PUBLIC_*` on `web` needs a
+redeploy, because Next.js builds them in.

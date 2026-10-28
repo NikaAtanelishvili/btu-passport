@@ -27,8 +27,8 @@ def client() -> S3Client:
         endpoint_url=s.s3_endpoint_url,
         aws_access_key_id=s.s3_access_key,
         aws_secret_access_key=s.s3_secret_key.get_secret_value(),
-        region_name="us-east-1",
-        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+        region_name=s.s3_region,
+        config=Config(signature_version="s3v4", s3={"addressing_style": s.s3_addressing_style}),
     )
 
 
