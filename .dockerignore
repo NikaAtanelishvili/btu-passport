@@ -1,0 +1,26 @@
+# IN-05: the build context is the repo root (docker build -f backend/Dockerfile .).
+# Secrets and env files must never reach an image layer.
+.env
+.env.*
+secrets/
+**/*.pem
+**/issuer_key*
+
+.git/
+docs/
+infra/
+**/node_modules/
+**/.next/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/*.tsbuildinfo
+backend/tests/
+web/tests/
+contracts/lib/
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/deployments/31337.json

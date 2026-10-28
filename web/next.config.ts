@@ -18,6 +18,8 @@ const btuIssuer = {
 const publicHost = new URL(process.env.PUBLIC_BASE_URL ?? "http://localhost:3000").hostname;
 
 const nextConfig: NextConfig = {
+  // IN-05: `next build` emits a self-contained server for the Docker image (web/Dockerfile).
+  output: "standalone",
   allowedDevOrigins: [publicHost],
   env: { NEXT_PUBLIC_BTU_ISSUER: JSON.stringify(btuIssuer) },
   cacheComponents: true,

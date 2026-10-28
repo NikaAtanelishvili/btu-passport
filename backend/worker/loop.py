@@ -1,8 +1,10 @@
 """The worker loop (BE-26): claim a job, run it in its own transaction, repeat; plus timers."""
 
 import logging
+import os
 import signal
 import time
+from pathlib import Path
 from types import FrameType
 
 from app.db import SessionLocal
@@ -59,8 +61,12 @@ def main() -> None:
             log.info("requeued %s job(s) left RUNNING by a crashed worker", n)
         db.commit()
     timers = ticks.Timers()
+    # Container healthcheck (docker_healthcheck.py): the file's age shows the loop is alive.
+    heartbeat = os.environ.get("WORKER_HEARTBEAT_FILE")
     log.info("worker started")
     while not stop.requested:
+        if heartbeat:
+            Path(heartbeat).touch()
         timers.run_due()
         if not run_once():
             time.sleep(1)
