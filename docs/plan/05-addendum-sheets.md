@@ -200,7 +200,7 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - Existing seeded students without a version get their V1 on the next `issue-pending`. Update the A1 wording and record the reversal in Deviations.
 - **Done when:** registering a student yields an ANCHORED V1 that verifies VALID; a zero-skill PDF looks right.
 
-### SH-09 Verify wording: record versus file (G8)
+### SH-09 Verify wording: record versus file (G8) ✅
 
 - Verify by code shows "Official record found", the version, latest or outdated, issuer verified, and a clear line: "This confirms the record. To check a file, upload the PDF." It must not look like a file check.
 - Verify by file keeps the authentic, outdated and not-valid results, labelled as file checks.
