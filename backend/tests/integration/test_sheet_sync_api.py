@@ -10,6 +10,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.db import SessionLocal
 from app.models import AuditLog, Job, SheetSyncRun
 from app.sheets import service, sync
 from app.sheets.source import VERIFIED
@@ -183,3 +184,29 @@ def test_records_listing(
 def test_students_get_403(client_as: ClientAs, method: str, path: str) -> None:
     assert getattr(client_as("student"), method)(path).status_code == 403
     assert getattr(client_as(None), method)(path).status_code == 401
+
+
+def test_a_run_left_without_its_job_is_picked_up(
+    seeded: Session, sheet: TableSource, run_jobs: Callable[[], int]
+) -> None:
+    """Seen live: a stale SHEET_SYNC job for a run that had already finished took the dedupe
+    key, so the next run got no job and stayed QUEUED, blocking every later sync."""
+    from app.services import jobs
+
+    with SessionLocal() as db, db.begin():
+        done = sync.create_run(db, "MANUAL", "Google Sheet")
+    sync.execute(done, sheet)  # finished outside the worker; its job is still queued
+    jobs.enqueue(seeded, "SHEET_SYNC", {"run_id": done}, dedupe_key="sheet-sync", max_attempts=1)
+    seeded.commit()
+    orphan = service.enqueue(seeded, "MANUAL").run_id  # the dedupe key is taken: no job
+    seeded.commit()
+    run_jobs()  # the stale job runs the active run instead of its finished one
+    assert [(r.run_id, r.status) for r in runs(seeded)] == [(done, "DONE"), (orphan, "DONE")]
+
+    # And a QUEUED run with no job at all gets one from the next tick.
+    seeded.add(SheetSyncRun(trigger="SCHEDULE", status="QUEUED", source="Google Sheet"))
+    seeded.commit()
+    assert service.tick(seeded) is None
+    seeded.commit()
+    run_jobs()
+    assert runs(seeded)[-1].status == "DONE"

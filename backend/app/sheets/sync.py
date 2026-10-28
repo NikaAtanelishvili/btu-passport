@@ -220,6 +220,8 @@ def fail_run(run_id: int, error: str) -> SyncResult:
 def execute(run_id: int, source: SheetSource) -> SyncResult:
     with SessionLocal() as db, db.begin():
         run = db.get_one(SheetSyncRun, run_id, with_for_update=True)
+        if run.status not in ("QUEUED", "RUNNING"):  # already ended: never run it twice
+            return SyncResult(run_id, run.status, run.error)
         run.status = "RUNNING"
         run.started_at = datetime.now(UTC)
     started = time.monotonic()

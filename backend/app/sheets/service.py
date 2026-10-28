@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.errors import AppError
 from app.models import (
+    Job,
     Passport,
     PassportVersion,
     SheetRecord,
@@ -70,6 +71,17 @@ def tick(db: Session) -> int | None:
     Returns the new run's ID. Disabled without GOOGLE_SHEETS_ID."""
     if not configured():
         return None
+    if (active := sync.active_run(db)) is not None:
+        # A run whose job is gone (a crash, or a job that ran another run) gets a new one.
+        pending = db.scalar(
+            select(func.count()).where(
+                Job.type == "SHEET_SYNC", Job.status.in_(("QUEUED", "RUNNING"))
+            )
+        )
+        if not pending:
+            jobs.enqueue(db, "SHEET_SYNC", {"run_id": active.run_id}, dedupe_key=DEDUPE_KEY,
+                         max_attempts=1)  # fmt: skip
+        return None
     due = next_run_at(db)
     if due is not None and due > datetime.now(UTC):
         return None
@@ -82,8 +94,15 @@ def source_for_run() -> SheetSource:
     return GoogleSheetSource()
 
 
-def run_job(run_id: int) -> sync.SyncResult:
-    """The SHEET_SYNC job: read, decide, process (SH-04), then write back (SH-06)."""
+def run_job(run_id: int) -> sync.SyncResult | None:
+    """The SHEET_SYNC job: read, decide, process (SH-04), then write back (SH-06). It runs the
+    run that is queued or running, which is its own unless that one already ended (one job
+    per dedupe key serves whichever run is active)."""
+    with SessionLocal() as db:
+        active = sync.active_run(db)
+    if active is None:
+        return None
+    run_id = active.run_id
     try:
         source = source_for_run()
     except SourceError as exc:
