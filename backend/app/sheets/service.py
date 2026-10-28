@@ -20,7 +20,7 @@ from app.models import (
 from app.schemas.common import Page
 from app.schemas.sheets import SheetRecordRow, SheetRunOut, SheetStatus, SyncRequested
 from app.services import audit, jobs
-from app.sheets import sync
+from app.sheets import sync, writeback
 from app.sheets.source import GoogleSheetSource, SheetSource, SourceError
 
 if TYPE_CHECKING:
@@ -87,7 +87,10 @@ def run_job(run_id: int) -> sync.SyncResult:
         source = source_for_run()
     except SourceError as exc:
         return sync.fail_run(run_id, str(exc))
-    return sync.execute(run_id, source)
+    result = sync.execute(run_id, source)
+    if isinstance(source, writeback.WritableSource):
+        writeback.write_back(result, source)
+    return result
 
 
 def give_up(run_id: int, error: str) -> None:

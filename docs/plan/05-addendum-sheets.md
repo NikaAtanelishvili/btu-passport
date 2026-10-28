@@ -181,7 +181,7 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - `POST /api/admin/sheet-sync` (Admin and Super admin): enqueue now, return the run ID; `GET /api/admin/sheet-sync/runs` and `GET /api/admin/sheet-sync/records?outcome=&tab=&q=` (paged).
 - **Done when:** a manual sync and a scheduled sync both run; a second request while one runs returns the running run's ID; a student gets 403.
 
-### SH-06 Write-back
+### SH-06 Write-back ✅
 
 - With `SHEET_WRITEBACK=true`, after each run write `sync_status`, `sync_message`, `synced_at` for every row decided in that run, in one `values.batchUpdate`; create the three header cells if missing; never touch other columns.
 - **Done when:** after a live sync the Verified Skills tab shows the outcome next to each row; turning write-back off leaves the Sheet untouched.

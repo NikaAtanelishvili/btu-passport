@@ -283,7 +283,7 @@ def _credentials(scope: str) -> service_account.Credentials:
     return creds
 
 
-def _a1_tab(title: str) -> str:
+def a1_tab(title: str) -> str:
     return "'" + title.replace("'", "''") + "'"
 
 
@@ -330,7 +330,7 @@ class GoogleSheetSource:
             "GET",
             f"{SHEETS_API}/{quote(self.sheet_id)}/values:batchGet",
             params=[
-                *[("ranges", _a1_tab(titles[name])) for name in TABS],
+                *[("ranges", a1_tab(titles[name])) for name in TABS],
                 ("valueRenderOption", "UNFORMATTED_VALUE"),
                 ("dateTimeRenderOption", "SERIAL_NUMBER"),
                 ("majorDimension", "ROWS"),

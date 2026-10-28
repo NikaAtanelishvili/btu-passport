@@ -102,8 +102,8 @@ class SyncResult:
     counts: dict[str, dict[str, int]] = field(default_factory=dict)
     decisions: list[Decision] = field(default_factory=list)
     versions: int = 0
-    # Each Verified Skills row as read, by row number (write-back compares its system cells).
-    verified_rows: dict[int, Row] = field(default_factory=dict)
+    # The Verified Skills tab as read: write-back (SH-06) compares its system cells.
+    verified: Tab | None = None
 
 
 # --- Values ----------------------------------------------------------------------------------
@@ -302,7 +302,7 @@ class _Engine:
             counts=counts,
             decisions=self.decisions,
             versions=self.versions,
-            verified_rows={r.number: r for r in verified.rows},
+            verified=verified,
         )
 
     def _previous(self, db: Session, tab: str) -> dict[str, SheetRecord]:
