@@ -90,6 +90,7 @@ class Decision:
     message: str | None = None
     award_id: int | None = None
     version_id: int | None = None
+    student_id: str | None = None  # a WAITING row's known student, for the admin link
     skipped: bool = False  # unchanged since its last decision (fast path)
     changed_data: bool = False  # created or updated something in the system
     saved: bool = False  # already written to sheet_records in its own transaction
@@ -319,7 +320,7 @@ class _Engine:
             return None
         outcome = prev.outcome if tab == VERIFIED else "UNCHANGED"
         return Decision(tab, item.key, item.row.number, digest, outcome, prev.message,
-                        prev.award_id, prev.version_id, skipped=True)  # fmt: skip
+                        prev.award_id, prev.version_id, prev.student_id, skipped=True)  # fmt: skip
 
     # --- Skills Catalog ----------------------------------------------------------------------
 
@@ -577,6 +578,7 @@ class _Engine:
                 continue
             if status == "PENDING":
                 d.outcome, d.message = "WAITING", "Waiting for confirmation"
+                d.student_id = v["student_id"] if v["student_id"] in known_students else None
                 continue
             if status == "REJECTED":
                 d.outcome, d.message = "IGNORED", "Rejected; not added"
@@ -798,6 +800,7 @@ def _upsert(db: Session, decisions: list[Decision], run_id: int) -> None:
                     message=d.message,
                     award_id=d.award_id,
                     version_id=d.version_id,
+                    student_id=d.student_id,
                     first_seen_at=now,
                     decided_at=now,
                     run_id=run_id,
@@ -808,5 +811,5 @@ def _upsert(db: Session, decisions: list[Decision], run_id: int) -> None:
             r.decided_at = now
             r.run_id = run_id
         r.outcome, r.message, r.row_number, r.row_hash = d.outcome, d.message, d.row, d.row_hash
-        r.award_id, r.version_id = d.award_id, d.version_id
+        r.award_id, r.version_id, r.student_id = d.award_id, d.version_id, d.student_id
     db.flush()

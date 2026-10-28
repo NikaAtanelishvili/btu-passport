@@ -167,6 +167,18 @@ def test_records_listing(
     assert [(r["key"], r["student_id"]) for r in students["items"]] == [
         ("BTU-T-0002", "BTU-T-0002")
     ]
+    # A WAITING row links to its student like a PROCESSED one; an unknown student gives none.
+    sheet.add(
+        VERIFIED,
+        record("REC-0103", "BTU-T-0002", "SKL-005", status="PENDING"),
+        record("REC-0107", "BTU-T-9999", "SKL-005", status="PENDING"),
+    )
+    sync.sync_now(sheet)
+    waiting = admin.get("/api/admin/sheet-sync/records", params={"outcome": "WAITING"}).json()
+    assert [(r["key"], r["student_id"]) for r in waiting["items"]] == [
+        ("REC-0103", "BTU-T-0002"),
+        ("REC-0107", None),
+    ]
     bad = admin.get("/api/admin/sheet-sync/records", params={"outcome": "SYNCED", "tab": "X"})
     assert bad.status_code == 422
     assert set(bad.json()["fields"]) == {"outcome", "tab"}

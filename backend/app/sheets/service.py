@@ -219,7 +219,7 @@ def list_records(
     """Errors and flags first, then Verified Skills, Students, Skills Catalog, by row."""
     row_student = aliased(Student)
     student_id = func.coalesce(
-        SkillAward.student_id, Passport.student_id, row_student.student_id
+        SkillAward.student_id, Passport.student_id, row_student.student_id, SheetRecord.student_id
     ).label("student_id")
     stmt: Any = (
         select(

@@ -62,6 +62,8 @@ class SheetRecord(Base):
     message: Mapped[str | None] = mapped_column(Text)
     award_id: Mapped[int | None] = mapped_column(ForeignKey("skill_awards.award_id"))
     version_id: Mapped[int | None] = mapped_column(ForeignKey("passport_versions.version_id"))
+    # The row's student when no award names one (a WAITING row), for the admin link.
+    student_id: Mapped[str | None] = mapped_column(ForeignKey("students.student_id"))
     first_seen_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
