@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models import AnchorBatch, Passport, PassportVersion
 from app.pdf.render import render_passport
-from app.services import anchoring, codes, merkle, storage
+from app.services import anchoring, codes, merkle, notify, storage
 from app.services.content import build_content
 from app.sheets import service as sheets
 
@@ -142,6 +142,7 @@ def anchor_batch(db: Session, payload: Payload) -> None:
         v.status = "ANCHORED"
         v.error = None
         _advance_latest(db, v)
+        notify.enqueue_if_due(db, v)  # SH-10
 
 
 def _batch_versions(db: Session, batch_id: int) -> list[PassportVersion]:
@@ -173,8 +174,14 @@ def fail_sheet_sync(db: Session, payload: Payload, error: str) -> None:
     sheets.give_up(payload["run_id"], error)
 
 
+def notify_version(db: Session, payload: Payload) -> None:
+    """SH-10: the student's email about a newly anchored version."""
+    notify.send(db, payload["version_id"])
+
+
 HANDLERS: dict[str, JobHandler] = {
     "ISSUE_VERSION": JobHandler(run=issue_version, give_up=fail_issue),
     "ANCHOR_BATCH": JobHandler(run=anchor_batch),
     "SHEET_SYNC": JobHandler(run=sheet_sync, give_up=fail_sheet_sync),
+    "NOTIFY_VERSION": JobHandler(run=notify_version),
 }

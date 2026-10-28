@@ -155,6 +155,14 @@ class FakeMailer:
         return next(code for to, code in reversed(self.sent) if to == email)
 
 
+@pytest.fixture(autouse=True)
+def _no_version_notices(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Version notices (SH-10) never reach the dev Mailpit from tests; test_notify records them."""
+    from app.services import mailer
+
+    monkeypatch.setattr(mailer, "send_version_notice", lambda **kwargs: None)
+
+
 @pytest.fixture
 def fake_mailer(monkeypatch: pytest.MonkeyPatch) -> FakeMailer:
     from app.services import mailer

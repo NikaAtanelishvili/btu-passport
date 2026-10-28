@@ -1,4 +1,5 @@
-"""Outgoing email (BE-10). Dev: Mailpit on localhost:1025; demo: a real SMTP account."""
+"""Outgoing email: sign-in codes (BE-10) and version notices (SH-10). Dev: Mailpit on
+localhost:1025; demo: a real SMTP account."""
 
 import smtplib
 import ssl
@@ -18,7 +19,31 @@ def send_login_code(email: str, code: str) -> None:
         f"It expires in {s.login_code_ttl_minutes} minutes and works once.\n"
         "If you didn't ask for it, ignore this email: nobody can sign in without the code.\n"
     )
+    _send(msg)
 
+
+def send_version_notice(
+    *, email: str, first_name: str, passport_id: str, version_no: int, skills: list[str], url: str
+) -> None:
+    """SH-10: a new version with new skills is anchored and can be downloaded."""
+    s = get_settings()
+    msg = EmailMessage()
+    msg["From"] = s.smtp_from
+    msg["To"] = email
+    msg["Subject"] = f"Your AI Skills Passport was updated to version {version_no}"
+    added = "\n".join(f"  - {name}" for name in skills)
+    msg.set_content(
+        f"Hello {first_name},\n\n"
+        f"BTU added new verified skills to your AI Skills Passport {passport_id}. "
+        f"Version {version_no} is issued and recorded on the blockchain.\n\n"
+        f"New skills:\n{added}\n\n"
+        f"View and download your passport: {url}\n"
+    )
+    _send(msg)
+
+
+def _send(msg: EmailMessage) -> None:
+    s = get_settings()
     smtp_class = smtplib.SMTP_SSL if s.smtp_port == 465 else smtplib.SMTP
     with smtp_class(s.smtp_host, s.smtp_port, timeout=15) as smtp:
         if s.smtp_port == 587:
