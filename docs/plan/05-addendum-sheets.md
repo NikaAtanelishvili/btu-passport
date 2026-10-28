@@ -223,7 +223,7 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - `sheets-demo-script.md`: the live Sheets demo step by step, using SH-02's rows.
 - **Done when:** each file is written in plain language and every number in it comes from a measurement or a setting.
 
-### SH-13 Acceptance tests for the MVP table
+### SH-13 Acceptance tests for the MVP table ✅
 
 - One automated test per MVP scenario (section 7) against a FileSource, plus a live smoke test against the real Sheet that runs only when `GOOGLE_SHEETS_ID` is set.
 - **Done when:** `make test` covers every scenario, and the live smoke test passes on my machine.

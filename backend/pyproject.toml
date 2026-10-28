@@ -66,4 +66,5 @@ pythonpath = ["."]
 testpaths = ["tests"]
 markers = [
     "chain: needs Anvil with the contract deployed (make test-chain)",
+    "live: reads the real Google Sheet; skipped unless .env sets GOOGLE_SHEETS_ID (SH-13)",
 ]
