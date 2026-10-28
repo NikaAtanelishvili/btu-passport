@@ -134,6 +134,21 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _demo_is_locked_down(self) -> "Settings":
+        """ENV=demo (M10): a public deployment. Cookies only over HTTPS, and no dev-only
+        sign-in exceptions; the API, worker and CLI refuse to start otherwise."""
+        if self.env != "demo":
+            return self
+        if not self.session_secure:
+            raise ValueError("ENV=demo needs SESSION_SECURE=true (session cookies over HTTPS)")
+        if self.allowed_emails:
+            raise ValueError(
+                "ENV=demo refuses ALLOWED_EMAILS (dev-only sign-in exceptions); leave it empty "
+                "and use ALLOWED_EMAIL_DOMAINS"
+            )
+        return self
+
+    @model_validator(mode="after")
     def _resend_needs_its_key(self) -> "Settings":
         if self.mail_provider == "resend" and not self.resend_api_key.get_secret_value():
             raise ValueError("MAIL_PROVIDER=resend needs RESEND_API_KEY")

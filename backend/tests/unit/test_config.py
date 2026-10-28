@@ -42,6 +42,7 @@ def test_dev_log_login_codes_refused_in_demo(monkeypatch: pytest.MonkeyPatch) ->
     with pytest.raises(ValueError, match="DEV_LOG_LOGIN_CODES"):
         Settings(_env_file=None)
     monkeypatch.setenv("DEV_LOG_LOGIN_CODES", "false")
+    monkeypatch.setenv("SESSION_SECURE", "true")
     assert Settings(_env_file=None).env == "demo"
 
 
@@ -113,3 +114,70 @@ def test_s3_region_and_addressing_default_to_minio(monkeypatch: pytest.MonkeyPat
     monkeypatch.setenv("S3_ADDRESSING_STYLE", "virtual")
     s = Settings(_env_file=None)
     assert (s.s3_region, s.s3_addressing_style) == ("auto", "virtual")
+
+
+# --- M10: ENV=demo enforces the demo's safety settings --------------------------------
+
+
+def _demo_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ENV", "demo")
+    monkeypatch.setenv("DEV_LOG_LOGIN_CODES", "false")
+    monkeypatch.setenv("SESSION_SECURE", "true")
+    monkeypatch.delenv("ALLOWED_EMAILS", raising=False)
+
+
+def test_demo_settings_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
+    _demo_env(monkeypatch)
+    s = Settings(_env_file=None)
+    assert (s.env, s.session_secure, s.dev_log_login_codes, s.allowed_emails) == (
+        "demo",
+        True,
+        False,
+        [],
+    )
+
+
+def test_demo_refuses_insecure_cookies(monkeypatch: pytest.MonkeyPatch) -> None:
+    _demo_env(monkeypatch)
+    monkeypatch.setenv("SESSION_SECURE", "false")
+    with pytest.raises(ValueError, match="SESSION_SECURE"):
+        Settings(_env_file=None)
+
+
+def test_demo_refuses_allowed_emails(monkeypatch: pytest.MonkeyPatch) -> None:
+    _demo_env(monkeypatch)
+    monkeypatch.setenv("ALLOWED_EMAILS", "someone@gmail.com")
+    with pytest.raises(ValueError, match="ALLOWED_EMAILS"):
+        Settings(_env_file=None)
+
+
+@pytest.mark.parametrize(
+    ("var", "value"),
+    [
+        ("SESSION_SECURE", "false"),
+        ("ALLOWED_EMAILS", "x@gmail.com"),
+        ("DEV_LOG_LOGIN_CODES", "true"),
+    ],
+)
+def test_api_refuses_to_start_with_unsafe_demo_settings(
+    monkeypatch: pytest.MonkeyPatch, var: str, value: str
+) -> None:
+    from app.config import get_settings
+    from app.main import create_app
+
+    _demo_env(monkeypatch)
+    monkeypatch.setenv(var, value)
+    get_settings.cache_clear()
+    try:
+        with pytest.raises(ValueError, match=var):
+            create_app()
+    finally:
+        get_settings.cache_clear()
+
+
+@pytest.mark.parametrize("env", ["dev", "test"])
+def test_dev_keeps_its_relaxed_settings(monkeypatch: pytest.MonkeyPatch, env: str) -> None:
+    monkeypatch.setenv("ENV", env)
+    monkeypatch.setenv("SESSION_SECURE", "false")
+    monkeypatch.setenv("ALLOWED_EMAILS", "x@gmail.com")
+    assert Settings(_env_file=None).allowed_emails == ["x@gmail.com"]
