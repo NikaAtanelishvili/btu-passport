@@ -293,7 +293,7 @@ Deployed once for the demo (BC-08) and committed: `contracts/deployments/1115511
 
 | | |
 | --- | --- |
-| Registry | [`0x7F90747ee05b30278B67EDE1F832dA3A46680Fb2`](https://sepolia.etherscan.io/address/0x7F90747ee05b30278B67EDE1F832dA3A46680Fb2) |
+| Registry | [`0x7F90747ee05b30278B67EDE1F832dA3A46680Fb2`](https://sepolia.etherscan.io/address/0x7F90747ee05b30278B67EDE1F832dA3A46680Fb2#code) (source verified on Etherscan and Sourcify) |
 | Owner = issuer | `0xFa5be866CA615744eCD72394A777D74B1cCb7e55` (key: `secrets/issuer_key_sepolia`) |
 | Deploy transaction | [`0x5a5fab86…a87081`](https://sepolia.etherscan.io/tx/0x5a5fab866fabb1c582bb0532d202c5181fc42087122446f224bd9eb676a87081), block 12013607, 2,590,230 gas |
 
@@ -307,8 +307,9 @@ It refuses unless the RPC's chain is `CHAIN_ID` and the issuer holds at least 0.
 with the key file (passed to forge through the environment, never on the command line), lets
 the node estimate gas, then writes the deployments file and `CONTRACT_ADDRESS` into
 `.env.demo`. Rebuild the images afterwards (the backend images copy the deployments file; the
-web image builds the address in). The source isn't verified on Etherscan (no
-`ETHERSCAN_API_KEY`); with one, add `DEPLOY_FLAGS=--verify`. Read-only browser checks use
+web image builds the address in). Then `make verify-contract` publishes the source on
+Etherscan (needs `ETHERSCAN_API_KEY` in `.env.demo`; compiler settings from `foundry.toml`,
+constructor argument `ISSUER_ADDRESS`). Read-only browser checks use
 the public RPC `https://ethereum-sepolia-rpc.publicnode.com` (`NEXT_PUBLIC_RPC_URL`), never
 the keyed `RPC_URL`.
 

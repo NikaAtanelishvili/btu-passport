@@ -14,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets railway-env chain-deploy-sepolia prod-build prod-up prod-down prod-ps prod-logs prod-cli prod-smoke chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets railway-env chain-deploy-sepolia verify-contract prod-build prod-up prod-down prod-ps prod-logs prod-cli prod-smoke chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -216,6 +216,20 @@ chain-deploy-sepolia:
 	python3 -c "import sys; sys.exit(float('$$bal') < 0.01)" || { echo "not funded (< 0.01 ETH); nothing deployed" >&2; exit 1; } && \
 	cd contracts && forge script script/Deploy.s.sol --rpc-url demo --broadcast --skip-simulation $(DEPLOY_FLAGS) && \
 	python3 script/post_deploy.py "$$chain" "" $(DEMO_ENV)
+
+# BC-08: publishes PassportRegistry's source on Etherscan for the deployment in $(DEMO_ENV)
+# (CONTRACT_ADDRESS, CHAIN_ID, constructor argument ISSUER_ADDRESS). Compiler settings come
+# from foundry.toml, as for the deploy. ETHERSCAN_API_KEY is read from the environment by
+# forge, never put on the command line or printed.
+verify-contract:
+	@test -f $(DEMO_ENV) || { echo "$(DEMO_ENV) not found" >&2; exit 1; }
+	@set -a && . ./$(DEMO_ENV) && set +a && \
+	test -n "$$ETHERSCAN_API_KEY" || { echo "ETHERSCAN_API_KEY is empty in $(DEMO_ENV)" >&2; exit 1; } && \
+	unset RPC_URL && cd contracts && \
+	forge verify-contract "$$CONTRACT_ADDRESS" src/PassportRegistry.sol:PassportRegistry \
+		--chain "$$CHAIN_ID" --constructor-args "$$(cast abi-encode 'constructor(address)' "$$ISSUER_ADDRESS")" \
+		--watch && \
+	echo "https://sepolia.etherscan.io/address/$$CONTRACT_ADDRESS#code"
 
 # ABI for Python (shared/) and the browser (web/lib/, typed `as const` for viem).
 chain-abi:
