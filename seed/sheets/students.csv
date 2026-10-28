@@ -1,0 +1,19 @@
+student_id,first_name,last_name,email,program,education_level,status
+BTU-T-0001,Giorgi,Kapanadze,btu-t-0001@example.org,Business Administration (Management),BACHELOR,ACTIVE
+BTU-T-0002,Mariam,Beridze,btu-t-0002@example.org,Business Administration (Finance),BACHELOR,ACTIVE
+BTU-T-0003,Nino,Maisuradze,btu-t-0003@example.org,Information Technologies,BACHELOR,ACTIVE
+BTU-T-0004,Saba,Japaridze,btu-t-0004@example.org,Digital Marketing,BACHELOR,ACTIVE
+BTU-T-0005,Ana,Kiknadze,btu-t-0005@example.org,Computer Science and Artificial Intelligence,BACHELOR,ACTIVE
+BTU-T-0006,Davit,Metreveli,btu-t-0006@example.org,Psychology in the Digital World,BACHELOR,ACTIVE
+BTU-T-0007,Salome,Chkheidze,btu-t-0007@example.org,Business Administration and Modern Technologies,MASTER,ACTIVE
+BTU-T-0008,Luka,Kipiani,btu-t-0008@example.org,Information Systems Management - DevOps,MASTER,ACTIVE
+BTU-T-0009,Tamar,Gogoladze,btu-t-0009@example.org,Data-Driven Digital Marketing,MASTER,GRADUATE
+BTU-T-0010,Irakli,Samkharadze,btu-t-0010@example.org,International Security and Technologies,MASTER,ACTIVE
+BTU-T-0011,Elene,Lomidze,btu-t-0011@example.org,Business Administration (Management),BACHELOR,ACTIVE
+BTU-T-0012,Nikoloz,Gelashvili,btu-t-0012@example.org,Business Administration (Finance),BACHELOR,ACTIVE
+BTU-T-0013,Ketevan,Abashidze,btu-t-0013@example.org,Information Technologies,BACHELOR,GRADUATE
+BTU-T-0014,Aleksandre,Mchedlishvili,btu-t-0014@example.org,Digital Marketing,BACHELOR,ACTIVE
+BTU-T-0021,Luka,Japaridze,btu-t-0021@example.org,Business Administration and Modern Technologies,MASTER,ACTIVE
+BTU-T-0022,Salome,Abashidze,btu-t-0022@example.org,Information Systems Management - DevOps,MASTER,ACTIVE
+BTU-T-0023,Dato,Kiknadze,btu-t-0023@example.org,Data-Driven Digital Marketing,MASTER,ACTIVE
+BTU-T-0024,Elene,Tsiklauri,btu-t-0024@example.org,International Security and Technologies,MASTER,ACTIVE

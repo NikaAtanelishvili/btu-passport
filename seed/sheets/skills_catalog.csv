@@ -1,0 +1,17 @@
+skill_code,name,category,description,badge_code
+SKL-001,AI Literacy,AI Skill,"Fundamentals of AI capabilities, limitations, and responsible use.",BDG-AI-001
+SKL-002,Prompt Engineering Fundamentals,AI Skill,Writing effective prompts for generative AI and evaluating responses.,BDG-AI-001
+SKL-003,AI Ethics & Responsible Use,AI Skill,"Identifying bias, privacy issues, and ethical risks in AI use.",BDG-AI-001
+SKL-004,AI Productivity Tools,AI Skill,Using AI tools to improve efficiency in routine tasks.,BDG-AI-001
+SKL-005,AI-Assisted Research,AI Skill,Researching information with AI assistance and critically verifying sources.,BDG-AI-001
+SKL-006,AI Data Analysis,AI Applied Skill,"Cleaning, analyzing, and interpreting data using AI tools.",BDG-AI-002
+SKL-007,Marketing Content with Generative AI,AI Applied Skill,"Generating, editing, and assessing marketing content with generative AI.",BDG-AI-002
+SKL-008,AI Workflow Automation,AI Applied Skill,Automating workflows using AI tools and system integrations.,BDG-AI-002
+SKL-009,AI Financial Analysis,AI Applied Skill,Analyzing financial data and supporting evidence-based conclusions with AI.,BDG-AI-002
+SKL-010,AI Business Decision Support,AI Applied Skill,Using AI-driven analytics to support business decisions.,BDG-AI-002
+SKL-011,AI-Powered Customer Insights,AI Applied Skill,Analyzing customer data and deriving marketing insights with AI.,BDG-AI-002
+SKL-012,Machine Learning Model Development,AI Advanced Skill,"Building, training, and evaluating machine-learning models.",BDG-AI-003
+SKL-013,Natural Language Processing,AI Advanced Skill,Applying natural language processing methods to textual data.,BDG-AI-003
+SKL-014,AI Systems Deployment,AI Advanced Skill,Deploying and monitoring AI solutions in operational environments.,BDG-AI-003
+SKL-015,Predictive Analytics with AI,AI Advanced Skill,Developing predictive models and evaluating their performance.,BDG-AI-003
+SKL-016,MLOps Fundamentals,AI Advanced Skill,"Versioning, automating, and maintaining machine-learning workflows.",BDG-AI-003
