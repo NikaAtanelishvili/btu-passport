@@ -14,6 +14,7 @@ from cli.__main__ import issue_pending
 from tests.integration.test_sheet_sync import TableSource, record
 
 pytestmark = pytest.mark.usefixtures("s3_bucket", "fake_signer")
+REAL_NOTICE = mailer.send_version_notice  # before the autouse fixture replaces it
 
 
 @pytest.fixture
@@ -69,7 +70,7 @@ def test_no_email_for_an_empty_first_version(
 def test_notice_text(monkeypatch: pytest.MonkeyPatch) -> None:
     messages: list[Any] = []
     monkeypatch.setattr(mailer, "_send", messages.append)
-    mailer.send_version_notice(
+    REAL_NOTICE(
         email="a@example.org",
         first_name="Giorgi",
         passport_id="BTU-AI-000125",
