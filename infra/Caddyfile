@@ -1,0 +1,13 @@
+# IN-05 (M10): the plain server's front door (infra/docker-compose.prod.yml). Server:
+# SITE_ADDRESS=btuaipassport.space, so Caddy gets and renews the HTTPS certificate itself;
+# local rehearsal: SITE_ADDRESS=http://:3000 (plain HTTP). The browser sees one origin.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	@api path /api/* /auth/* /.well-known/*
+	handle @api {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

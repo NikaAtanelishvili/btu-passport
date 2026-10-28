@@ -33,7 +33,7 @@ COPY --from=deps /srv/backend/.venv .venv
 COPY shared/PassportRegistry.abi.json /srv/shared/
 COPY contracts/deployments/ /srv/contracts/deployments/
 COPY seed/ /srv/seed/
-COPY backend/alembic.ini backend/docker_healthcheck.py ./
+COPY backend/alembic.ini backend/docker_healthcheck.py backend/docker-entrypoint.sh ./
 COPY backend/migrations migrations
 COPY backend/app app
 COPY backend/worker worker

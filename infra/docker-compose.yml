@@ -1,6 +1,6 @@
-# IN-01. Dev: only the default-profile infrastructure runs here; api, worker,
-# signer and web run on the host with hot reload (make api / web / ...).
-# The `app` and `demo` profiles containerise everything for the demo (IN-05, M10).
+# IN-01. Dev: only the infrastructure runs here; api, worker, signer and web run on the
+# host with hot reload (make api / web / ...). The containerised production stack is
+# infra/docker-compose.prod.yml (M10).
 #
 # Started via the Makefile, which passes --env-file .env from the repo root.
 # Images are pinned to exact tags (and digests where the tag is mutable).
@@ -92,67 +92,9 @@ services:
       retries: 20
     networks: [backend, signing]
 
-  # --- profile app: containerised services for the demo (Dockerfiles in IN-05, M10) ---
-
-  api:
-    profiles: [app]
-    build: { context: ../backend }
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-    env_file: [../.env]
-    expose: ["8000"]
-    depends_on:
-      db: { condition: service_healthy }
-      minio: { condition: service_healthy }
-    networks: [backend]
-
-  worker:
-    profiles: [app]
-    build: { context: ../backend }
-    command: ["python", "-m", "worker"]
-    env_file: [../.env]
-    depends_on:
-      db: { condition: service_healthy }
-    networks: [backend, signing]
-
-  signer:
-    profiles: [app]
-    build: { context: ../backend }
-    command: ["uvicorn", "signer.main:app", "--host", "0.0.0.0", "--port", "8100"]
-    env_file: [../.env] # split into a signer-only env file in IN-05
-    environment:
-      ISSUER_PRIVATE_KEY_FILE: /run/secrets/issuer_key
-    secrets: [issuer_key] # the only service with the key
-    expose: ["8100"]
-    networks: [signing]
-
-  web:
-    profiles: [app]
-    build: { context: ../web }
-    environment:
-      API_ORIGIN: http://api:8000
-    expose: ["3000"]
-    networks: [backend]
-
-  caddy:
-    profiles: [demo]
-    # Must see the real client address: Docker's published ports keep it for IPv4 via
-    # iptables, but the userland proxy (IPv6, hairpin) or a tunnel replaces it with a
-    # gateway address, and then every client shares one per-IP sign-in limit (IN-05/IN-07).
-    image: caddy:2.11.7
-    ports: ["80:80", "443:443"]
-    environment:
-      DEMO_DOMAIN: ${DEMO_DOMAIN:-localhost}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddydata:/data
-    networks: [backend]
-
 networks:
   backend:
-    # Pinned so Caddy's address (demo) is always inside the API's trusted-proxy ranges
-    # (app/auth/login_codes.py TRUSTED_PROXY_NETS); otherwise the API ignores
-    # X-Forwarded-For and the per-IP sign-in limit sees only Caddy.
-    # Checked by tests/integration/test_demo_proxy.py.
+    # Pinned to a private range (the prod stack pins its own, 172.29.0.0/24).
     ipam:
       config:
         - subnet: 172.28.0.0/24
@@ -162,8 +104,3 @@ volumes:
   pgdata: {}
   miniodata: {}
   anvildata: {}
-  caddydata: {}
-
-secrets:
-  issuer_key:
-    file: ../secrets/issuer_key

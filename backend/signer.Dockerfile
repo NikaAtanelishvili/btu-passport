@@ -25,7 +25,7 @@ WORKDIR /srv/backend
 COPY --from=deps /srv/backend/.venv .venv
 COPY shared/PassportRegistry.abi.json /srv/shared/
 COPY contracts/deployments/ /srv/contracts/deployments/
-COPY backend/docker_healthcheck.py ./
+COPY backend/docker_healthcheck.py backend/docker-entrypoint.sh ./
 COPY backend/signer signer
 USER app
 EXPOSE 8100

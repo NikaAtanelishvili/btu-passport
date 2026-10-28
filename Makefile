@@ -14,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets railway-env chain-deploy-sepolia chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check sheets-reset demo-reset export-sheets railway-env chain-deploy-sepolia prod-build prod-up prod-down prod-ps prod-logs prod-cli chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -125,15 +125,26 @@ sheets-reset:
 	cd backend && uv run python -m cli sheets-reset
 
 # Back to a clean demo: the Sheet to the seed data (rows below it deleted, the sync columns
-# emptied; nothing else touched), then a fresh dev database. Keeps the chain and MinIO: the
-# new versions get new codes, so new Merkle roots. Stops the dev servers first.
+# emptied; nothing else touched), then a fresh database. Keeps the chain and object storage:
+# the new versions get new codes, so new Merkle roots.
+#   make demo-reset              dev: stops the dev servers, drops the dev database
+#   make demo-reset STACK=prod   the prod stack (make prod-up): stops its worker, runs
+#                                `python -m cli demo-reset --yes` in an api container, restarts it
+STACK ?= dev
 demo-reset:
+ifeq ($(STACK),prod)
+	@read -p "This deletes the prod stack's database and every Sheet row below the seed data. Type 'yes': " ans && [ "$$ans" = yes ]
+	$(PROD_COMPOSE) stop worker
+	$(PROD_COMPOSE) run --rm --no-deps api python -m cli demo-reset --yes; status=$$?; \
+		$(PROD_COMPOSE) start worker; exit $$status
+else
 	@read -p "This deletes the dev database and every Sheet row below the seed data. Type 'yes': " ans && [ "$$ans" = yes ]
 	$(MAKE) stop
 	$(MAKE) sheets-reset
 	$(COMPOSE) exec -T db psql -U passport -d postgres -c 'DROP DATABASE IF EXISTS passport WITH (FORCE)' -c 'CREATE DATABASE passport'
 	$(MAKE) migrate seed bootstrap issue-pending
 	@echo "demo-reset: done. Run make dev: the worker renders and anchors the seed passports."
+endif
 
 export-sheets:
 	cd backend && uv run python -m cli export-sheets
@@ -142,6 +153,37 @@ export-sheets:
 # deploy"); prints variable names only.
 railway-env:
 	python3 infra/railway/env_blocks.py $(DEMO_ENV)
+
+## Production stack (M10) ---------------------------------------------------------
+# infra/docker-compose.prod.yml with .env.demo: the images Railway runs, with Postgres, MinIO
+# and Caddy as containers (README "Local production rehearsal" / "Plain server deploy").
+# Local (default): http://localhost:3000. On the server: PROD_MODE=server (HTTPS on 80/443).
+# Compose runs with a clean environment, so the dev .env this Makefile exports can't leak
+# into the stack's variables.
+PROD_MODE ?= local
+PROD_COMPOSE = env -i PATH="$(PATH)" HOME="$(HOME)" $(if $(DOCKER_HOST),DOCKER_HOST="$(DOCKER_HOST)") \
+	docker compose -f infra/docker-compose.prod.yml --env-file $(DEMO_ENV) \
+	$(if $(filter server,$(PROD_MODE)),,--env-file infra/prod-local.env)
+
+prod-build:
+	$(PROD_COMPOSE) build
+
+prod-up:
+	$(PROD_COMPOSE) up -d --build --wait
+	$(PROD_COMPOSE) ps
+
+prod-down:
+	$(PROD_COMPOSE) down
+
+prod-ps:
+	$(PROD_COMPOSE) ps -a
+
+prod-logs:
+	$(PROD_COMPOSE) logs -f --tail 100 $(SERVICE)
+
+# One-off CLI command in an api container, e.g. make prod-cli ARGS="demo-users"
+prod-cli:
+	$(PROD_COMPOSE) run --rm --no-deps api python -m cli $(ARGS)
 
 ## Chain -------------------------------------------------------------------------
 

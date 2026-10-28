@@ -210,7 +210,9 @@ Build everything against Anvil; switch to Sepolia only in M10 by changing config
 | Explorer | none | `https://sepolia.etherscan.io/tx/` |
 | Persistence | `--state` keeps the chain across restarts; deleting the file means redeploying **and** re-seeding, because old roots would be gone | Permanent (until Sepolia is retired) |
 
-### BC-08 Sepolia deployment (M10)
+### BC-08 Sepolia deployment (M10) ✅
+
+*Done 2026-10-28 with `make chain-deploy-sepolia` (registry `0x7F90747ee05b30278B67EDE1F832dA3A46680Fb2`); batches anchored from the prod rehearsal. Step 5 (verify page from a phone on mobile data) needs a public host and is still to do by hand.*
 
 1. `cast wallet new` → save the key to `secrets/issuer_key`, the address to `.env` as `ISSUER_ADDRESS`. Fund it from a faucet.
 2. `make chain-deploy RPC_URL=$SEPOLIA_RPC_URL` with `--verify` and `ETHERSCAN_API_KEY` set, so the contract source is public on Etherscan.

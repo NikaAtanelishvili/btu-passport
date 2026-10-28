@@ -175,8 +175,8 @@ the super admin, an admin and at least one student are created with real address
 domains are allowed only in the demo env file (`.env.demo`, git-ignored), never in `.env`:
 
 ```sh
-# .env.demo (on top of the demo values: SMTP_*, ENV=demo, DEV_LOG_LOGIN_CODES=false, ...)
-ALLOWED_EMAIL_DOMAINS=btu.edu.ge,btu.test,example.org,gmail.com   # + the real domains
+# .env.demo (with the other demo values; see .env.example)
+ALLOWED_EMAIL_DOMAINS=btu.edu.ge,gmail.com   # the real addresses' domains
 DEMO_SUPER_ADMIN_EMAIL=you@gmail.com
 DEMO_ADMIN_EMAIL=colleague@gmail.com
 DEMO_STUDENT_EMAIL=student@gmail.com
@@ -184,7 +184,8 @@ DEMO_STUDENT_ID=BTU-T-0900            # optional; also DEMO_STUDENT_FIRST_NAME /
 ```
 
 ```sh
-make demo-users            # reads .env.demo over .env; DEMO_ENV=path/to/file for another file
+make prod-cli ARGS=demo-users   # the prod stack (README "Local production rehearsal")
+# Railway: railway ssh --service api, then python -m cli demo-users
 ```
 
 It grants SUPER_ADMIN and ADMIN to the two staff addresses and registers the student (with a
@@ -246,6 +247,40 @@ the backend images copy, and it is a build argument of the web image.
 
 Before either target, check `.env.demo` locally with the production build (`make prod-up`,
 "Local production rehearsal" below).
+
+### Local production rehearsal
+
+`make prod-up` runs the production images with the demo settings on this machine:
+`infra/docker-compose.prod.yml` (project `btu-passport-prod`, its own volumes, never touches
+the dev stack) with Postgres and MinIO containers standing in for Railway's, Sepolia as the
+chain, Resend for email and Caddy in front, at **http://localhost:3000**. Values come from
+`.env.demo`; `infra/prod-local.env` overrides only the address (`PUBLIC_BASE_URL`, Caddy's
+site and ports). Compose runs with a clean environment, so the dev `.env` can't leak in.
+
+```sh
+make stop                          # the dev servers use port 3000 too
+make prod-up                       # builds the three images, migrates, waits until healthy
+make prod-cli ARGS=seed            # once: seed data
+make prod-cli ARGS=demo-users      # DEMO_* super admin, admin, student
+make prod-cli ARGS=issue-pending   # the worker renders and anchors them on Sepolia
+make prod-cli ARGS=sheets-check    # the Sheet's three tabs
+make demo-reset STACK=prod         # later: Sheet + database back to the seed data (typed yes)
+make prod-logs SERVICE=worker      # follow one service; make prod-ps shows all
+make prod-down                     # stop (data kept; add -v by hand to wipe the volumes)
+```
+
+Sign in at http://localhost:3000/login: the code reaches the real inbox through Resend, and
+Google works with the dev redirect URI `http://localhost:3000/auth/google/callback`. The
+demo's Secure `__Host-session` cookie works because browsers treat localhost as secure.
+Every anchored batch is a real Sepolia transaction (about 130,000 gas, a tiny fraction of the
+wallet). The Google Sheet is the one dev uses: don't run the dev worker (`make dev`) and the
+prod stack at the same time, or both sync and write back to it.
+
+What the stack does differently from dev: `ENV=demo` (startup refuses insecure cookies, logged
+codes and `ALLOWED_EMAILS`); the containers run as uid 10001 and get file secrets through
+`backend/docker-entrypoint.sh` (copied into a tmpfs as `app`, mode 0400; only the signer gets
+the issuer key); only Caddy publishes a port; the worker and signer share a network the API
+isn't on.
 
 ### Sepolia contract
 
@@ -335,6 +370,58 @@ terminates HTTPS), no Mailpit (Resend sends mail over HTTPS; Railway blocks SMTP
    `https://btuaipassport.space/.well-known/ai-passport-issuer.json` names the Sepolia
    contract; sign in with a code to `DEMO_SUPER_ADMIN_EMAIL`; the Issuance page reaches
    ANCHORED and the verify page links the transaction on Sepolia Etherscan.
+
+### Plain server deploy
+
+Fallback when Railway isn't available: the same stack as the local rehearsal on one Linux
+server, with Caddy getting the HTTPS certificate for `btuaipassport.space` itself. Only Caddy
+publishes ports (80, 443).
+
+1. **Server:** Ubuntu 24.04 or Debian 12/13 with at least 2 GB RAM plus 2 GB swap (building
+   the web image needs about 1.5 GB; the running stack about 1 GB), a public IPv4 address,
+   inbound TCP 22, 80, 443 open. Install Docker Engine with the compose plugin
+   (docs.docker.com/engine/install), `git` and `make`, and add your user to the `docker`
+   group.
+2. **DNS at Namecheap** (*Domain List → Manage → Advanced DNS*): delete the default parking
+   records for `@` and `www`, keep Resend's records, add:
+
+   | Type | Host | Value |
+   | --- | --- | --- |
+   | A Record | `@` | the server's IPv4 address |
+
+   (Add an `AAAA` record only if the server has IPv6 and Docker publishes on it.) Check with
+   `dig +short btuaipassport.space` before step 5: Caddy needs it to get the certificate.
+3. **Code:** `git clone <this repo> btu-passport && cd btu-passport` (the contract libraries,
+   git submodules, aren't needed to run).
+4. **Configuration and secrets**, from the laptop (they are git-ignored, so copy them):
+
+   ```sh
+   scp .env.demo server:btu-passport/.env.demo
+   ssh server 'mkdir -p -m 700 btu-passport/secrets'
+   scp secrets/issuer_key_sepolia secrets/google-sheets-sa.json server:btu-passport/secrets/
+   ssh server 'chmod 600 btu-passport/.env.demo btu-passport/secrets/*'
+   ```
+
+   `.env.demo` must have `SITE_ADDRESS=btuaipassport.space` and
+   `PUBLIC_BASE_URL=https://btuaipassport.space`.
+5. **Start** (on the server, in the repo):
+
+   ```sh
+   export PROD_MODE=server            # every prod target below uses the server settings
+   make prod-up                       # builds, migrates, starts; Caddy gets the certificate
+   make prod-cli ARGS=seed
+   make prod-cli ARGS=demo-users
+   make prod-cli ARGS=issue-pending
+   make prod-cli ARGS=sheets-check
+   make demo-reset STACK=prod         # later: back to the seed data (typed yes)
+   ```
+
+6. **Check:** `curl https://btuaipassport.space/api/healthz` → `{"ok":true}`; sign in with a
+   code to `DEMO_SUPER_ADMIN_EMAIL` and with Google (the redirect URI
+   `https://btuaipassport.space/auth/google/callback` is registered); the Issuance page
+   reaches ANCHORED; the verify page links the transaction on Sepolia Etherscan.
+7. **Updates:** `git pull && make prod-up` (with `PROD_MODE=server`). Logs:
+   `make prod-logs SERVICE=api`. Containers restart on failure and after a reboot.
 
 Notes: Railway's private network has no per-service isolation, so the API can reach the signer
 too (the HMAC header still guards `/anchor`; on the plain server only the worker shares a

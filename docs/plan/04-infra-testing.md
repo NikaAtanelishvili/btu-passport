@@ -113,6 +113,8 @@ Each scenario from the Requirements Analysis becomes at least one automated test
 
 ### IN-05 Containers and Caddy (M10)
 
+**Part 1 done 2026-10-28** (Dockerfiles, `infra/docker-compose.prod.yml`, Caddy, Railway config; see Deviations). Still open for M10: A1–A16 in the demo configuration, the demo script run twice on the chosen host.
+
 - `backend/Dockerfile`: `python:3.12-slim`, install Pango and HarfBuzz runtime libraries and fonts, copy the uv lockfile, `uv sync --frozen --no-dev`, run as a non-root user. One image; `api`, `worker` and `signer` differ only in command, and only `signer` mounts the key secret.
 - `web/Dockerfile`: multi-stage Node build, `next build` with `output: "standalone"`, `API_ORIGIN=http://api:8000`.
 - `infra/Caddyfile`:

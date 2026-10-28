@@ -1,9 +1,10 @@
-"""BE-10 in the demo profile: Caddy's address is a trusted proxy, so the per-IP limit is live.
+"""BE-10 in the prod stack: Caddy's address is a trusted proxy, so the per-IP limit is live.
 
-Caddy (profile `demo`) sends /auth/* straight to the API over the Compose `backend` network.
+Caddy (infra/docker-compose.prod.yml) sends /auth/* straight to the API over the `backend`
+network.
 The API reads the client IP from X-Forwarded-For only when the direct peer is inside
-TRUSTED_PROXY_NETS, so that network's subnet must sit inside them. It is pinned in
-docker-compose.yml rather than left to Docker's address pools, which a host can change.
+TRUSTED_PROXY_NETS, so that network's subnet must sit inside them. It is pinned in the
+compose file rather than left to Docker's address pools, which a host can change.
 """
 
 import ipaddress
@@ -17,7 +18,7 @@ from app.config import REPO_ROOT
 from app.main import create_app
 from tests.conftest import FakeMailer
 
-COMPOSE = REPO_ROOT / "infra" / "docker-compose.yml"
+COMPOSE = REPO_ROOT / "infra" / "docker-compose.prod.yml"
 
 
 def _caddy_subnets() -> list[ipaddress.IPv4Network | ipaddress.IPv6Network]:
@@ -30,7 +31,7 @@ def _caddy_subnets() -> list[ipaddress.IPv4Network | ipaddress.IPv6Network]:
 
 def test_caddy_network_is_pinned_inside_the_trusted_proxy_ranges() -> None:
     subnets = _caddy_subnets()
-    assert subnets, "pin networks.backend.ipam.config[].subnet in infra/docker-compose.yml"
+    assert subnets, "pin networks.backend.ipam.config[].subnet in infra/docker-compose.prod.yml"
     for subnet in subnets:
         assert any(
             subnet.version == net.version and subnet.subnet_of(net)  # type: ignore[arg-type]

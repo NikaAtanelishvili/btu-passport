@@ -1,0 +1,199 @@
+# IN-05 / IN-07 (M10): the production stack. The same images as Railway, with Postgres and
+# MinIO as containers and Caddy in front. Two uses (README "Local production rehearsal" and
+# "Plain server deploy"):
+#   local:  make prod-up                    → http://localhost:3000 (Caddy, plain HTTP)
+#   server: make prod-up PROD_MODE=server   → https://$SITE_ADDRESS (Caddy, automatic HTTPS)
+# Values come from .env.demo (--env-file, and env_file for api/worker); local mode adds
+# infra/prod-local.env on top. Only Caddy publishes ports. A separate project name and
+# volumes: this never touches the dev stack (infra/docker-compose.yml).
+
+name: btu-passport-prod
+
+x-backend: &backend
+  image: btu-passport/backend:prod
+  build: { context: .., dockerfile: backend/Dockerfile }
+  env_file: [../.env.demo]
+  # Started as root only to hand file secrets to the `app` user (docker-entrypoint.sh).
+  user: root
+  entrypoint: ["/srv/backend/docker-entrypoint.sh"]
+  tmpfs: ["/run/app:uid=10001,gid=10001,mode=0700"]
+  secrets: [google_sheets_sa]
+  restart: unless-stopped
+  mem_limit: 1g
+
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+psycopg://passport:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.demo}@db:5432/passport
+  S3_ENDPOINT_URL: http://minio:9000
+  S3_REGION: us-east-1
+  S3_ADDRESSING_STYLE: path
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?}
+  SIGNER_URL: http://signer:8100
+  GOOGLE_SHEETS_CREDENTIALS_FILE: /run/secrets/google_sheets_sa
+  GOOGLE_SHEETS_CREDENTIALS_JSON: ""
+  # The issuer key belongs to the signer alone, even if the env file names it.
+  ISSUER_PRIVATE_KEY: ""
+  ISSUER_PRIVATE_KEY_FILE: ""
+
+services:
+  db:
+    image: postgres:16.15@sha256:9e2cf6287f25c3151f4c9421ccce2b17f3e60061c111a29165e0d2cdd9ff0a97
+    environment:
+      POSTGRES_USER: passport
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: passport
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U passport -d passport"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [backend]
+
+  minio:
+    image: cgr.dev/chainguard/minio@sha256:ae73835075ee168f1745cc28d4cf5bbd6a5973e5609b2b2593280aaa495ea113
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?}
+    volumes: [miniodata:/data]
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - |-
+          exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /minio/health/live HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && read -r status <&3 && [[ $$status == *' 200 '* ]]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [backend]
+
+  minio-init:
+    image: cgr.dev/chainguard/minio-client@sha256:8548a9731c3f4cf507d8596c18c351ddb8fcb1063f212e6dd72ff5eeb697bc9c
+    depends_on:
+      minio: { condition: service_healthy }
+    environment:
+      MC_HOST_local: http://${S3_ACCESS_KEY}:${S3_SECRET_KEY}@minio:9000
+    command: ["mb", "--ignore-existing", "local/${S3_BUCKET:?}"]
+    restart: "no"
+    networks: [backend]
+
+  # Railway's pre-deploy step: migrations before api and worker start.
+  migrate:
+    <<: *backend
+    command: ["alembic", "upgrade", "head"]
+    environment: *backend-env
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+    networks: [backend]
+
+  api:
+    <<: *backend
+    command: ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    environment: *backend-env
+    expose: ["8000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      minio-init: { condition: service_completed_successfully }
+    networks: [backend]
+
+  worker:
+    <<: *backend
+    command: ["python", "-m", "worker"]
+    environment:
+      <<: *backend-env
+      WORKER_HEARTBEAT_FILE: /tmp/worker-alive
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      minio-init: { condition: service_completed_successfully }
+      signer: { condition: service_healthy }
+    networks: [backend, signing]
+
+  signer:
+    image: btu-passport/signer:prod
+    build: { context: .., dockerfile: backend/signer.Dockerfile }
+    user: root
+    entrypoint: ["/srv/backend/docker-entrypoint.sh"]
+    command: ["sh", "-c", "exec uvicorn signer.main:app --host 0.0.0.0 --port 8100"]
+    tmpfs: ["/run/app:uid=10001,gid=10001,mode=0700"]
+    # Its own variables only: no env file, so nothing else from .env.demo reaches it.
+    environment:
+      ENV: ${ENV:?}
+      CHAIN_ID: ${CHAIN_ID:?}
+      RPC_URL: ${RPC_URL:?}
+      CONTRACT_ADDRESS: ${CONTRACT_ADDRESS:?run make chain-deploy-sepolia}
+      ISSUER_ADDRESS: ${ISSUER_ADDRESS:?}
+      SIGNER_HMAC_SECRET: ${SIGNER_HMAC_SECRET:?}
+      CONFIRMATIONS: ${CONFIRMATIONS:-1}
+      ISSUER_PRIVATE_KEY_FILE: /run/secrets/issuer_key
+    secrets: [issuer_key] # the only service with the key
+    expose: ["8100"]
+    restart: unless-stopped
+    mem_limit: 1g
+    networks: [signing]
+
+  web:
+    image: btu-passport/web:prod
+    build:
+      context: ..
+      dockerfile: web/Dockerfile
+      args:
+        API_ORIGIN: http://api:8000
+        CHAIN_ID: ${CHAIN_ID}
+        CONTRACT_ADDRESS: ${CONTRACT_ADDRESS}
+        ISSUER_ADDRESS: ${ISSUER_ADDRESS}
+        NEXT_PUBLIC_RPC_URL: ${NEXT_PUBLIC_RPC_URL:?}
+        NEXT_PUBLIC_EXPLORER_TX_URL: ${NEXT_PUBLIC_EXPLORER_TX_URL:?}
+        PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+    environment:
+      # Caddy sends /api and /auth to the API itself; client headers reaching web are dropped.
+      TRUSTED_EDGE_PROXY: "false"
+    expose: ["3000"]
+    restart: unless-stopped
+    mem_limit: 1g
+    networks: [backend]
+
+  caddy:
+    # Must see the real client address: Docker's published ports keep it for IPv4 via
+    # iptables, but the userland proxy (IPv6, hairpin) or a tunnel replaces it with a
+    # gateway address, and then every client shares one per-IP sign-in limit (IN-05/IN-07).
+    image: caddy:2.11.7
+    ports:
+      - ${CADDY_HTTP_BIND:-80:80}
+      - ${CADDY_HTTPS_BIND:-443:443}
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on: [api, web]
+    restart: unless-stopped
+    networks: [backend]
+
+networks:
+  backend:
+    # Pinned so Caddy's address is always inside the API's trusted-proxy ranges
+    # (app/auth/login_codes.py TRUSTED_PROXY_NETS); otherwise the API ignores
+    # X-Forwarded-For and the per-IP sign-in limit sees only Caddy.
+    # Checked by tests/integration/test_demo_proxy.py.
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
+  # worker ↔ signer only. Not internal: the signer needs the internet for the Sepolia RPC.
+  signing: {}
+
+volumes:
+  pgdata: {}
+  miniodata: {}
+  caddydata: {}
+  caddyconfig: {}
+
+secrets:
+  issuer_key:
+    file: ../${ISSUER_PRIVATE_KEY_FILE:?}
+  google_sheets_sa:
+    file: ../${GOOGLE_SHEETS_CREDENTIALS_FILE:?}
