@@ -150,7 +150,7 @@ Students rows end as `CREATED`, `UPDATED`, `UNCHANGED`, `CONFLICT` or `ERROR`; S
 
 M11 runs after the UI polish and before M10 (hosting). Work in order; one commit per task; tests first for every rule marked as an invariant; record every deviation in `docs/plan/00-overview.md` and add M11 and these task rows there. Priority: SH-01 – SH-09 and SH-12 – SH-13 are **Must**, SH-10 **Should**, SH-11 **Could**.
 
-### SH-01 Sheet source adapter — `backend/app/sheets/source.py`
+### SH-01 Sheet source adapter — `backend/app/sheets/source.py` ✅
 
 - A `SheetSource` interface returning the three tabs as lists of header-keyed rows with their row numbers.
 - `GoogleSheetSource`: service account from `GOOGLE_SHEETS_CREDENTIALS_FILE` or `GOOGLE_SHEETS_CREDENTIALS_JSON`; one `values.batchGet`; scope read-only unless `SHEET_WRITEBACK=true`. Use `google-auth` plus `httpx` or a small well-known client; justify the choice in Deviations.
@@ -159,7 +159,7 @@ M11 runs after the UI polish and before M10 (hosting). Work in order; one commit
 - New env vars in `.env.example`: `GOOGLE_SHEETS_ID`, `GOOGLE_SHEETS_CREDENTIALS_FILE`, `GOOGLE_SHEETS_CREDENTIALS_JSON`, `SHEET_SYNC_INTERVAL_SECONDS=60`, `SHEET_WRITEBACK=false`. Never log credentials.
 - **Done when:** unit tests read a fixture `.xlsx` and a CSV folder; with my `.env`, `python -m cli sheets-check` prints the three tab names and row counts from the real Sheet.
 
-### SH-02 Sheet import files and demo rows — `seed/sheets/`
+### SH-02 Sheet import files and demo rows — `seed/sheets/` ✅
 
 - `python -m cli export-sheets` writes `students.csv`, `skills_catalog.csv`, `verified_skills.csv` from the current seed data in section 4's format, all records CONFIRMED with their `REC-` IDs.
 - `seed/sheets/demo-rows.md`: the rows to paste live in the demo: one new student with one CONFIRMED skill, one new CONFIRMED skill for BTU-T-0001, one PENDING, one REJECTED, one with an unknown student ID, one with a future date, one exact repeat of a processed record.
