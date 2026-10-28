@@ -22,6 +22,10 @@ os.environ["GOOGLE_CLIENT_ID"] = ""
 os.environ["GOOGLE_CLIENT_SECRET"] = ""
 os.environ["ALLOWED_EMAILS"] = ""
 os.environ["DEV_SUPER_ADMIN_EMAILS"] = ""
+# No Google Sheet and no write-back, whatever .env says; the live smoke test (SH-13) reads the
+# real Sheet ID from .env itself and runs only when it is set.
+os.environ["GOOGLE_SHEETS_ID"] = ""
+os.environ["SHEET_WRITEBACK"] = "false"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

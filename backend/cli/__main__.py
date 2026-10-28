@@ -2,7 +2,7 @@
 
 import argparse
 
-from cli import bootstrap, demo_users, merkle_vectors, seed
+from cli import bootstrap, demo_users, merkle_vectors, seed, sheets
 
 
 def main() -> None:
@@ -22,6 +22,9 @@ def main() -> None:
     commands.add_parser(
         "issue-pending", help="new version for students with awards not yet in one (BE-04)"
     )
+    commands.add_parser(
+        "sheets-check", help="read the Google Sheet and print its tabs and row counts (SH-01)"
+    )
     args = parser.parse_args()
 
     if args.command == "merkle-vectors":
@@ -34,6 +37,8 @@ def main() -> None:
         demo_users.main()
     elif args.command == "issue-pending":
         issue_pending()
+    elif args.command == "sheets-check":
+        sheets.check()
 
 
 def issue_pending() -> None:

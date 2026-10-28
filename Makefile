@@ -14,7 +14,7 @@ export PATH := $(HOME)/.foundry/bin:$(PATH)
 
 COMPOSE := docker compose --env-file .env -f infra/docker-compose.yml
 
-.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending chain-deploy chain-abi merkle-vectors \
+.PHONY: infra-up infra-down infra-reset infra-ps api web worker signer dev stop lan-url types migrate migrate-test seed bootstrap demo-users issue-pending sheets-check export-sheets chain-deploy chain-abi merkle-vectors \
 	lint lint-backend lint-web lint-contracts test test-backend test-web test-contracts test-chain
 
 ## Infrastructure ------------------------------------------------------------
@@ -116,6 +116,13 @@ demo-users:
 # A new version for every student whose awards aren't all in their latest one (BE-04 step 8).
 issue-pending:
 	cd backend && uv run python -m cli issue-pending
+
+# Google Sheets (M11): read the Sheet once / write the seed as the three import CSVs.
+sheets-check:
+	cd backend && uv run python -m cli sheets-check
+
+export-sheets:
+	cd backend && uv run python -m cli export-sheets
 
 ## Chain -------------------------------------------------------------------------
 

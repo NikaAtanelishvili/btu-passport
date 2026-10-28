@@ -1,0 +1,8 @@
+{
+  "_comment": "Tab titles, header row and header names of the Sheet, mapped to the names in docs/plan/05-addendum-sheets.md section 4. Identity by default; for a differently laid-out copy, set its tab titles, its header row and 'their header': 'our name' pairs. Headers match ignoring case and surrounding spaces.",
+  "tabs": {
+    "Students": {"title": "Students", "header_row": 1, "headers": {}},
+    "Skills Catalog": {"title": "Skills Catalog", "header_row": 1, "headers": {}},
+    "Verified Skills": {"title": "Verified Skills", "header_row": 1, "headers": {}}
+  }
+}

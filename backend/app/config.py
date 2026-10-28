@@ -88,6 +88,14 @@ class Settings(BaseSettings):
 
     passport_template_dir: str = "app/pdf/templates"
 
+    # Google Sheets intake (M11, SH-01). Empty ID = no scheduled sync. The service account key
+    # comes from a file (dev, relative to the repo root) or its JSON content (demo host).
+    google_sheets_id: str = ""
+    google_sheets_credentials_file: str = ""
+    google_sheets_credentials_json: SecretStr = SecretStr("")
+    sheet_sync_interval_seconds: int = 60
+    sheet_writeback: bool = False
+
     @field_validator(
         "allowed_email_domains", "allowed_emails", "dev_super_admin_emails", mode="before"
     )
