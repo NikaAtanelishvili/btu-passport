@@ -69,7 +69,7 @@ def main(env_file: str) -> None:
         "api": common | BUCKET | {
             "DATABASE_URL": POSTGRES, "GOOGLE_SHEETS_CREDENTIALS_JSON": sa_json,
             "S3_ADDRESSING_STYLE": env.get("RAILWAY_S3_ADDRESSING_STYLE", "virtual"),
-            "HOST": "::", "PORT": "8000",
+            "PORT": "8000",
         },
         "worker": common | BUCKET | {
             "DATABASE_URL": POSTGRES, "GOOGLE_SHEETS_CREDENTIALS_JSON": sa_json,
@@ -78,7 +78,7 @@ def main(env_file: str) -> None:
         },
         "signer": {k: env[k] for k in SIGNER} | {
             "SIGNER_HMAC_SECRET": env["SIGNER_HMAC_SECRET"], "ISSUER_PRIVATE_KEY": issuer_key,
-            "CONFIRMATIONS": env.get("CONFIRMATIONS", "1"), "HOST": "::", "PORT": "8100",
+            "CONFIRMATIONS": env.get("CONFIRMATIONS", "1"), "PORT": "8100",
         },
         "web": {k: env[k] for k in WEB_BUILD} | {
             "API_ORIGIN": "http://api.railway.internal:8000", "TRUSTED_EDGE_PROXY": "true",

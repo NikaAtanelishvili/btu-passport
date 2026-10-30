@@ -3,7 +3,7 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "backend/signer.Dockerfile",
-    "watchPatterns": ["backend/signer/**", "backend/pyproject.toml", "backend/uv.lock", "shared/**", "contracts/deployments/**"]
+    "watchPatterns": ["backend/signer/**", "backend/signer.Dockerfile", "backend/pyproject.toml", "backend/uv.lock", "shared/**", "contracts/deployments/**"]
   },
   "deploy": {
     "healthcheckPath": "/healthz",

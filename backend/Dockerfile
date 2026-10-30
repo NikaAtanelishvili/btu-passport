@@ -43,5 +43,6 @@ USER app
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=6s --start-period=30s --retries=3 \
     CMD ["python", "docker_healthcheck.py"]
-# HOST=:: on Railway, whose private network is IPv6 (uvicorn then listens on IPv6 only).
-CMD ["sh", "-c", "exec uvicorn app.main:app --host \"${HOST:-0.0.0.0}\" --port \"${PORT:-8000}\""]
+# Without HOST uvicorn listens on every IPv4 and IPv6 address: Railway's healthcheck comes
+# over IPv4, its private network over IPv6 (HOST=:: would be IPv6 only).
+CMD ["sh", "-c", "exec uvicorn app.main:app --host \"${HOST:-}\" --port \"${PORT:-8000}\""]

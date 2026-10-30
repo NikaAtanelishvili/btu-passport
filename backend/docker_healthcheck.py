@@ -14,7 +14,7 @@ if heartbeat:
     except OSError:
         sys.exit(1)
 
-# HOST=:: (Railway) listens on IPv6 only.
+# An IPv6 HOST (e.g. ::) listens on IPv6 only; no HOST listens on both.
 local = "[::1]" if ":" in os.environ.get("HOST", "") else "127.0.0.1"
 port = os.environ.get("PORT", "8000")
 url = f"http://{local}:{port}{os.environ.get('HEALTHCHECK_PATH', '/api/healthz')}"
