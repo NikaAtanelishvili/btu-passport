@@ -324,43 +324,72 @@ terminates HTTPS), no Mailpit (Resend sends mail over HTTPS; Railway blocks SMTP
 1. **Variables from `.env.demo`:** `make railway-env` writes one block per service to
    `secrets/railway/{api,worker,signer,web}.env` (git-ignored, mode 0600; it prints only
    variable names). The signer key goes into `signer.env` only.
-2. **Project:** in Railway, *New Project → Deploy from GitHub repo* → this repository. Rename
-   the first service to `api`. Then *+ New → GitHub repo* (same repo) three more times for
-   `worker`, `signer`, `web`; *+ New → Database → PostgreSQL* (keep the name `Postgres`);
-   *+ New → Bucket* (name it `Bucket`). Service names matter: they are the private host
-   names (`api.railway.internal`, `signer.railway.internal`) and the variable references
-   (`${{Postgres.DATABASE_URL}}`, `${{Bucket.…}}`).
-3. **Per service, Settings:** leave *Root Directory* empty (builds use the repo root) and set
-   *Config-as-code → Railway config file* to:
+2. **Project** (Railway CLI: `npm i -g @railway/cli`, `railway login`; a paid plan, an
+   expired trial refuses `railway init`). Create the services empty, so nothing builds before
+   its settings and variables are in:
 
-   | Service | Config file | What it sets |
+   ```sh
+   railway init --name btu-passport          # links this directory
+   railway add --database postgres           # service "Postgres"
+   railway bucket create Bucket --region ams
+   for s in api worker signer web; do railway add --service $s; done
+   ```
+
+   Names matter: they are the private host names (`api.railway.internal`,
+   `signer.railway.internal`) and the variable references (`${{Postgres.DATABASE_URL}}`,
+   `${{Bucket.…}}`).
+3. **Per service, build and deploy settings** from `infra/railway/<service>.json`. Railway no
+   longer accepts a config file on new projects ("Config as Code is deprecated"), so the
+   files are the record and the values go on each service (dashboard *Settings*, or the
+   `serviceInstanceUpdate` API mutation via `railway api`: `dockerfilePath`, `watchPatterns`,
+   `preDeployCommand`, `startCommand`, `healthcheckPath`, `healthcheckTimeout`,
+   `restartPolicyType`, `restartPolicyMaxRetries`, `numReplicas: 1`). Leave *Root Directory*
+   empty (builds use the repo root). The builder shows Railpack, but a set Dockerfile path
+   wins. The Dockerfiles have no `RUN --mount=type=cache`: Railway refuses cache mounts
+   without a service-specific id.
+
+   | Service | Settings file | What it sets |
    | --- | --- | --- |
-   | api | `/infra/railway/api.json` | `backend/Dockerfile`, pre-deploy `alembic upgrade head`, healthcheck `/api/healthz` |
-   | worker | `/infra/railway/worker.json` | `backend/Dockerfile`, start `python -m worker` |
-   | signer | `/infra/railway/signer.json` | `backend/signer.Dockerfile`, healthcheck `/healthz` |
-   | web | `/infra/railway/web.json` | `web/Dockerfile`, healthcheck `/verify` |
+   | api | `infra/railway/api.json` | `backend/Dockerfile`, pre-deploy `alembic upgrade head`, healthcheck `/api/healthz` |
+   | worker | `infra/railway/worker.json` | `backend/Dockerfile`, start `python -m worker`, one replica |
+   | signer | `infra/railway/signer.json` | `backend/signer.Dockerfile`, healthcheck `/healthz` |
+   | web | `infra/railway/web.json` | `web/Dockerfile`, healthcheck `/verify` |
 
-4. **Per service, Variables → Raw Editor:** paste the matching `secrets/railway/<service>.env`.
-   Open the bucket's *Variables* tab and check its variable names match the `${{Bucket.…}}`
-   references in `api.env` / `worker.env` (`ENDPOINT`, `ACCESS_KEY_ID`, `SECRET_ACCESS_KEY`,
-   `BUCKET`, `REGION`); rename the references if Railway shows other names. If uploads fail
-   with an addressing error, set `S3_ADDRESSING_STYLE=path` on api and worker.
-5. **Networking:** only `web` gets a domain: *web → Settings → Networking → Custom Domain* →
-   `btuaipassport.space`, target port `3000`. Don't generate domains for the others.
+4. **Per service, variables** from `secrets/railway/<service>.env`: paste into *Variables →
+   Raw Editor*, or set them with the CLI one at a time through stdin, so no value is on a
+   command line or in the output (`railway variable set KEY --stdin --service <svc>
+   --skip-deploys`). The bucket's reference names are `ENDPOINT`, `ACCESS_KEY_ID`,
+   `SECRET_ACCESS_KEY`, `BUCKET` and `REGION` (checked: they resolve on api and worker); it
+   uses virtual-host addressing (`S3_ADDRESSING_STYLE=virtual`). `${{Bucket.REGION}}`
+   resolves to the bucket's location (`ams`) while `railway bucket credentials` names the
+   signing region `auto`: if uploads fail with a signature or region error, set
+   `S3_REGION=auto` on api and worker. `DATABASE_URL` arrives as `postgresql://…`; the config
+   adds the psycopg driver. Don't set `HOST`: api and signer then listen on IPv4 (Railway's
+   healthcheck) and IPv6 (its private network); `HOST=::` is IPv6 only and fails the
+   healthcheck.
+5. **Source and domain:** `railway service source connect --repo <owner>/btu-passport
+   --branch main --service <svc>` for each of the four starts the builds; later pushes to
+   `main` redeploy the services whose watch patterns match. Only `web` gets a domain: first
+   `railway domain --service web --port 3000` (a `….up.railway.app` address to test on),
+   then `railway domain btuaipassport.space --service web --port 3000`, which prints the DNS
+   records. Don't generate domains for the others.
 6. **DNS at Namecheap** (*Domain List → Manage → Advanced DNS*): delete the default parking
-   records for `@` and `www` (CNAME / URL Redirect), keep Resend's records, then add exactly
-   what Railway shows for the custom domain, normally:
+   records for `@` and `www` (CNAME / URL Redirect), keep Resend's records and the SPF TXT,
+   then add what `railway domain btuaipassport.space` printed (`railway domain status
+   btuaipassport.space --service web` shows it again):
 
    | Type | Host | Value |
    | --- | --- | --- |
-   | ALIAS Record | `@` | the `….up.railway.app` target Railway shows |
-   | TXT Record | the host Railway shows (e.g. `_railway-verify`) | the value Railway shows, if it shows one |
+   | ALIAS Record | `@` | the CNAME target Railway shows (`….up.railway.app`, not the service domain) |
+   | TXT Record | `_railway-verify` | `railway-verify=…`, the token Railway shows |
 
-   Namecheap has no CNAME at the apex; its *ALIAS Record* is the equivalent. Railway issues
-   the certificate once DNS resolves (minutes to an hour).
-7. **Deploy** all four (the api's pre-deploy step migrates the database). Then, in a terminal
-   with the Railway CLI (`npm i -g @railway/cli`, `railway login`, `railway link`), run the
-   one-off commands inside the api service:
+   Railway asks for a CNAME; Namecheap has none at the apex, and its *ALIAS Record* is the
+   equivalent. Railway issues the certificate once both resolve (minutes to an hour).
+7. **Deploy:** connecting the source (step 5) deploys all four; the api's pre-deploy step
+   migrates the database. `make prod-smoke`'s script checks it from outside:
+   `python3 infra/smoke.py https://….up.railway.app`. For the one-off commands, register an
+   SSH key with Railway once (`railway ssh keys add` or `railway ssh keys github`), then run
+   them inside the api service:
 
    ```sh
    railway ssh --service api
