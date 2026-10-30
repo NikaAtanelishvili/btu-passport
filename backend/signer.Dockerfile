@@ -11,7 +11,8 @@ COPY --from=uv /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 WORKDIR /srv/backend
 COPY backend/pyproject.toml backend/uv.lock ./
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
+# No cache mount: Railway's builder only accepts ones with a service-specific id.
+RUN uv sync --frozen --no-dev --no-cache
 
 FROM python:3.12.16-slim-trixie
 RUN useradd --uid 10001 --user-group --no-create-home --shell /usr/sbin/nologin app

@@ -8,8 +8,8 @@ FROM node:24.22.1-trixie-slim AS deps
 WORKDIR /app
 RUN corepack enable
 COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --frozen-lockfile
+# No cache mount: Railway's builder only accepts ones with a service-specific id.
+RUN COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY web/ ./
