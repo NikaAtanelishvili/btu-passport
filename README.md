@@ -361,9 +361,8 @@ terminates HTTPS), no Mailpit (Resend sends mail over HTTPS; Railway blocks SMTP
    --skip-deploys`). The bucket's reference names are `ENDPOINT`, `ACCESS_KEY_ID`,
    `SECRET_ACCESS_KEY`, `BUCKET` and `REGION` (checked: they resolve on api and worker); it
    uses virtual-host addressing (`S3_ADDRESSING_STYLE=virtual`). `${{Bucket.REGION}}`
-   resolves to the bucket's location (`ams`) while `railway bucket credentials` names the
-   signing region `auto`: if uploads fail with a signature or region error, set
-   `S3_REGION=auto` on api and worker. `DATABASE_URL` arrives as `postgresql://…`; the config
+   resolves to the bucket's location (`ams`), and uploads sign fine with it (checked with a
+   put/get/delete from the worker), although `railway bucket credentials` says `auto`. `DATABASE_URL` arrives as `postgresql://…`; the config
    adds the psycopg driver. Don't set `HOST`: api and signer then listen on IPv4 (Railway's
    healthcheck) and IPv6 (its private network); `HOST=::` is IPv6 only and fails the
    healthcheck.
